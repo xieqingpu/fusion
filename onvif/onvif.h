@@ -106,11 +106,25 @@ typedef struct _ONVIF_MetadataConfiguration
 	onvif_MetadataConfiguration Configuration;
 } ONVIF_MetadataConfiguration;
 
+////
+typedef struct 
+{
+	float x;		//顶点坐标x(左上角)
+	float y;		//顶点坐标y(左上角)
+	float w;		//宽
+	float h;		//高
+} onvif_VectorList;
+////
 typedef struct
 {
-    BOOL    UsedFlag;
+	BOOL 	UsedFlag		: 1;
+	BOOL 	VectorListFlag		: 1;
+	uint32 	Reserved		: 30;
     
 	uint32   zoomVal;								// add by xieqingpu 加了摄像机焦距,目的是使预置位对应相应的焦距
+	uint16   Vector_Number;
+	onvif_VectorList	 Vector_list[VECTOR_LIST_LEN];		// add by xieqingpu 增加标记区域,对应这预置位
+
     onvif_PTZPreset	PTZPreset;
 } ONVIF_PTZPreset;
 

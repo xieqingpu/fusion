@@ -70,15 +70,29 @@ typedef struct
 	onvif_PTZSpeed	Speed;						// optional, An optional Speed parameter
 } RelativeMove_REQ;
 
+
+// add
+typedef struct 
+{
+	float x;		//顶点坐标x(左上角)
+	float y;		//顶点坐标y(左上角)
+	float w;		//宽
+	float h;		//高
+} onvif_ex_VectorList;
+
 typedef struct
 {
 	uint32	PresetTokenFlag : 1;				// Indicates whether the field PresetToken is valid
 	uint32	PresetNameFlag 	: 1;				// Indicates whether the field PresetName is valid
-	uint32  Reserved	 	: 30;
+	uint32  VectorList_Flag	 	: 1;	//xieqingpu
+	uint32  Reserved	 	: 29;
 	
     char	ProfileToken[ONVIF_TOKEN_LEN];		// required, A reference to the MediaProfile where the operation should take place
     char	PresetToken[ONVIF_TOKEN_LEN];		// optional, A requested preset token
     char    PresetName[ONVIF_NAME_LEN];			// optional, A requested preset name
+
+	uint16  VectorNumber;     //xie
+	onvif_ex_VectorList	 VectorList[VECTOR_LIST_LEN];     //xieqingpu
 } SetPreset_REQ;
 
 typedef struct

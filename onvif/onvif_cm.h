@@ -31,6 +31,8 @@
 #define ONVIF_NAME_LEN    	    100
 #define ONVIF_URI_LEN     	    300
 
+#define VECTOR_LIST_LEN     	    50      //add 
+
 // #define MAX_PTZ_PRESETS         100 
 #define MAX_PTZ_PRESETS         128
 #define MAX_DNS_SERVER		    2

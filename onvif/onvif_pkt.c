@@ -7331,9 +7331,30 @@ int build_SetPreset_rly_xml(char * p_buf, int mlen, const char * argv)
 	return offset;
 }
 
+////	xieqingpu
+int build_Vector_xml(char * p_buf, int mlen, onvif_VectorList * p_req)
+{
+	int offset = 0;
+	
+	offset += snprintf(p_buf+offset, mlen-offset, 
+		// "<tt:Source>"
+			"<tt:X>%f</tt:X>"
+			"<tt:Y>%f</tt:Y>"
+			"<tt:W>%f</tt:W>"
+			"<tt:H>%f</tt:H>",
+		// "</tt:Source>",
+		p_req->x,
+		p_req->y,
+		p_req->w,
+		p_req->h);
+		
+	return offset;		
+}
+////
+
 int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
 {
-	int i;
+	int i , j;
 	int offset = 0;
     ONVIF_PROFILE * p_profile = onvif_find_profile(argv);  // g_onvif_cfg.profiles
     if (NULL == p_profile)
@@ -7346,12 +7367,16 @@ int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
 	{
 		printf("read PTZ preset faile.\n");
 	}
-	/* else{
-		for(int j = 0; j < 64; j++)
+	/*else{
+	 	for(int j = 0; j < 8; j++)		// just for test
 		{
-			printf("xxx read1 p_profile->presets[%d].UsedFlag:%d\n",j, p_profile->presets[j].UsedFlag);
-			printf("xxx read1 Preset[%d],token:%s Name:%s\n\n",j, p_profile->presets[j].PTZPreset.token, p_profile->presets[j].PTZPreset.Name);
-		}
+			printf("xxx GetPresets| Preset[%d].UsedFlag:%d token:%s Name:%s\n",j, p_profile->presets[j].UsedFlag, p_profile->presets[j].PTZPreset.token, p_profile->presets[j].PTZPreset.Name);
+			for (int i = 0; i < g_vector_num; i++)
+			{
+				printf("xxxxxx GetPresets| Vector_list: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f\n",p_profile->presets[j].Vector_list[i].x, p_profile->presets[j].Vector_list[i].y, p_profile->presets[j].Vector_list[i].w, p_profile->presets[j].Vector_list[i].h);
+			}
+		printf("\n");
+		} 
 	} */
 	////
 
@@ -7392,6 +7417,21 @@ int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
 		    }        
 	        offset += snprintf(p_buf+offset, mlen-offset, "</tt:PTZPosition>");
 	    }
+
+	    		////  xieqingpu
+		// printf("xxx ========= p_profile->presets[%d].VectorListFlag = %d ==========\n", i, p_profile->presets[i].VectorListFlag);
+		if ( p_profile->presets[i].VectorListFlag != 0 ) {      //对应的预置位是否有画检测区域Vector  !=0代表有
+		
+			offset += snprintf(p_buf+offset, mlen-offset, "<tt:VectorList>");
+			for ( j = 0; j < p_profile->presets[i].Vector_Number; j++ )
+			{
+				offset += snprintf(p_buf+offset, mlen-offset, "<tt:Vector>");
+				offset += build_Vector_xml(p_buf+offset, mlen-offset, &p_profile->presets[i].Vector_list[j]);
+				offset += snprintf(p_buf+offset, mlen-offset, "</tt:Vector>");
+			}
+			offset += snprintf(p_buf+offset, mlen-offset, "</tt:VectorList>");
+		}
+	   ////
 	    
         offset += snprintf(p_buf+offset, mlen-offset, "</tptz:Preset>");
     }

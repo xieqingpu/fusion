@@ -24,7 +24,7 @@ COMPILEOPTION += -DPTZ_SUPPORT
 
 INCLUDEDIR = -I./bm -I./onvif -I./http
 #INCLUDEDIR += -I./openssl/include -I./openssl/include/linux
-#INCLUDEDIR += -I./libical/include
+INCLUDEDIR += -I../include
 INCLUDEDIR += -I./camCtl
 INCLUDEDIR += -I./camCtl/pelco_ptz 
 INCLUDEDIR += -I./camCtl/visca

@@ -271,46 +271,68 @@ int setImgParam(ImgParam_t *imgParams)
 }
 
 
-/* 读取 热成像参数配置_1*/
-#define  TP1FILE  ("/user/cfg_files/TP1.dat")
-int getThermalParam1(ThermalParam1_t *thermalParam1)
+#define IR_BASE_PARAM_FILE			"/user/cfg_files/irBase.dat"
+//获取热成像基础参数,成功返回0，失败返回-1
+int getThermalBaseParam(ThermalBaseParam *param)
 {
-#if __REALSE__
-	getThermalBaseParam((ThermalBaseParam *)thermalParam1);
-#endif
+	if (read_cfg_from_file((char*)IR_BASE_PARAM_FILE, (char*)param, sizeof(ThermalBaseParam))<0)
+	{
+		param->actime = 300;
+		param->orgData = 0;
+		param->userPalette = 2;
+		param->wideDynamic = 0;
+		UTIL_ERR("read ir base param fail\n");
+		return -1;
+	}
 	return 0;
 }
 
 
 
 /*  保存 热成像参数配置_1 */
-int setThermalParam1(ThermalParam1_t *thermalParam1)
+int setThermalParam1(ThermalBaseParam *thermalParam1)
 {
 #if __REALSE__
 	setThermalBaseParam((ThermalBaseParam*)thermalParam1);
 #endif
+	//保存参数
+	if (save_cfg_to_file((char*)IR_BASE_PARAM_FILE, (char*)thermalParam1, sizeof(ThermalBaseParam))<0)
+		UTIL_ERR("save ir base param fail\n");
+
 	return 0;
 }
 
-
-/* 读取 热成像参数配置_2*/
-#define  TP2FILE  ("/user/cfg_files/TP2.dat")
-int getThermalParam2(ThermalParam2_t *thermalParam2)
+#define IR_ENV_PARAM_FILE			"/user/cfg_files/irEnv.dat"
+//获取热成像环境参数,成功返回0，失败返回-1
+int getThermalEnvParam(ThermalEnvParam *param)
 {
-	//获取热成像环境参数,成功返回0，失败返回-1
-#if __REALSE__
-	getThermalEnvParam((ThermalEnvParam *)thermalParam2);
-#endif
+	if (read_cfg_from_file((char*)IR_ENV_PARAM_FILE, (char*)param, sizeof(ThermalEnvParam))<0)
+	{
+		param->emissivity = 0.95;           //发射率    
+		param->distance=3.0;             //距离
+		param->humidity=0.45;             //湿度
+		param->correction=0;           //修正
+		param->reflection=25;           //反射温度
+		param->amb=25;                  //环境温度
+
+		UTIL_ERR("read ir env param fail\n");
+		return -1;
+	}
 	return 0;
+
 }
 
 /* 保存 热成像参数配置_2*/
-int setThermalParam2(ThermalParam2_t *thermalParam2)
+int setThermalParam2(ThermalEnvParam *thermalParam2)
 {
 	//设置热成像环境参数，成功返回0，失败返回-1
 #if __REALSE__	
 	setThermalEnvParam((ThermalEnvParam *)thermalParam2);
 #endif
+	//保存参数
+	if (save_cfg_to_file((char*)IR_ENV_PARAM_FILE, (char*)thermalParam2, sizeof(ThermalEnvParam)) < 0)
+		UTIL_ERR("save fusion param fail\n");
+
 	return 0;
 }
 

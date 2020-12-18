@@ -382,6 +382,19 @@ int set_zoom_stop()
 
 static const char* com_dev = NULL;
 static pthread_t gs_pid;
+
+static int visca_status = 0;
+void set_visca_status(int visca_flag)
+{
+	visca_status = visca_flag;
+}
+
+int get_visca_status()
+{
+	return visca_status;
+}
+
+
 void* visca_init_thread(void* param)
 {
 	int ret;
@@ -391,15 +404,13 @@ void* visca_init_thread(void* param)
 		if (VISCA_open_serial(&iface, com_dev)!=VISCA_SUCCESS)
 		{
 			UTIL_ERR("unable to open serial device %s\n", com_dev);
-			sleep(3);
+			sleep(1);
 			continue;
 		}
 		else
 			break;
 	}
 	
-	// sleep(5);
-	UTIL_INFO("sleep 30 second visca \n");
 
 	while(1)
 	{
@@ -409,7 +420,7 @@ void* visca_init_thread(void* param)
 		if(VISCA_set_address(&iface, &camera_num)!=VISCA_SUCCESS)
 		{
 			UTIL_ERR("visca VISCA_set_address fail\n");
-			sleep(3);
+			sleep(1);
 			continue;
 		}
 		else
@@ -428,12 +439,13 @@ void* visca_init_thread(void* param)
 			UTIL_INFO("camera info vendor: 0x%04x\n model: 0x%04x\n ROM version: 0x%04x\n socket number: 0x%02x\n",
 					camera.vendor, camera.model, camera.rom_version, camera.socket_num);
 
+			set_visca_status(1);    //1:success
 			return VISCA_SUCCESS;
 		}
 		else
 			UTIL_ERR("VISCA_get_camera_info fail");
 
-		sleep(3);
+		usleep(300*1000);
 	}
 
 }

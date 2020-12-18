@@ -962,11 +962,11 @@ void onvif_init_ImagingSettings()
 	if (g_onvif_cfg.ImagingSettings.ThermalSettings_extFlag)
 	{
 		//热成像第一个设置
-		ThermalParam1_t thermalParam1;
-		memset(&thermalParam1, 0, sizeof(ThermalParam1_t));
+		ThermalBaseParam thermalParam1;
+		memset(&thermalParam1, 0, sizeof(ThermalBaseParam));
 
-		if (getThermalParam1(&thermalParam1) != 0)
-			printf("get thermal paeam1 faile.\n");
+		if (getThermalBaseParam(&thermalParam1) != 0)
+			UTIL_ERR("getThermalBaseParam faile.");
 		g_onvif_cfg.ImagingSettings.ThermalSettings.ThermalSet_ext1Flag = 1;
 		g_onvif_cfg.ImagingSettings.ThermalSettings.ThermalSet1.UserPalette = thermalParam1.userPalette;
 		g_onvif_cfg.ImagingSettings.ThermalSettings.ThermalSet1.WideDynamic = thermalParam1.wideDynamic;
@@ -974,11 +974,11 @@ void onvif_init_ImagingSettings()
 		g_onvif_cfg.ImagingSettings.ThermalSettings.ThermalSet1.Actime = thermalParam1.actime;
 
 		//热成像第二个设置
-		ThermalParam2_t thermalParam2;
-		memset(&thermalParam2, 0, sizeof(ThermalParam2_t));
+		ThermalEnvParam thermalParam2;
+		memset(&thermalParam2, 0, sizeof(ThermalEnvParam));
 
-		if ( getThermalParam2(&thermalParam2) != 0)
-			printf("get thermal param2 faile.\n");
+		if (getThermalEnvParam(&thermalParam2) != 0)
+			UTIL_ERR("getThermalEnvParam faile.");
 		g_onvif_cfg.ImagingSettings.ThermalSettings.ThermalSet_ext2Flag = 1;
 		g_onvif_cfg.ImagingSettings.ThermalSettings.ThermalSet2.Emissivity = thermalParam2.emissivity;
 		g_onvif_cfg.ImagingSettings.ThermalSettings.ThermalSet2.Distance = thermalParam2.distance;

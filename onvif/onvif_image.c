@@ -193,8 +193,8 @@ ONVIF_RET onvif_SetImagingSettings(SetImagingSettings_REQ * p_req)
 		printf("OrgData 数据源:%d (0：原始数据 or 1：YUV数据)\n", p_req->ImagingSettings.ThermalSettings.ThermalSet1.OrgData);	
 		printf("Actime 自动校正间隔:%d \n", p_req->ImagingSettings.ThermalSettings.ThermalSet1.Actime); 
  		*/
-	 	ThermalParam1_t thermalParam_1;
-	    memset(&thermalParam_1, 0, sizeof(ThermalParam1_t));
+	 	ThermalBaseParam thermalParam_1;
+	    memset(&thermalParam_1, 0, sizeof(ThermalBaseParam));
 
 		thermalParam_1.userPalette =  p_req->ImagingSettings.ThermalSettings.ThermalSet1.UserPalette;
 		thermalParam_1.wideDynamic =  p_req->ImagingSettings.ThermalSettings.ThermalSet1.WideDynamic;
@@ -212,8 +212,8 @@ ONVIF_RET onvif_SetImagingSettings(SetImagingSettings_REQ * p_req)
 		printf("Correction 修正:%0.2f \n", p_req->ImagingSettings.ThermalSettings.ThermalSet2.Correction);
 		printf("Reflection 反射温度:%0.2f \n", p_req->ImagingSettings.ThermalSettings.ThermalSet2.Reflection);
 		printf("Amb 环境温度:%0.2f \n", p_req->ImagingSettings.ThermalSettings.ThermalSet2.Amb); */
-		ThermalParam2_t thermalParam_2;
-		memset(&thermalParam_2, 0, sizeof(ThermalParam2_t));
+		ThermalEnvParam thermalParam_2;
+		memset(&thermalParam_2, 0, sizeof(ThermalEnvParam));
 
 		thermalParam_2.emissivity =	p_req->ImagingSettings.ThermalSettings.ThermalSet2.Emissivity;
 		thermalParam_2.distance =	p_req->ImagingSettings.ThermalSettings.ThermalSet2.Distance;

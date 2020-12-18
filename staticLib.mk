@@ -31,7 +31,7 @@ COMPILEOPTION += -DPTZ_SUPPORT
 
 INCLUDEDIR = -I./bm -I./onvif -I./http
 #INCLUDEDIR += -I./openssl/include -I./openssl/include/linux
-#INCLUDEDIR += -I./libical/include
+INCLUDEDIR += -I../include
 INCLUDEDIR += -I./camCtl
 INCLUDEDIR += -I./camCtl/pelco_ptz 
 INCLUDEDIR += -I./camCtl/visca
@@ -71,7 +71,6 @@ PROC = proc
 # 编成静态库
 $(STATIC_LIB): $(OBJS)
 	$(AR) cr $@ $^
-	cp -rf onvif_ex.h  ../include
 	cp -rf $(STATIC_LIB) ../$(LIB_DIR)
 
 

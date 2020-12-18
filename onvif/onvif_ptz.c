@@ -36,6 +36,7 @@
 extern ONVIF_CLS g_onvif_cls;
 extern ONVIF_CFG g_onvif_cfg;
 
+
 /***************************************************************************************/
 ONVIF_RET onvif_ptz_GetStatus(ONVIF_PROFILE * p_profile, onvif_PTZStatus * p_ptz_status)
 {
@@ -309,20 +310,43 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)    // ssetPreset
 
  // todo : get PTZ current position ...
  //// add by xieqingpu
+	int i;
  	p_preset->UsedFlag = 1;		//
 
  	int index = onvif_find_PTZPreset_index(p_req->ProfileToken, p_req->PresetToken);
 	// printf(" \ng_onvif_cls.preset_idx = %d\n", g_onvif_cls.preset_idx);
 
 	short location = index < 0 ? 1:index;
+	/* 设置预置位 */
 	setPtzPreset(location);
 
+
+	/* 预置位对应的截取的图像区域 */
+    if (p_req->VectorList_Flag )
+	{
+		p_profile->presets[index-1].VectorListFlag = 1;
+		for (i = 0; i < p_req->VectorNumber; i++)
+		{
+			// printf("xxx \033[0;34m===onvif__SetPreset| VectorList: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f ===\033[0m\n", p_req->VectorList[i].x, p_req->VectorList[i].y, p_req->VectorList[i].w, p_req->VectorList[i].h);  
+						//30黑，31红，32绿，33黄，34蓝，35紫
+			p_profile->presets[index-1].Vector_Number = p_req->VectorNumber;
+			p_profile->presets[index-1].Vector_list[i].x = p_req->VectorList[i].x;
+			p_profile->presets[index-1].Vector_list[i].y = p_req->VectorList[i].y;
+			p_profile->presets[index-1].Vector_list[i].w = p_req->VectorList[i].w;
+			p_profile->presets[index-1].Vector_list[i].h = p_req->VectorList[i].h;
+		}
+	}
+	else {
+		p_profile->presets[index-1].VectorListFlag = 0;
+	}
+	
+
+	/* 预置位对应的相机焦距 */
 	p_profile->presets[index-1].zoomVal = get_zoom_val();
-	printf("xxx ===== onvif_SetPreset |p_profile->presets[index-1].zoomVal: %d ====\n", p_profile->presets[index-1].zoomVal);
+	printf("xxx ===== onvif__SetPreset |p_profile->presets[index-1].zoomVal: %d ====\n", p_profile->presets[index-1].zoomVal);
 
 	if (writePtzPreset(p_profile->presets, 128) != 0) //ARRAY_SIZE(p_profile->presets) //128:ptz设备最多支持128个预置位
 		printf("write Ptz Preset faile.\n");
-		
  ////
 
     p_preset->PTZPreset.PTZPositionFlag = 1;

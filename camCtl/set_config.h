@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-
+#include "ir.h"
 #include "onvif.h"
 #include "onvif_device.h"
 
@@ -129,24 +129,6 @@ typedef struct
 	float brightness;         //亮度补偿 
     float sharp;                   //清晰度 (锐度)
 } ImgParam_t;
-
-typedef struct
-{
-	int userPalette;             //色板  
-	int wideDynamic;        //宽动态
-	int orgData;                    //数据源
-    int actime;                      //自动校正间隔
-} ThermalParam1_t;
-
-typedef struct
-{
-	float emissivity;           //发射率    
-	float distance;               //距离
-    float humidity;             //湿度
-	float correction;           //修正
-    float reflection;            //反射温度
-    float amb;                      //环境温度
-} ThermalParam2_t;
 
 typedef struct
 {
@@ -287,44 +269,6 @@ int getImgParam(ImgParam_t *imgParams);
 int setImgParam(ImgParam_t *imgParams);
 
 int img_Stop();
-
-/*********************************************
-* FuncName: getThermalParam1       
-* Describe:  获取 热成像参数配置_1 , 获取:色板、宽动态、亮度补偿、清晰度 (锐度)
-* Params  :                                
-* [IN]      
-* Return  : 成功返回0，失败返回-1                              
-**********************************************/
-int getThermalParam1(ThermalParam1_t *thermalParam1);
-
-/*********************************************
-* FuncName: setThermalParam1       
-* Describe:  热成像参数配置设置_1 , 设置:色板、宽动态、亮度补偿、清晰度 (锐度)
-* Params  :                                
-* [OUT]      
-* Return  : 成功返回0，失败返回-1                             
-**********************************************/
-int setThermalParam1(ThermalParam1_t *thermalParam1);
-
-/*********************************************
-* FuncName: getThermalParam2       
-* Describe:  获取 热成像参数配置设置_1 , 获取:发射率、距离、湿度、修正、反射温度、环境温度
-* Params  :                                
-* [IN]      
-* Return  : 成功返回0，失败返回-1                             
-**********************************************/
-int getThermalParam2(ThermalParam2_t *thermalParam2);
-
-/*********************************************
-* FuncName: setThermalParam2       
-* Describe:  热成像参数配置设置_1 , 设置:发射率、距离、湿度、修正、反射温度、环境温度
-* Params  :                                
-* [OUT]      
-* Return  : 成功返回0，失败返回-1                             
-**********************************************/
-int setThermalParam2(ThermalParam2_t *thermalParam2);
-
-
 
 /*********************************************
 * FuncName: getDulaParam        

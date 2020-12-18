@@ -3701,6 +3701,42 @@ ONVIF_RET parse_RelativeMove(XMLN * p_node, RelativeMove_REQ * p_req)
 	return ONVIF_OK;
 }
 
+////
+ONVIF_RET prase_Vector(XMLN * p_node, onvif_ex_VectorList * p_req)
+{
+    XMLN * p_X;
+	XMLN * p_Y;
+	XMLN * p_W;
+	XMLN * p_H;
+
+	p_X = xml_node_soap_get(p_node, "X");
+	if (p_X && p_X->data)
+	{
+		p_req->x = (float)atof(p_X->data);
+	}
+
+	p_Y = xml_node_soap_get(p_node, "Y");
+	if (p_Y && p_Y->data)
+	{	
+		p_req->y = (float)atof(p_Y->data);
+	}
+
+	p_W = xml_node_soap_get(p_node, "W");
+	if (p_W && p_W->data)
+	{
+		p_req->w = (float)atof(p_W->data);
+	}
+
+	p_H = xml_node_soap_get(p_node, "H");
+	if (p_H && p_H->data)
+	{
+		p_req->h = (float)atof(p_H->data);
+	}
+
+	return ONVIF_OK;
+}
+////
+
 ONVIF_RET parse_SetPreset(XMLN * p_node, SetPreset_REQ * p_req)
 {
 	XMLN * p_ProfileToken;
