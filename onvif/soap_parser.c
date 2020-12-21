@@ -3714,11 +3714,20 @@ ONVIF_RET prase_Vector(XMLN * p_node, onvif_ex_VectorList * p_req)
 	{
 		p_req->x = (float)atof(p_X->data);
 	}
+	else
+	{
+		return -124;
+	}
+	
 
 	p_Y = xml_node_soap_get(p_node, "Y");
 	if (p_Y && p_Y->data)
 	{	
 		p_req->y = (float)atof(p_Y->data);
+	}
+	else
+	{
+		return -124;
 	}
 
 	p_W = xml_node_soap_get(p_node, "W");
@@ -3726,11 +3735,19 @@ ONVIF_RET prase_Vector(XMLN * p_node, onvif_ex_VectorList * p_req)
 	{
 		p_req->w = (float)atof(p_W->data);
 	}
+	else
+	{
+		return -124;
+	}
 
 	p_H = xml_node_soap_get(p_node, "H");
 	if (p_H && p_H->data)
 	{
 		p_req->h = (float)atof(p_H->data);
+	}
+	else
+	{
+		return -124;
 	}
 
 	return ONVIF_OK;
@@ -3764,6 +3781,44 @@ ONVIF_RET parse_SetPreset(XMLN * p_node, SetPreset_REQ * p_req)
 		p_req->PresetTokenFlag = 1;
 		strncpy(p_req->PresetToken, p_PresetToken->data, sizeof(p_req->PresetToken)-1);
 	}
+
+	///  xieqigpu
+	XMLN * p_VectorList;
+	XMLN * p_Vector;
+	int ret, i = 0;
+	p_VectorList = xml_node_soap_get(p_node, "VectorList");
+	if ( p_VectorList )
+	{
+		// printf("xxx \033[0;34m+++++++++++++ 1.parse__SetPreset | p_VectorList = %d ++++++++++++++\033[0m\n",i);
+		p_req->VectorList_Flag = 1;
+
+		XMLN * p_Vector = xml_node_soap_get(p_VectorList, "Vector");
+		while (p_Vector)
+		{
+			if (i < ARRAY_SIZE(p_req->VectorList))
+			{
+				ret = prase_Vector(p_Vector, &p_req->VectorList[i]);
+				if (ONVIF_OK != ret)
+				{
+					// return ret;
+					break;
+				}
+
+				++i;
+			}
+			// else {
+			// 	return -123;
+			// }
+			
+			p_Vector = p_Vector->next;
+		}
+		p_req->VectorNumber = i;		//有几个检测框图（即多少个Vector节点）
+		
+	}
+	else {
+		p_req->VectorList_Flag = 0;
+	}
+	////
 
 	return ONVIF_OK;
 }

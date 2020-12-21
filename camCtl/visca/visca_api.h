@@ -6,7 +6,9 @@
 extern "C" {
 #endif
 
- 
+/* 获取visca初始化状态，返回值为 1=成功 */
+int get_visca_status();
+
  /* 设置焦距值 */
 int set_zoom(unsigned short val);
 /* 获取焦距的初始值 */

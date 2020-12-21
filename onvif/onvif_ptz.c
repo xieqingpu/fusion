@@ -321,13 +321,15 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)    // ssetPreset
 	setPtzPreset(location);
 
 
+printf("xxx \033[0;34m===onvif__SetPreset| start   VectorList / p_req->VectorNumber = %d ++++++++++++++++ ===\033[0m\n", p_req->VectorNumber);
 	/* 预置位对应的截取的图像区域 */
     if (p_req->VectorList_Flag )
 	{
 		p_profile->presets[index-1].VectorListFlag = 1;
+		
 		for (i = 0; i < p_req->VectorNumber; i++)
 		{
-			// printf("xxx \033[0;34m===onvif__SetPreset| VectorList: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f ===\033[0m\n", p_req->VectorList[i].x, p_req->VectorList[i].y, p_req->VectorList[i].w, p_req->VectorList[i].h);  
+			printf("xxx \033[0;34m===onvif__SetPreset| VectorList: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f ===\033[0m\n", p_req->VectorList[i].x, p_req->VectorList[i].y, p_req->VectorList[i].w, p_req->VectorList[i].h);  
 						//30黑，31红，32绿，33黄，34蓝，35紫
 			p_profile->presets[index-1].Vector_Number = p_req->VectorNumber;
 			p_profile->presets[index-1].Vector_list[i].x = p_req->VectorList[i].x;

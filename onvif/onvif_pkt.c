@@ -7337,12 +7337,10 @@ int build_Vector_xml(char * p_buf, int mlen, onvif_VectorList * p_req)
 	int offset = 0;
 	
 	offset += snprintf(p_buf+offset, mlen-offset, 
-		// "<tt:Source>"
 			"<tt:X>%f</tt:X>"
 			"<tt:Y>%f</tt:Y>"
 			"<tt:W>%f</tt:W>"
 			"<tt:H>%f</tt:H>",
-		// "</tt:Source>",
 		p_req->x,
 		p_req->y,
 		p_req->w,
@@ -7418,8 +7416,8 @@ int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
 	        offset += snprintf(p_buf+offset, mlen-offset, "</tt:PTZPosition>");
 	    }
 
-	    		////  xieqingpu
-		// printf("xxx ========= p_profile->presets[%d].VectorListFlag = %d ==========\n", i, p_profile->presets[i].VectorListFlag);
+	   ////  xieqingpu
+		printf("xxx \033[0;34m========= p_profile->presets[%d].VectorListFlag = %d =========\033[0m\n", i, p_profile->presets[i].VectorListFlag);
 		if ( p_profile->presets[i].VectorListFlag != 0 ) {      //对应的预置位是否有画检测区域Vector  !=0代表有
 		
 			offset += snprintf(p_buf+offset, mlen-offset, "<tt:VectorList>");
