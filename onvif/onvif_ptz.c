@@ -243,7 +243,9 @@ int  onvif_find_PTZPreset_index(const char * profile_token, const char  * preset
 
     for (i = 0; i < ARRAY_SIZE(p_profile->presets); i++)
     {
-        if (strcmp(preset_token, p_profile->presets[i].PTZPreset.token) == 0)
+	//  printf("xxx onvif_find_PTZPreset_index | preset_token=%s, p_profile->presets[%d].PTZPreset.token=%s xxx\n",preset_token, i, p_profile->presets[i].PTZPreset.token);
+      
+	    if (strcmp(preset_token, p_profile->presets[i].PTZPreset.token) == 0)
         {
             return i+1;     //这里加1，因为把0给了soap_SetHomePositio()设置home Position
         }
@@ -254,7 +256,7 @@ int  onvif_find_PTZPreset_index(const char * profile_token, const char  * preset
 //////
 
 
-ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)    // ssetPreset
+ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
 {
     ONVIF_PTZPreset * p_preset = NULL;
 	ONVIF_PROFILE * p_profile;
@@ -290,13 +292,21 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)    // ssetPreset
     {
     	strcpy(p_preset->PTZPreset.Name, p_req->PresetName);
     }
-    else
-    {
+	 else {
     	sprintf(p_preset->PTZPreset.Name, "PRESET_%d", g_onvif_cls.preset_idx);
     	strcpy(p_req->PresetName, p_preset->PTZPreset.Name);
     	g_onvif_cls.preset_idx++;
     }
-    
+	/* else {		  //// add by xieqingpu
+		p_preset = onvif_find_PTZPreset(p_req->ProfileToken, p_req->PresetToken);	// &p_profile->presets[i]    //如果是新的预置位，则赋新的名字,NULL为新
+		if (NULL == p_preset) 
+		{
+			sprintf(p_preset->PTZPreset.Name, "PRESET_%d", g_onvif_cls.preset_idx);
+  	  		strcpy(p_req->PresetName, p_preset->PTZPreset.Name);
+    		g_onvif_cls.preset_idx++;
+		}
+	}	 */        	////
+
     if (p_req->PresetTokenFlag && p_req->PresetToken[0] != '\0')
     {
         strcpy(p_preset->PTZPreset.token, p_req->PresetToken);
@@ -314,14 +324,14 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)    // ssetPreset
  	p_preset->UsedFlag = 1;		//
 
  	int index = onvif_find_PTZPreset_index(p_req->ProfileToken, p_req->PresetToken);
-	// printf(" \ng_onvif_cls.preset_idx = %d\n", g_onvif_cls.preset_idx);
+	//  printf("xxx \033[0;34m+++++++++ index = onvif_find_PTZPreset__index == %d ++++++++++\033[0m\n",index);     //30黑,31红,32绿,33黄,34蓝,35紫
 
 	short location = index < 0 ? 1:index;
 	/* 设置预置位 */
 	setPtzPreset(location);
 
 
-printf("xxx \033[0;34m===onvif__SetPreset| start   VectorList / p_req->VectorNumber = %d ++++++++++++++++ ===\033[0m\n", p_req->VectorNumber);
+	// printf("xxx \033[0;34m===onvif__SetPreset| start   VectorList / p_req->VectorNumber = %d ++++++++++++++++ ===\033[0m\n", p_req->VectorNumber);
 	/* 预置位对应的截取的图像区域 */
     if (p_req->VectorList_Flag )
 	{
@@ -329,8 +339,7 @@ printf("xxx \033[0;34m===onvif__SetPreset| start   VectorList / p_req->VectorNum
 		
 		for (i = 0; i < p_req->VectorNumber; i++)
 		{
-			printf("xxx \033[0;34m===onvif__SetPreset| VectorList: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f ===\033[0m\n", p_req->VectorList[i].x, p_req->VectorList[i].y, p_req->VectorList[i].w, p_req->VectorList[i].h);  
-						//30黑，31红，32绿，33黄，34蓝，35紫
+			// printf("xxx \033[0;34m===onvif__SetPreset| VectorList: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f ===\033[0m\n", p_req->VectorList[i].x, p_req->VectorList[i].y, p_req->VectorList[i].w, p_req->VectorList[i].h);  
 			p_profile->presets[index-1].Vector_Number = p_req->VectorNumber;
 			p_profile->presets[index-1].Vector_list[i].x = p_req->VectorList[i].x;
 			p_profile->presets[index-1].Vector_list[i].y = p_req->VectorList[i].y;
@@ -344,8 +353,9 @@ printf("xxx \033[0;34m===onvif__SetPreset| start   VectorList / p_req->VectorNum
 	
 
 	/* 预置位对应的相机焦距 */
-	p_profile->presets[index-1].zoomVal = get_zoom_val();
-	printf("xxx ===== onvif__SetPreset |p_profile->presets[index-1].zoomVal: %d ====\n", p_profile->presets[index-1].zoomVal);
+	uint16_t z = get_zoom_val();
+	p_profile->presets[index-1].zoomVal = z;
+	printf("xxx ===== onvif__SetPreset |p_profile->presets[%d].zoomVal: %d === z=%d\n", index-1,p_profile->presets[index-1].zoomVal,z);
 
 	if (writePtzPreset(p_profile->presets, 128) != 0) //ARRAY_SIZE(p_profile->presets) //128:ptz设备最多支持128个预置位
 		printf("write Ptz Preset faile.\n");
@@ -431,9 +441,9 @@ ONVIF_RET onvif_GotoPreset(GotoPreset_REQ * p_req)
 	if (readPtzPreset(p_profile->presets, 128) != 0)		// 128:由于云台设备支持128个预置位
 			printf("read PTZ preset faile.\n");
 
-	printf("xxx ==== onvif_GotoPreset |p_profile->presets[index-1].zoomVal: %d =====\n", p_profile->presets[index-1].zoomVal);
+	// printf("xxx ==== onvif_GotoPreset |p_profile->presets[%d].zoomVal: %d =====\n", index-1, p_profile->presets[index-1].zoomVal);
 
-	uint32_t zoomValue ;
+	uint16_t zoomValue ;
 	zoomValue = p_profile->presets[index-1].zoomVal;
 	set_zoom(zoomValue);
  
@@ -462,7 +472,7 @@ ONVIF_RET onvif_GotoHomePosition(GotoHomePosition_REQ * p_req)
 	memset(&homePreset, 0, sizeof(CONFIG_Home));
 	if (readHomePos(&homePreset) != 0) 
 		printf("write Ptz Preset faile.\n");
-	printf("xxx +++++++ onvif_GotoHomePosition | homePreset.homeZoom:%d +++++++\n",homePreset.homeZoom);
+	// printf("xxx +++++++ onvif_GotoHomePosition | homePreset.homeZoom:%d +++++++\n",homePreset.homeZoom);
 
 	uint16_t homeZoomVal ;
 	homeZoomVal = homePreset.homeZoom;

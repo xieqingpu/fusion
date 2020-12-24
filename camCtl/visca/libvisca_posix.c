@@ -48,9 +48,9 @@ _VISCA_write_packet_data(VISCAInterface_t *iface, VISCACamera_t *camera, VISCAPa
 
     err = write(iface->port_fd, packet->bytes, packet->length);
     
-    for(int i=0;i<packet->length;i++)
+    /* for(int i=0;i<packet->length;i++)
     	printf("%2x ", packet->bytes[i]);
-    printf("\n");
+    printf("\n"); */
     
     if ( err < packet->length )
 	return VISCA_FAILURE;

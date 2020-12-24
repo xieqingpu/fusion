@@ -7417,7 +7417,7 @@ int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
 	    }
 
 	   ////  xieqingpu
-		printf("xxx \033[0;34m========= p_profile->presets[%d].VectorListFlag = %d =========\033[0m\n", i, p_profile->presets[i].VectorListFlag);
+		// printf("xxx \033[0;34m========= p_profile->presets[%d].VectorListFlag = %d =========\033[0m\n", i, p_profile->presets[i].VectorListFlag);
 		if ( p_profile->presets[i].VectorListFlag != 0 ) {      //对应的预置位是否有画检测区域Vector  !=0代表有
 		
 			offset += snprintf(p_buf+offset, mlen-offset, "<tt:VectorList>");

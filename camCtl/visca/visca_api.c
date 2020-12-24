@@ -262,26 +262,37 @@ int set_zoom_value(int param){
 	return VISCA_set_zoom_value(&iface, &camera, command);
 }
 
-
+/* 设置相机焦距 (调焦) */
 int set_zoom(unsigned short val)
 {
 
 	return VISCA_set_zoom_value(&iface, &camera, val);
 }
 
-
-int get_zoom_val()
+/* 获取相机焦距的值 */
+uint16_t get_zoom_val()
 {
-	unsigned short zoom_value=0;
-	int ret = VISCA_get_zoom_value(&iface, &camera, &zoom_value);
-	
-	if(ret==VISCA_SUCCESS)
-		return zoom_value;
-	else
+	for(int i=0;i<3;i++)
 	{
-		printf("get zoom error:%d\n",ret);
-		return -1;
+		unsigned short zoom_value=0;
+		unsigned short zoom_value2=0;
+
+		int ret = VISCA_get_zoom_value(&iface, &camera, &zoom_value);
+		usleep(50*1000);
+		int ret2 = VISCA_get_zoom_value(&iface, &camera, &zoom_value2);
+
+		if((ret==VISCA_SUCCESS)&&(ret==VISCA_SUCCESS) && (zoom_value==zoom_value2))
+		{
+			return zoom_value;
+		}
+		else
+		{
+			usleep(100*1000);
+		}
 	}
+
+		printf("get zoom error!!!\n");
+		return -1;
 }
 
 

@@ -3789,7 +3789,6 @@ ONVIF_RET parse_SetPreset(XMLN * p_node, SetPreset_REQ * p_req)
 	p_VectorList = xml_node_soap_get(p_node, "VectorList");
 	if ( p_VectorList )
 	{
-		// printf("xxx \033[0;34m+++++++++++++ 1.parse__SetPreset | p_VectorList = %d ++++++++++++++\033[0m\n",i);
 		p_req->VectorList_Flag = 1;
 
 		XMLN * p_Vector = xml_node_soap_get(p_VectorList, "Vector");

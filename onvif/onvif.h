@@ -121,7 +121,7 @@ typedef struct
 	BOOL 	VectorListFlag		: 1;
 	uint32 	Reserved		: 30;
     
-	uint32   zoomVal;								// add by xieqingpu 加了摄像机焦距,目的是使预置位对应相应的焦距
+	uint16   zoomVal;								// add by xieqingpu 加了摄像机焦距,目的是使预置位对应相应的焦距
 	uint16   Vector_Number;
 	onvif_VectorList	 Vector_list[VECTOR_LIST_LEN];		// add by xieqingpu 增加标记区域,对应这预置位
 

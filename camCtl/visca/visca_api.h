@@ -12,7 +12,7 @@ int get_visca_status();
  /* 设置焦距值 */
 int set_zoom(unsigned short val);
 /* 获取焦距的初始值 */
-int get_zoom_val();
+unsigned short int get_zoom_val();
 
 
 /* 设备初始化 */
