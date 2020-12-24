@@ -249,18 +249,6 @@ int writePtzPreset(ONVIF_PTZPreset * p_presets, int cnt);
 void focusMove(float zoom);
 
 
-/*********************************************
-* FuncName: setThermalParam1       
-* Describe:  设置热成像参数1
-* Params  :                                
-* [OUT]      
-*    thermalParam1 : 参数结构体 
-* Return  :                                                  
-**********************************************/
-int setThermalParam1(ThermalBaseParam *thermalParam1);
-/* 设置热成像参数2 */
-int setThermalParam2(ThermalEnvParam *thermalParam2);
-
 
 /*********************************************
 * FuncName: getImgParam       

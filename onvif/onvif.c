@@ -1941,7 +1941,7 @@ void onvif_build_gateway(char *ipAddr)
 	char *temp = NULL;
 	
 	ONVIF_NetworkInterface * p_net_inf = g_onvif_cfg.network.interfaces;
-	if (p_net_inf && strlen(p_net_inf->NetworkInterface.IPv4.Config.Address) > 0) {
+	if (p_net_inf && strlen(p_net_inf->NetworkInterface.IPv4.Config.Address) > 4) {
 		strcpy(ipAddr, p_net_inf->NetworkInterface.IPv4.Config.Address);
 		temp = strrchr(ipAddr, '.');
 		ipAddr[temp-ipAddr+1] = '1';
@@ -1955,8 +1955,6 @@ void onvif_build_gateway(char *ipAddr)
 
 void onvif_init_net()
 {
-    const char * dns;
-    const char * gw;
     int ret = -1;
 
     g_onvif_cfg.network.DiscoveryMode = DiscoveryMode_Discoverable;
@@ -1969,7 +1967,9 @@ void onvif_init_net()
 		onvif_init_NetworkInterface(&pNetworkInterface);
 	}
 	else {
-		//system_ex("killall udhcpc; udhcpc -i eth0");
+		//system_ex("ifconfig eth0 192.168.3.10 netmask 255.255.255.0");
+		UTIL_INFO("ifconfig eth0 up; killall udhcpc; udhcpc -i eth0");
+		system_ex("ifconfig eth0 up; killall udhcpc; udhcpc -i eth0");
 		onvif_init_NetworkInterface(NULL);
 	}
 
@@ -1989,15 +1989,8 @@ void onvif_init_net()
 	if (ret < 0) {
 	    g_onvif_cfg.network.DNSInformation.SearchDomainFlag = 1;
 	    g_onvif_cfg.network.DNSInformation.FromDHCP = FALSE;
-	    
-	    dns = get_dns_server();
-	    if (dns && strlen(dns) > 0){
-	    	strcpy(g_onvif_cfg.network.DNSInformation.DNSServer[0], dns);
-	    }
-		else {
-			onvif_build_gateway(g_onvif_cfg.network.DNSInformation.DNSServer[0]);
-			SetDNSInformation(&g_onvif_cfg.network.DNSInformation, FALSE);
-		}
+	    onvif_build_gateway(g_onvif_cfg.network.DNSInformation.DNSServer[0]);
+		SetDNSInformation(&g_onvif_cfg.network.DNSInformation, FALSE);
 		UTIL_INFO("dns==%s", g_onvif_cfg.network.DNSInformation.DNSServer[0]);
 	}
 	else {
@@ -2015,15 +2008,8 @@ void onvif_init_net()
     // init default gateway
     ret = GetNetworkGateway(&g_onvif_cfg.network.NetworkGateway);
 	if (ret < 0) {
-	    gw = get_default_gateway();
-	    if (gw && strlen(gw) > 0) {
-	    	strcpy(g_onvif_cfg.network.NetworkGateway.IPv4Address[0], gw);
-	    }
-		else {
-			onvif_build_gateway(g_onvif_cfg.network.NetworkGateway.IPv4Address[0]);
-			SetNetworkGateway(&g_onvif_cfg.network.NetworkGateway, FALSE);
-		}
-		
+		onvif_build_gateway(g_onvif_cfg.network.NetworkGateway.IPv4Address[0]);
+		SetNetworkGateway(&g_onvif_cfg.network.NetworkGateway, FALSE);
 		UTIL_INFO("gw==%s", g_onvif_cfg.network.NetworkGateway.IPv4Address[0]);
 	}
 	else {
@@ -5838,6 +5824,8 @@ void onvif_init()
 
 	memset(&g_onvif_cfg, 0, sizeof(ONVIF_CFG));
 	memset(&g_onvif_cls, 0, sizeof(ONVIF_CLS));
+	
+	system_ex("route add -net 224.0.0.0 netmask 224.0.0.0 eth0");
 	
 	onvif_init_cfg();
 

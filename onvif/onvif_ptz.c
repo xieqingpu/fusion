@@ -243,9 +243,9 @@ int  onvif_find_PTZPreset_index(const char * profile_token, const char  * preset
 
     for (i = 0; i < ARRAY_SIZE(p_profile->presets); i++)
     {
-	//  printf("xxx onvif_find_PTZPreset_index | preset_token=%s, p_profile->presets[%d].PTZPreset.token=%s xxx\n",preset_token, i, p_profile->presets[i].PTZPreset.token);
+			//  printf("xxx onvif_find_PTZPreset_index | preset_token=%s, p_profile->presets[%d].PTZPreset.token=%s xxx\n",preset_token, i, p_profile->presets[i].PTZPreset.token);
       
-	    if (strcmp(preset_token, p_profile->presets[i].PTZPreset.token) == 0)
+        if (strcmp(preset_token, p_profile->presets[i].PTZPreset.token) == 0)
         {
             return i+1;     //这里加1，因为把0给了soap_SetHomePositio()设置home Position
         }
@@ -288,7 +288,7 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
         }
     }
 
-    if (p_req->PresetNameFlag && p_req->PresetName[0] != '\0')
+     if (p_req->PresetNameFlag && p_req->PresetName[0] != '\0')
     {
     	strcpy(p_preset->PTZPreset.Name, p_req->PresetName);
     }
@@ -306,7 +306,7 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
     		g_onvif_cls.preset_idx++;
 		}
 	}	 */        	////
-
+    
     if (p_req->PresetTokenFlag && p_req->PresetToken[0] != '\0')
     {
         strcpy(p_preset->PTZPreset.token, p_req->PresetToken);
@@ -336,7 +336,7 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
     if (p_req->VectorList_Flag )
 	{
 		p_profile->presets[index-1].VectorListFlag = 1;
-		
+
 		for (i = 0; i < p_req->VectorNumber; i++)
 		{
 			// printf("xxx \033[0;34m===onvif__SetPreset| VectorList: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f ===\033[0m\n", p_req->VectorList[i].x, p_req->VectorList[i].y, p_req->VectorList[i].w, p_req->VectorList[i].h);  

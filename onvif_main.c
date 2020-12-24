@@ -53,15 +53,13 @@ void onvifStart(int     bdebug)
 #endif
 #endif
     //设备初始化
-    int ret = devInit(PTZ_COM, VISCA_COM);
-    if (ret == 0)
-		printf("++++ dev init successful. +++++\r\n");
+    devInit(PTZ_COM, VISCA_COM);
 
 	//打开onvif log开关
 	if (1 == bdebug) {
     	logOpen();
 	}
-
+	
 	sys_buf_init(32);
 	http_msg_buf_init(16);
 

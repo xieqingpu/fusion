@@ -109,10 +109,10 @@ typedef struct _ONVIF_MetadataConfiguration
 ////
 typedef struct 
 {
-	float x;		//¶¥µã×ø±êx(×óÉÏ½Ç)
-	float y;		//¶¥µã×ø±êy(×óÉÏ½Ç)
-	float w;		//¿í
-	float h;		//¸ß
+	float x;		//é¡¶ç‚¹åæ ‡x(å·¦ä¸Šè§’)
+	float y;		//é¡¶ç‚¹åæ ‡y(å·¦ä¸Šè§’)
+	float w;		//å®½
+	float h;		//é«˜
 } onvif_VectorList;
 ////
 typedef struct
@@ -121,9 +121,9 @@ typedef struct
 	BOOL 	VectorListFlag		: 1;
 	uint32 	Reserved		: 30;
     
-	uint16   zoomVal;								// add by xieqingpu ¼ÓÁËÉãÏñ»ú½¹¾à,Ä¿µÄÊÇÊ¹Ô¤ÖÃÎ»¶ÔÓ¦ÏàÓ¦µÄ½¹¾à
+	uint16   zoomVal;								// add by xieqingpu åŠ äº†æ‘„åƒæœºç„¦è·,ç›®çš„æ˜¯ä½¿é¢„ç½®ä½å¯¹åº”ç›¸åº”çš„ç„¦è·
 	uint16   Vector_Number;
-	onvif_VectorList	 Vector_list[VECTOR_LIST_LEN];		// add by xieqingpu Ôö¼Ó±ê¼ÇÇøÓò,¶ÔÓ¦ÕâÔ¤ÖÃÎ»
+	onvif_VectorList	 Vector_list[VECTOR_LIST_LEN];		// add by xieqingpu å¢åŠ æ ‡è®°åŒºåŸŸ,å¯¹åº”è¿™é¢„ç½®ä½
 
     onvif_PTZPreset	PTZPreset;
 } ONVIF_PTZPreset;

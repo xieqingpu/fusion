@@ -72,22 +72,23 @@ int devInit(char *ptzDevID, const char *cameraDEVID)
 {
 	int ret;
 #if __REALSE__
- 	//visca 设备初始化 
-   	for(int i=0;i<10;i++)
-   	{
-   		ret = visca_init(cameraDEVID);	
+	//visca 设备初始化 
+	for(int i=0;i<10;i++)
+	{
+		ret = visca_init(cameraDEVID);	
 		if(ret==0)
 			break;
 		visca_deinit();
 		sleep(1);
-   	}
+	}
 #endif
 
 #ifdef PTZ_SUPPORT
-   ret =RET_ERR;
+  ret =RET_ERR;
   ret=pelco_Init(ptzDevID,9600);
-  if (ret != 0)
-		printf("========== pelco ptz init faile.\n");
+  if (ret != 0) {
+    UTIL_ERR("pelco ptz init failed!!!");
+  }
 
     return ret;
   #endif 
@@ -282,6 +283,10 @@ int getThermalBaseParam(ThermalBaseParam *param)
 		param->userPalette = 2;
 		param->wideDynamic = 0;
 		UTIL_ERR("read ir base param fail\n");
+		
+		//保存参数
+		if (save_cfg_to_file((char*)IR_BASE_PARAM_FILE, (char*)param, sizeof(ThermalBaseParam))<0)
+			UTIL_ERR("save ir base param fail\n");
 		return -1;
 	}
 	return 0;
@@ -316,6 +321,10 @@ int getThermalEnvParam(ThermalEnvParam *param)
 		param->amb=25;                  //环境温度
 
 		UTIL_ERR("read ir env param fail\n");
+		
+		//保存参数
+		if (save_cfg_to_file((char*)IR_ENV_PARAM_FILE, (char*)param, sizeof(ThermalEnvParam)) < 0)
+			UTIL_ERR("save fusion param fail\n");
 		return -1;
 	}
 	return 0;
