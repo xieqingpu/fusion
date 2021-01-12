@@ -243,8 +243,6 @@ int  onvif_find_PTZPreset_index(const char * profile_token, const char  * preset
 
     for (i = 0; i < ARRAY_SIZE(p_profile->presets); i++)
     {
-			//  printf("xxx onvif_find_PTZPreset_index | preset_token=%s, p_profile->presets[%d].PTZPreset.token=%s xxx\n",preset_token, i, p_profile->presets[i].PTZPreset.token);
-      
         if (strcmp(preset_token, p_profile->presets[i].PTZPreset.token) == 0)
         {
             return i+1;     //这里加1，因为把0给了soap_SetHomePositio()设置home Position
@@ -288,24 +286,16 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
         }
     }
 
-     if (p_req->PresetNameFlag && p_req->PresetName[0] != '\0')
+    if (p_req->PresetNameFlag && p_req->PresetName[0] != '\0')
     {
     	strcpy(p_preset->PTZPreset.Name, p_req->PresetName);
     }
-	 else {
+    else
+    {
     	sprintf(p_preset->PTZPreset.Name, "PRESET_%d", g_onvif_cls.preset_idx);
     	strcpy(p_req->PresetName, p_preset->PTZPreset.Name);
     	g_onvif_cls.preset_idx++;
     }
-	/* else {		  //// add by xieqingpu
-		p_preset = onvif_find_PTZPreset(p_req->ProfileToken, p_req->PresetToken);	// &p_profile->presets[i]    //如果是新的预置位，则赋新的名字,NULL为新
-		if (NULL == p_preset) 
-		{
-			sprintf(p_preset->PTZPreset.Name, "PRESET_%d", g_onvif_cls.preset_idx);
-  	  		strcpy(p_req->PresetName, p_preset->PTZPreset.Name);
-    		g_onvif_cls.preset_idx++;
-		}
-	}	 */        	////
     
     if (p_req->PresetTokenFlag && p_req->PresetToken[0] != '\0')
     {
@@ -324,14 +314,13 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
  	p_preset->UsedFlag = 1;		//
 
  	int index = onvif_find_PTZPreset_index(p_req->ProfileToken, p_req->PresetToken);
-	//  printf("xxx \033[0;34m+++++++++ index = onvif_find_PTZPreset__index == %d ++++++++++\033[0m\n",index);     //30黑,31红,32绿,33黄,34蓝,35紫
+	// printf(" \ng_onvif_cls.preset_idx = %d\n", g_onvif_cls.preset_idx);
 
 	short location = index < 0 ? 1:index;
 	/* 设置预置位 */
 	setPtzPreset(location);
 
 
-	// printf("xxx \033[0;34m===onvif__SetPreset| start   VectorList / p_req->VectorNumber = %d ++++++++++++++++ ===\033[0m\n", p_req->VectorNumber);
 	/* 预置位对应的截取的图像区域 */
     if (p_req->VectorList_Flag )
 	{

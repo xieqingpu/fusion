@@ -334,7 +334,7 @@ ONVIF_VideoEncoder2Configuration * onvif_parse_video_encoder_cfg()
 
 // ONVIF_AudioSourceConfiguration * onvif_parse_audio_source_cfg(XMLN * p_audio_source)
 ONVIF_AudioSourceConfiguration * onvif_parse_audio_source_cfg()
-{	
+{		
 	ONVIF_AudioSourceConfiguration * p_a_src_cfg = g_onvif_cfg.a_src_cfg;
 	if (p_a_src_cfg)
 	{

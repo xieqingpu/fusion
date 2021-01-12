@@ -64,7 +64,6 @@ void onvifStart(int     bdebug)
 	http_msg_buf_init(16);
 
     init_network();
-    onvif_init();    ////
 
 	onvif_start(); 
 	

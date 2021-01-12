@@ -90,7 +90,7 @@ typedef struct
     u32_t    bitrate_limit;             // The maximum output bitrate in kbps
     Video_encode video_encoding;                 
 } Video_Encoder;
-   
+        
 
 //设备信息
 typedef struct 

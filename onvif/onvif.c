@@ -1002,7 +1002,7 @@ void onvif_init_ImagingSettings()
 		if (getDulaParam(&dulaInfomation) != 0){
 			printf("get dula faile.\n");
 		}
-		
+
 		g_onvif_cfg.ImagingSettings.DulaInformationFlag = 1;
 		g_onvif_cfg.ImagingSettings.DulaInfo.focal = dulaInfomation.focal;
 		g_onvif_cfg.ImagingSettings.DulaInfo.lens = dulaInfomation.lens;
@@ -1541,7 +1541,7 @@ void onvif_init_VideoEncoderConfigurationOptions()
 	// g_onvif_cfg.VideoEncoderConfigurationOptions.MPEG4Flag = 1;	   // xieqingpu,注释掉MPEG,现在只用h264编码	
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264Flag = 1;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.QualityRange.Min = 0;
-	g_onvif_cfg.VideoEncoderConfigurationOptions.QualityRange.Max = 100;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.QualityRange.Max = 100;	
 
 	// jpeg config options
 	g_onvif_cfg.VideoEncoderConfigurationOptions.JPEG.ResolutionsAvailable[0].Width = 1920;
@@ -5933,41 +5933,6 @@ void onvif_init_cfg()
 #endif
 }
 
-// void onvif_chk_server_cfg()
-// {
-// 	int i;
-
-//     for (i = 0; i < g_onvif_cfg.servs_num; i++)
-//     {
-//         // check the server ip and port configure
-        
-//         if (g_onvif_cfg.servs[i].serv_port <= 0 || g_onvif_cfg.servs[i].serv_port >= 65535) 
-//     	{
-// #ifdef HTTPS
-//     		if (g_onvif_cfg.https_enable)
-//     		{
-//     			g_onvif_cfg.servs[i].serv_port = 443;
-//     		}
-//     		else
-//     		{
-//     			g_onvif_cfg.servs[i].serv_port = 8000;
-//     		}
-// #else
-//     		g_onvif_cfg.servs[i].serv_port = 8000;
-// #endif
-//     	}
-
-//     	if (g_onvif_cfg.servs[i].serv_ip[0] == '\0')
-//     	{
-// 			const char * ip = onvif_get_local_ip();
-//     		if (ip)
-//     		{
-//     			strcpy(g_onvif_cfg.servs[i].serv_ip, ip);
-//     		}
-//     	}
-//     }    
-// }
-
 void onvif_init()
 {
 #ifdef PTZ_SUPPORT
@@ -5976,17 +5941,11 @@ void onvif_init()
 
 	memset(&g_onvif_cfg, 0, sizeof(ONVIF_CFG));
 	memset(&g_onvif_cls, 0, sizeof(ONVIF_CLS));
-	
-	// system_ex("route add -net 224.0.0.0 netmask 224.0.0.0 eth0");
-	
+		
 	onvif_init_cfg();
 
     onvif_init_net();    
-
-    // onvif_chk_server_cfg();
     
-    // // onvif_init_net();        // 放到 onvif_chk_server_cfg()  前面
-
     onvif_eua_init();
     
 #ifdef PTZ_SUPPORT

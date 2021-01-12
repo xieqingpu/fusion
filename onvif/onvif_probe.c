@@ -110,10 +110,11 @@ SOCKET onvif_probe_init()
 #else
     mcast.imr_interface.s_addr = htonl(INADDR_ANY);
 #endif
-
+	//主要是为解决加入组播  No such device失败的问题
+	system_ex("route add -net 224.0.0.0 netmask 224.0.0.0 eth0");
 	if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*)&mcast, sizeof(mcast)) < 0)
 	{
-		system_ex("echo 20 > /proc/sys/net/ipv4/igmp_max_memberships");
+		system_ex("echo 20 > /proc/sys/net/ipv4/igmp_max_memberships");	
 		if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*)&mcast, sizeof(mcast)) < 0)
 		{
 			UTIL_ERR("setsockopt IP_ADD_MEMBERSHIP error!%s\n", sys_os_get_socket_error());

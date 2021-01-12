@@ -103,7 +103,7 @@ void onvif_start()
 {
 	int i;
 
-	// onvif_init();
+	onvif_init();
 
 	if (logEnable)
 	{
@@ -111,8 +111,6 @@ void onvif_start()
 		log_init("onvif_log.txt");
 		// log_set_level(LOG_DBG);
 	}
-
-	// printf("\r\nHappytime onvif server version %d.%d\r\n", ONVIF_MAJOR_VERSION, ONVIF_MINOR_VERSION);
 
     g_onvif_cls.msg_queue = hqCreate(100, sizeof(OIMSG), HQ_GET_WAIT);
 	if (g_onvif_cls.msg_queue == NULL)

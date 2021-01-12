@@ -27,7 +27,7 @@
 #include "onvif_probe.h"
 #include "onvif_event.h"
 #include "set_config.h"
-
+#include "utils_log.h"
 /***************************************************************************************/
 extern ONVIF_CFG g_onvif_cfg;
 extern ONVIF_CLS g_onvif_cls;
@@ -119,7 +119,7 @@ ONVIF_RET onvif_SetSystemDateAndTime(SetSystemDateAndTime_REQ * p_req)
 
 	g_onvif_cfg.SystemDateTime.DateTimeType = p_req->SystemDateTime.DateTimeType;
 	g_onvif_cfg.SystemDateTime.DaylightSavings = p_req->SystemDateTime.DaylightSavings;
-	if (p_req->SystemDateTime.TimeZoneFlag && p_req->SystemDateTime.TimeZone.TZ[0] != '\0')
+	if (/*p_req->SystemDateTime.TimeZoneFlag && */p_req->SystemDateTime.TimeZone.TZ[0] != '\0')
 	{
 		strcpy(g_onvif_cfg.SystemDateTime.TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ);
 	}
@@ -357,7 +357,14 @@ ONVIF_RET onvif_SetNetworkInterfaces(SetNetworkInterfaces_REQ * p_req)
     }
 
     // todo : add set network interfaces code ...
-    SetNetworkInterfaces(&p_req->NetworkInterface, TRUE);
+    //NOTE:只有在有线环境下才可以设置ip地址
+    if (NULL != strstr(p_req->NetworkInterface.token, "eth")) 
+	{
+	    SetNetworkInterfaces(&p_req->NetworkInterface, TRUE);
+		memset(g_onvif_cfg.servs[0].serv_ip, 0x0, sizeof(g_onvif_cfg.servs[0].serv_ip));
+		strcpy(g_onvif_cfg.servs[0].serv_ip, p_req->NetworkInterface.IPv4.Config.Address);
+		onvif_init_capabilities();
+    }
 		
 	p_net_inf->NetworkInterface.Enabled = p_req->NetworkInterface.Enabled;
 
@@ -830,7 +837,7 @@ BOOL onvif_FirmwareUpgrade(const char * buff, int len)
 	
 	pfd = fopen("/user/gpttemp", "wb+");
 	if (NULL == pfd) { 
-		onvif_print("############open error\n",	errno);  
+		UTIL_ERR("############open /user/gpttemp error", errno);  
 		return FALSE; 
 	} 
 	
@@ -839,14 +846,14 @@ BOOL onvif_FirmwareUpgrade(const char * buff, int len)
 	Content_Type = strcasestr(pbuffer, (const char *)"Content-Type");
 	if (NULL == Content_Type) {
 		isOK = FALSE;
-		onvif_print("############NULL == Content-Type\n"); 
+		UTIL_ERR("############NULL == Content-Type"); 
 		goto _EXIT1;
 	}
 	
 	nchrBegin = strstr(Content_Type, "\r\n\r\n");  
 	if (NULL == nchrBegin) {
 		isOK = FALSE;
-		onvif_print("############NULL == nchrBegin\n"); 
+		UTIL_ERR("############NULL == nchrBegin"); 
 		goto _EXIT1;
 	}
 	
@@ -859,14 +866,14 @@ BOOL onvif_FirmwareUpgrade(const char * buff, int len)
 	}
 	endlength = 200 - i;
 	length	= len - endlength - firstlen;
-	onvif_print("firstlen=%d, endlength=%d, length=%d\n",firstlen, endlength, length);  
+	UTIL_INFO("firstlen=%d, endlength=%d, length=%d",firstlen, endlength, length);  
 
 	if (fwrite(nchrBegin+4, 1, length,	pfd) != length) 
 	{  
 		isOK = FALSE;
 		goto _EXIT1;
 	} 
-	onvif_print("xxx ============== save ok ==============\n"); 
+	UTIL_INFO("FirmwareUpgrade OK!!!"); 
 	isOK = TRUE;
 
 _EXIT1:
