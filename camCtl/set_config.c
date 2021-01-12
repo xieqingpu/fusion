@@ -26,6 +26,8 @@
 #include "onvif.h"
 #include "utils_log.h"
 #include "ir.h"
+#include "gpt_video.h"
+
 
 #define  __REALSE__    1
 
@@ -221,6 +223,15 @@ int img_Stop()
 int getImgParam(ImgParam_t *imgParams)
 {
 	if (read_cfg_from_file(IMGPARFILE, (char *)imgParams,sizeof(ImgParam_t)) != 0) {
+
+		imgParams->brightness = 50;
+		imgParams->contrast = 50;
+		imgParams->saturation = 50;
+		imgParams->sharp = 50;
+
+		if (save_cfg_to_file((char*)IMGPARFILE, (char*)imgParams, sizeof(ImgParam_t))<0)
+			UTIL_ERR("save img param fail\n");
+
 		return -1;
 	}
 
@@ -352,6 +363,21 @@ int setThermalParam2(ThermalEnvParam *thermalParam2)
 int getDulaParam(DulaInformation_t *dulaInfo)
 {
 	if (read_cfg_from_file(DULAFILE, (char *)dulaInfo,sizeof(DulaInformation_t)) != 0) {
+		//如果获取失败，则初始化并保存于文件中
+		dulaInfo->focal = 0;
+		dulaInfo->lens = 0.50;
+		dulaInfo->distance = 0.90;
+		dulaInfo->dula_model = 0;
+		dulaInfo->x = 466;
+		dulaInfo->y = 114;
+		dulaInfo->scale = 2.46;
+
+		UTIL_ERR("read ir env param fail\n");
+		
+		//保存参数
+		if (save_cfg_to_file((char*)DULAFILE, (char*)dulaInfo, sizeof(DulaInformation_t)) < 0)
+			UTIL_ERR("save fusion param fail\n");
+
 		return -1;
 	}
 
@@ -389,6 +415,155 @@ int setDulaParam(DulaInformation_t *dulaInfo)
 
 	return 0;
 }
+
+
+#define  AUDIO_ENCODER_FILE  ("/user/cfg_files/AudioEncoder.dat")
+/* 读取 设置音频编码器参数 */
+int getAudioEncoder(Audio_Encoder *p_audio_encoder)
+{
+	if (read_cfg_from_file(AUDIO_ENCODER_FILE, (char *)p_audio_encoder,sizeof(Video_Encoder)) != 0) {
+		//如果读取失败，则初始化它
+		p_audio_encoder->session_timeout = 10;
+		p_audio_encoder->sample_rate = 8;	 //采样率
+		p_audio_encoder->bitrate = 64;		 //码率
+		strncpy(p_audio_encoder->a_encoding,g711,32); //编码
+
+		UTIL_ERR("read Audio Encoder param fail\n");
+		
+		//保存初始参数
+		if (save_cfg_to_file(AUDIO_ENCODER_FILE, (char*)p_audio_encoder, sizeof(Video_Encoder)) < 0)
+			UTIL_ERR("save Audio Encoder param fail\n");
+
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int get_Resolution_Type(onvif_VideoResolution * resolution)
+{
+	if(resolution->Width == 1920 && resolution->Height == 1080){
+		// printf("xxxxxxxxxxxxx get_Resolution_Type | resolution->Width == 1920 , Height == 1080 XXXXXXXXXXX\n");
+		return PIC_1080P;
+	}
+	else if (resolution->Width == 1280 && resolution->Height == 720){
+		return PIC_720P;
+	}
+	else if (resolution->Width == 720 && resolution->Height == 576){
+		return PIC_D1_PAL;
+	}
+	else if (resolution->Width == 640 && resolution->Height == 360){
+		return PIC_360P;
+	}
+	else if (resolution->Width == 352 && resolution->Height == 288){
+		return PIC_CIF;
+	}else
+	{
+		return PIC_720P;
+	}
+	
+	return PIC_720P;
+}
+
+#define VIDEO_ENCODER_FILE  ("/user/cfg_files/VideoEncoder.dat")
+/* 读取 视频编码器参数 */
+int getVideoEncoder(Video_Encoder *p_video_encoder)
+{
+	if (read_cfg_from_file(VIDEO_ENCODER_FILE, (char *)p_video_encoder,sizeof(Video_Encoder)) != 0) {
+		//如果读取失败，则初始化它
+		p_video_encoder->width = 1280;	  //分辨率 宽
+		p_video_encoder->height = 720;	  //分辨率 高	
+		p_video_encoder->quality = 4;
+		p_video_encoder->session_timeout = 10;
+		p_video_encoder->framerate = 25;	  //帧率	
+		p_video_encoder->encoding_interval = 50;
+		p_video_encoder->bitrate_limit = 2048;	//码流(码率) 
+
+		p_video_encoder->video_encoding.v_encoding = VIEDO_ENCODE_H264; 
+		p_video_encoder->video_encoding.v_encoding_profile.gov_length = 50; //GOP(关键帧)
+		p_video_encoder->video_encoding.v_encoding_profile.encode_profile = H264Profile_Main; //编码级别
+		
+		UTIL_ERR("Init read Video Encoder param fail\n");
+		
+		//保存初始参数
+		if (save_cfg_to_file(VIDEO_ENCODER_FILE, (char*)p_video_encoder, sizeof(Video_Encoder)) < 0)
+			UTIL_ERR("save Video Encoder param fail\n");
+
+		return -1;
+	}
+
+	return 0;
+}
+/* 设置 视频编码器参数 ,同时保存到文件 */
+int setVideoEncoder(Video_Encoder *p_video_encoder)
+{
+	UTIL_INFO("set_config |分辨率width:%d,height:%d, 码率:%d, 帧率:%d, GOP(关键帧):%d, 编码级别:%d(0:Baseline 1:Main)\n",
+				p_video_encoder->width, p_video_encoder->height,
+				p_video_encoder->bitrate_limit,
+				p_video_encoder->framerate,
+				p_video_encoder->video_encoding.v_encoding_profile.gov_length,
+				p_video_encoder->video_encoding.v_encoding_profile.encode_profile );
+	
+	Video_Encoder  readCameraEncoder;
+	memset(&readCameraEncoder, 0 ,sizeof(Video_Encoder));
+
+	if (read_cfg_from_file(VIDEO_ENCODER_FILE, (char *)&readCameraEncoder, sizeof(Video_Encoder)) < 0){
+		UTIL_ERR("read Camera Encoder param fail\n");
+	}
+
+	//设置分辨率
+	onvif_VideoResolution resolution;
+	resolution.Width = p_video_encoder->width;
+	resolution.Height = p_video_encoder->height;
+
+	u32_t resolution_type = get_Resolution_Type(&resolution);  //分辨率
+	u32_t bitrate = p_video_encoder->bitrate_limit;  	       //码流(码率)
+	u32_t framerate = p_video_encoder->framerate; 		       //帧率
+	u32_t gop = p_video_encoder->video_encoding.v_encoding_profile.gov_length;  //GOP(关键帧)
+	u32_t encode_profile = p_video_encoder->video_encoding.v_encoding_profile.encode_profile;  //编码级别
+
+	
+	//设置编码器的码流(码率)
+	if( p_video_encoder->bitrate_limit != readCameraEncoder.bitrate_limit ){
+		if( COMM_SetVencChnBitrate(0, bitrate) == -1)  
+			return OTHER_FAILE;
+	}
+	
+	//设置编码器的帧率
+	if( p_video_encoder->framerate != readCameraEncoder.framerate ){
+		if( COMM_SetVencChnFrameRate(0, framerate) == -1)  
+			return OTHER_FAILE;
+	}
+
+	//设置编码器的GOP(关键帧) GovLength
+	if( p_video_encoder->video_encoding.v_encoding_profile.gov_length != readCameraEncoder.video_encoding.v_encoding_profile.gov_length ){
+		if( COMM_Video_SetVencChnGOP(0, gop) == -1)  
+			return OTHER_FAILE;
+	}
+	
+	//设置编码器的编码级别
+	if( p_video_encoder->video_encoding.v_encoding_profile.encode_profile != readCameraEncoder.video_encoding.v_encoding_profile.encode_profile){
+		if( COMM_SetVencChnProfile(0, encode_profile) == -1);
+			return OTHER_FAILE;
+	}
+
+	// printf("xxx 设置分辨率 / resolution_type resolution_type = %d\n", resolution_type);
+	if( p_video_encoder->width != readCameraEncoder.width && p_video_encoder->height != readCameraEncoder.height ){
+		if( COMM_SetVencChnResolution(0, resolution_type) == -1)  
+			return OTHER_FAILE;
+	}
+    
+	/* 更新保存于文件 */
+	if (save_cfg_to_file(VIDEO_ENCODER_FILE, (char*)p_video_encoder, sizeof(Video_Encoder)) < 0) {
+		printf(" setVideoEncoder | save_cfg_to_file faile\n");
+		return -1;
+	}
+
+	return 0;
+}
+
+
 
 /* 读取NTPInformation数据参数 */
 #define  NTPFILE  ("/user/cfg_files/ntp.dat")
@@ -691,7 +866,7 @@ int Opt_SetDeviceIpAddr(const char *ifname, const char *ipaddr,
     int fd = -1;
     int ret = -1;
     struct ifreq ifr; 
-    struct sockaddr_in *sin;
+    struct sockaddr_in sin;
 	
 	if (!ifname || !ipaddr || !mask) {
 		UTIL_ERR("ifname or ipaddr or mask== NULL!!");
@@ -707,29 +882,38 @@ int Opt_SetDeviceIpAddr(const char *ifname, const char *ipaddr,
     }
 	
     memset(&ifr,0,sizeof(ifr)); 
-    strcpy(ifr.ifr_name,ifname); 
-    sin = (struct sockaddr_in*)&ifr.ifr_addr;     
-    sin->sin_family = AF_INET;     
+    strcpy(ifr.ifr_name, ifname); 
+	
+    if (ioctl(fd, SIOCGIFADDR, &ifr) < 0) {     
+        UTIL_ERR("ioctl SIOCGIFADDR error");     
+        ret = -1;
+		goto __EXIT;
+    }
+	
     //设置设备IP地址
-    if (inet_aton(ipaddr, &(sin->sin_addr)) < 0) {     
-        UTIL_INFO("inet_aton   error");     
+    memset(&sin, 0, sizeof(struct sockaddr));
+    sin.sin_family = AF_INET;
+    if (inet_aton(ipaddr, &(sin.sin_addr)) < 0) {     
+        UTIL_INFO("inet_aton error");     
         ret = -1;
 		goto __EXIT;
     }    
+    memcpy(&ifr.ifr_addr, &sin, sizeof(struct sockaddr));
 
     if (ioctl(fd, SIOCSIFADDR, &ifr) < 0) {     
-        UTIL_ERR("ioctl   SIOCSIFADDR   error");     
+        UTIL_ERR("ioctl SIOCSIFADDR error");     
         ret = -1;
 		goto __EXIT;
     }
 	
     //设置设备子网掩码
-    if (inet_aton(mask,&(sin->sin_addr)) < 0) {     
-        UTIL_ERR("inet_pton   error");     
+    if (inet_aton(mask, &(sin.sin_addr)) < 0) {     
+        UTIL_ERR("inet_pton error");     
         ret = -1;
 		goto __EXIT;
     } 
 	
+    memcpy(&ifr.ifr_addr, &sin, sizeof(struct sockaddr));
     if (ioctl(fd, SIOCSIFNETMASK, &ifr) < 0) {
         UTIL_ERR("ioctl SIOCSIFNETMASK failed!!");
         ret = -1;

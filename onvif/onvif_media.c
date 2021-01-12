@@ -22,6 +22,8 @@
 #include "onvif_media.h"
 #include "onvif_utils.h"
 #include "ir.h"
+#include "set_config.h"
+
 /***************************************************************************************/
 extern ONVIF_CFG g_onvif_cfg;
 extern ONVIF_CLS g_onvif_cls;
@@ -249,7 +251,7 @@ ONVIF_RET onvif_SetVideoEncoderConfiguration(SetVideoEncoderConfiguration_REQ * 
     onvif_VideoResolution * p_VideoResolution;
 	ONVIF_VideoEncoder2Configuration * p_v_enc_cfg;
 
-	p_v_enc_cfg = onvif_find_VideoEncoderConfiguration(p_req->Configuration.token);
+	p_v_enc_cfg = onvif_find_VideoEncoderConfiguration(p_req->Configuration.token);  // &g_onvif_cfg.v_enc_cfg
 	if (NULL == p_v_enc_cfg)
 	{
 		return ONVIF_ERR_NoConfig;
@@ -332,9 +334,24 @@ ONVIF_RET onvif_SetVideoEncoderConfiguration(SetVideoEncoderConfiguration_REQ * 
 
 	memcpy(&p_v_enc_cfg->Configuration.Multicast, &p_req->Configuration.Multicast, sizeof(onvif_MulticastConfiguration));
 
-	// todo : here add your handler code ...
-	
-	
+	// todo : here add your handler code ... by xieqingpu
+	Video_Encoder h264_encoder;
+	memset(&h264_encoder, 0, sizeof(Video_Encoder));
+
+    h264_encoder.width = p_req->Configuration.Resolution.Width;
+    h264_encoder.height = p_req->Configuration.Resolution.Height;
+	h264_encoder.bitrate_limit = p_req->Configuration.RateControl.BitrateLimit;
+	h264_encoder.framerate = p_req->Configuration.RateControl.FrameRateLimit;
+	h264_encoder.video_encoding.v_encoding_profile.gov_length = p_req->Configuration.H264.GovLength;
+	h264_encoder.video_encoding.v_encoding_profile.encode_profile = p_req->Configuration.H264.H264Profile;
+
+	// printf("xxxxxxxxxxxxxxxxxxxxxxxx 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
+
+	/* 设置视频编码器参数 */
+	if( setVideoEncoder(&h264_encoder) != 0)
+		printf("set Video Encoder parameter faile.\n");
+
+
 	return ONVIF_OK;
 }
 

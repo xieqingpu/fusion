@@ -241,7 +241,7 @@ int build_MulticastConfiguration_xml(char * p_buf, int mlen, onvif_MulticastConf
 }
 
 int build_VideoEncoderConfiguration_xml(char * p_buf, int mlen, onvif_VideoEncoder2Configuration * p_v_enc_cfg)
-{
+{																	//g_onvif_cfg.v_enc_cfg.Configuration
 	int offset = 0;
 	
 	offset += snprintf(p_buf+offset, mlen-offset, 
@@ -1950,16 +1950,17 @@ int build_H264Options_xml(char * p_buf, int mlen, onvif_H264Options * p_options)
 			"<tt:Min>%d</tt:Min>"
 			"<tt:Max>%d</tt:Max>"
 		"</tt:FrameRateRange>"
-		"<tt:EncodingIntervalRange>"
+		/* 注释掉编码间隔，现项目不用（为了不让前端页面显示出来） */
+		/* "<tt:EncodingIntervalRange>"
 			"<tt:Min>%d</tt:Min>"
 			"<tt:Max>%d</tt:Max>"
-		"</tt:EncodingIntervalRange>",
+		"</tt:EncodingIntervalRange>" */,
 		p_options->GovLengthRange.Min, 
 		p_options->GovLengthRange.Max, 
 		p_options->FrameRateRange.Min, 
-		p_options->FrameRateRange.Max,
+		p_options->FrameRateRange.Max/* ,
 		p_options->EncodingIntervalRange.Min, 
-		p_options->EncodingIntervalRange.Max);
+		p_options->EncodingIntervalRange.Max */);
 
 	if (p_options->H264Profile_Baseline)
 	{
@@ -2022,13 +2023,14 @@ int build_GetVideoEncoderConfigurationOptions_rly_xml(char * p_buf, int mlen, co
 	}
 
 	offset += snprintf(p_buf+offset, mlen-offset, "<trt:GetVideoEncoderConfigurationOptionsResponse><trt:Options>");
-	offset += snprintf(p_buf+offset, mlen-offset, 
+	/* 注释掉图像质量，现项目不用（不用发给前端显示出来） */
+	/* offset += snprintf(p_buf+offset, mlen-offset, 
 		"<tt:QualityRange>"
 			"<tt:Min>%d</tt:Min>"
 			"<tt:Max>%d</tt:Max>"
 		"</tt:QualityRange>",
 		g_onvif_cfg.VideoEncoderConfigurationOptions.QualityRange.Min, 
-		g_onvif_cfg.VideoEncoderConfigurationOptions.QualityRange.Max);
+		g_onvif_cfg.VideoEncoderConfigurationOptions.QualityRange.Max); */
 
 	if (g_onvif_cfg.VideoEncoderConfigurationOptions.JPEGFlag)
 	{
@@ -2087,7 +2089,8 @@ int build_GetVideoEncoderConfigurationOptions_rly_xml(char * p_buf, int mlen, co
     		// H264 options
     		offset += snprintf(p_buf+offset, mlen-offset, "<tt:H264>");
     		
-    		offset += build_H264Options_xml(p_buf+offset, mlen-offset, &g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options);
+			/* 只需在原来的编码上扩展码率BitrateRange，所以注释掉这个 */
+    		// offset += build_H264Options_xml(p_buf+offset, mlen-offset, &g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options);
     		offset += build_BitrateRange_xml(p_buf+offset, mlen-offset, &g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.BitrateRange);
     			
     		offset += snprintf(p_buf+offset, mlen-offset, "</tt:H264>");	

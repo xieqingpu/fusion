@@ -499,9 +499,17 @@ BOOL onvif_is_user_exist(const char * username)
 //// add by xieqingpu
 ONVIF_RET add_to_Gusers(void)
 {
-	// g_onvif_cfg.users[MAX_USERS] = {0};
-	if (readUsers(g_onvif_cfg.users, ARRAY_SIZE(g_onvif_cfg.users)) != 0)	  //从文件User.dat读取用户
+	if (readUsers(g_onvif_cfg.users, ARRAY_SIZE(g_onvif_cfg.users)) != 0)  //从文件User.dat读取用户
 	{
+		//如果获取失败，则初始化用户为管理者用户
+		strncpy(g_onvif_cfg.users[0].Password,"admin",sizeof(g_onvif_cfg.users[0].Password)-1);
+		strncpy(g_onvif_cfg.users[0].Username,"admin",sizeof(g_onvif_cfg.users[0].Username)-1);
+		g_onvif_cfg.users[0].UserLevel = 0;	 //UserLevel_Administrator=0, UserLevel_Operator=1,UserLevel_User=2,serLevel_Anonymous=3,UserLevel_Extended=4
+
+		if (writeUsers(g_onvif_cfg.users, ARRAY_SIZE(g_onvif_cfg.users)) != 0){  //写用户到文件保存起来
+			printf("Init write user faile.\n");	
+		}
+
 		printf(" read user faile.\n");
 		return -1;
 	}else{
@@ -512,7 +520,6 @@ ONVIF_RET add_to_Gusers(void)
 		return ONVIF_OK;
 	}
 }
-
 ////
 
 
@@ -950,8 +957,9 @@ void onvif_init_ImagingSettings()
 	ImgParam_t imgParam;
 	memset(&imgParam, 0, sizeof(ImgParam_t));
 
-	if (getImgParam(&imgParam) != 0)
-		printf("get img param.\n");
+	if (getImgParam(&imgParam) != 0){
+		printf("get img param faile.\n");
+	}
 	g_onvif_cfg.ImagingSettings.Brightness = imgParam.brightness;
 	g_onvif_cfg.ImagingSettings.Contrast = imgParam.contrast;
 	g_onvif_cfg.ImagingSettings.ColorSaturation = imgParam.saturation;
@@ -991,8 +999,10 @@ void onvif_init_ImagingSettings()
 		DulaInformation_t dulaInfomation;
 		memset(&dulaInfomation, 0, sizeof(DulaInformation_t));
 
-		if (getDulaParam(&dulaInfomation) != 0)
+		if (getDulaParam(&dulaInfomation) != 0){
 			printf("get dula faile.\n");
+		}
+		
 		g_onvif_cfg.ImagingSettings.DulaInformationFlag = 1;
 		g_onvif_cfg.ImagingSettings.DulaInfo.focal = dulaInfomation.focal;
 		g_onvif_cfg.ImagingSettings.DulaInfo.lens = dulaInfomation.lens;
@@ -1527,11 +1537,11 @@ void onvif_init_VideoEncoderConfigurationOptions()
 #endif
 
 	// video encoder config options
-	g_onvif_cfg.VideoEncoderConfigurationOptions.JPEGFlag = 1;
-	g_onvif_cfg.VideoEncoderConfigurationOptions.MPEG4Flag = 1;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.JPEGFlag = 1;    // xieqingpu,注释掉JPEG,现在只用h264编码
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.MPEG4Flag = 1;	   // xieqingpu,注释掉MPEG,现在只用h264编码	
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264Flag = 1;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.QualityRange.Min = 0;
-	g_onvif_cfg.VideoEncoderConfigurationOptions.QualityRange.Max = 100;	
+	g_onvif_cfg.VideoEncoderConfigurationOptions.QualityRange.Max = 100;
 
 	// jpeg config options
 	g_onvif_cfg.VideoEncoderConfigurationOptions.JPEG.ResolutionsAvailable[0].Width = 1920;
@@ -1569,16 +1579,27 @@ void onvif_init_VideoEncoderConfigurationOptions()
 	g_onvif_cfg.VideoEncoderConfigurationOptions.MPEG4.EncodingIntervalRange.Max = 60;
 
 	// h264 config options
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[0].Width = 1920;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[0].Height = 1080;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[1].Width = 1280;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[1].Height = 720;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[2].Width = 640;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[2].Height = 480;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[3].Width = 352;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[3].Height = 288;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[4].Width = 320;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[4].Height = 240;
+	/***** by xieqingpu  h264 config options for hi3519a *****/
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[0].Width = 1920;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[0].Height = 1080;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[1].Width = 1280;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[1].Height = 720;
-	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[2].Width = 640;
-	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[2].Height = 480;
-	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[3].Width = 352;
-	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[3].Height = 288;
-	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[4].Width = 320;
-	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[4].Height = 240;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[2].Width = 720;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[2].Height = 576;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[3].Width = 640;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[3].Height = 360;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[4].Width = 352;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.ResolutionsAvailable[4].Height = 288;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.H264Profile_Baseline = 1;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.H264Profile_Main = 1;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.GovLengthRange.Min = 10;
@@ -1587,6 +1608,80 @@ void onvif_init_VideoEncoderConfigurationOptions()
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.FrameRateRange.Max = 30;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.EncodingIntervalRange.Min = 5;
 	g_onvif_cfg.VideoEncoderConfigurationOptions.H264.EncodingIntervalRange.Max = 60;
+
+
+	/********** Extension by xieqingpu 
+	* 与前端保持信息交互一致，只需在原来的编码上扩展码率BitrateRange，其他的与原来一样即可，看看获取函数soap_GetVideoEncoderConfigurationOptions
+	***********/
+	g_onvif_cfg.VideoEncoderConfigurationOptions.ExtensionFlag = 1;
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEGFlag = 1;	//只用h264编码
+	// g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4Flag = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264Flag = 1;
+
+	// Extension h264 config options
+	/* g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[0].Width = 1920;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[0].Height = 1080;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[1].Width = 1280;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[1].Height = 720;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[2].Width = 640;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[2].Height = 480;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[3].Width = 352;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[3].Height = 288;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[4].Width = 320;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.ResolutionsAvailable[4].Height = 240;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.H264Profile_Baseline = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.H264Profile_Main = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.GovLengthRange.Min = 10;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.GovLengthRange.Max = 60;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.FrameRateRange.Min = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.FrameRateRange.Max = 30;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.EncodingIntervalRange.Min = 5;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.H264Options.EncodingIntervalRange.Max = 60; */
+	
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.BitrateRange.Min = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.H264.BitrateRange.Max = 4096;
+	 
+	// Extension jpeg config options
+	/* g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[0].Width = 1920;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[0].Height = 1080;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[1].Width = 1280;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[1].Height = 720;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[2].Width = 640;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[2].Height = 480;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[3].Width = 352;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[3].Height = 288;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[4].Width = 320;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.ResolutionsAvailable[4].Height = 240;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.FrameRateRange.Min = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.FrameRateRange.Max = 30;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.EncodingIntervalRange.Min = 5;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.JpegOptions.EncodingIntervalRange.Max = 60;
+
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.BitrateRange.Min = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.JPEG.BitrateRange.Max = 4096;
+
+	// Extension mpeg4 config options
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[0].Width = 1920;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[0].Height = 1080;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[1].Width = 1280;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[1].Height = 720;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[2].Width = 640;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[2].Height = 480;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[3].Width = 352;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[3].Height = 288;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[4].Width = 320;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.ResolutionsAvailable[4].Height = 240;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.Mpeg4Profile_SP = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.GovLengthRange.Min = 10;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.GovLengthRange.Max = 60;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.FrameRateRange.Min = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.FrameRateRange.Max = 30;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.EncodingIntervalRange.Min = 5;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.Mpeg4Options.EncodingIntervalRange.Max = 60;
+
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.BitrateRange.Min = 1;
+	g_onvif_cfg.VideoEncoderConfigurationOptions.Extension.MPEG4.BitrateRange.Max = 4096; */
+	/* ***** */
 }
 
 /*
@@ -1626,10 +1721,10 @@ void onvif_init_VideoSourceConfigurationOptions()
 	g_onvif_cfg.VideoSourceConfigurationOptions.BoundsRange.YRange.Max = 100;
 
 	g_onvif_cfg.VideoSourceConfigurationOptions.BoundsRange.WidthRange.Min = 320;
-	g_onvif_cfg.VideoSourceConfigurationOptions.BoundsRange.WidthRange.Max = 1280;
+	g_onvif_cfg.VideoSourceConfigurationOptions.BoundsRange.WidthRange.Max = 1920;
 
 	g_onvif_cfg.VideoSourceConfigurationOptions.BoundsRange.HeightRange.Min = 240;
-	g_onvif_cfg.VideoSourceConfigurationOptions.BoundsRange.HeightRange.Max = 720;	
+	g_onvif_cfg.VideoSourceConfigurationOptions.BoundsRange.HeightRange.Max = 1080;	
 }
 
 void onvif_init_SystemDateTime()
@@ -1758,6 +1853,60 @@ ONVIF_NetworkInterface * onvif_add_NetworkInterface()
 	}
 
 	return p_net_inf;
+}
+
+void onvif_chk_server_cfg()
+{
+    ONVIF_NetworkInterface * p_net_inf;
+	int i = 0;
+
+	p_net_inf = g_onvif_cfg.network.interfaces;
+	g_onvif_cfg.servs_num = 0;
+    // check the server ip and port configure
+	if (NULL != p_net_inf)
+	{
+		while (p_net_inf) {
+			if (g_onvif_cfg.servs[i].serv_port <= 0 || g_onvif_cfg.servs[i].serv_port >= 65535) 
+			{
+#ifdef HTTPS
+				if (g_onvif_cfg.https_enable)
+				{
+					g_onvif_cfg.servs[i].serv_port = 443;
+				}
+				else
+				{
+					g_onvif_cfg.servs[i].serv_port = 8000;
+				}
+#else
+				g_onvif_cfg.servs[i].serv_port = 8000;
+#endif
+			}
+		    memset(g_onvif_cfg.servs[i].serv_ip, 0x0, sizeof(g_onvif_cfg.servs[i].serv_ip));
+			strcpy(g_onvif_cfg.servs[i].serv_ip, p_net_inf->NetworkInterface.IPv4.Config.Address);
+			//UTIL_INFO("g_onvif_cfg.servs[%d].serv_ip=%s", i, g_onvif_cfg.servs[i].serv_ip);
+			p_net_inf = p_net_inf->next;
+			i++;
+		}
+		g_onvif_cfg.servs_num = i;
+	}
+	else 
+	{
+#ifdef HTTPS
+		if (g_onvif_cfg.https_enable)
+		{
+			g_onvif_cfg.servs[i].serv_port = 443;
+		}
+		else
+		{
+			g_onvif_cfg.servs[i].serv_port = 8000;
+		}
+#else
+		g_onvif_cfg.servs[i].serv_port = 8000;
+#endif	
+		g_onvif_cfg.servs_num = 1;
+		memset(g_onvif_cfg.servs[i].serv_ip, 0x0, sizeof(g_onvif_cfg.servs[i].serv_ip));
+		strcpy(g_onvif_cfg.servs[i].serv_ip, "192.168.3.10");
+	}
 }
 
 void onvif_init_NetworkInterface(onvif_NetworkInterface	*pNetworkInterface)
@@ -1894,7 +2043,7 @@ NEXT:
 				p_net_inf->NetworkInterface.IPv4.Config.DHCP = pNetworkInterface->IPv4.Config.DHCP;
             }
 			else {
-				p_net_inf->NetworkInterface.IPv4.Config.DHCP = FALSE;
+				p_net_inf->NetworkInterface.IPv4.Config.DHCP = TRUE;
 			}
 
 			strcpy(p_net_inf->NetworkInterface.IPv4.Config.Address, inet_ntoa(sin->sin_addr));
@@ -1958,6 +2107,8 @@ void onvif_init_net()
     int ret = -1;
 
     g_onvif_cfg.network.DiscoveryMode = DiscoveryMode_Discoverable;
+	system_ex("killall dhcpcd");
+	UTIL_INFO("killall dhcpcd");
 
 	// 1.init network interface
     onvif_NetworkInterface	pNetworkInterface;	
@@ -1967,11 +2118,12 @@ void onvif_init_net()
 		onvif_init_NetworkInterface(&pNetworkInterface);
 	}
 	else {
-		//system_ex("ifconfig eth0 192.168.3.10 netmask 255.255.255.0");
-		UTIL_INFO("ifconfig eth0 up; killall udhcpc; udhcpc -i eth0");
-		system_ex("ifconfig eth0 up; killall udhcpc; udhcpc -i eth0");
+		system_ex("ifconfig eth0 192.168.3.10 netmask 255.255.255.0 up");
+		UTIL_INFO("ifconfig eth0 192.168.3.10 netmask 255.255.255.0 up");
 		onvif_init_NetworkInterface(NULL);
 	}
+	
+	onvif_chk_server_cfg();
 
     if (g_onvif_cfg.network.interfaces) {
         // init zero configuration
@@ -1988,7 +2140,7 @@ void onvif_init_net()
 	ret = GetDNSInformation(&g_onvif_cfg.network.DNSInformation);
 	if (ret < 0) {
 	    g_onvif_cfg.network.DNSInformation.SearchDomainFlag = 1;
-	    g_onvif_cfg.network.DNSInformation.FromDHCP = FALSE;
+	    g_onvif_cfg.network.DNSInformation.FromDHCP = TRUE;
 	    onvif_build_gateway(g_onvif_cfg.network.DNSInformation.DNSServer[0]);
 		SetDNSInformation(&g_onvif_cfg.network.DNSInformation, FALSE);
 		UTIL_INFO("dns==%s", g_onvif_cfg.network.DNSInformation.DNSServer[0]);
@@ -2000,7 +2152,7 @@ void onvif_init_net()
     // init ntp settting
     ret = GetNTPInformation(&g_onvif_cfg.network.NTPInformation);
 	if (ret < 0) {
-	    g_onvif_cfg.network.NTPInformation.FromDHCP = FALSE;
+	    g_onvif_cfg.network.NTPInformation.FromDHCP = TRUE;
 	    strcpy(g_onvif_cfg.network.NTPInformation.NTPServer[0], "ntp1.aliyun.com");
 		SetNTPInformation(&g_onvif_cfg.network.NTPInformation, TRUE);
 	}
@@ -5781,40 +5933,40 @@ void onvif_init_cfg()
 #endif
 }
 
-void onvif_chk_server_cfg()
-{
-	int i;
+// void onvif_chk_server_cfg()
+// {
+// 	int i;
 
-    for (i = 0; i < g_onvif_cfg.servs_num; i++)
-    {
-        // check the server ip and port configure
+//     for (i = 0; i < g_onvif_cfg.servs_num; i++)
+//     {
+//         // check the server ip and port configure
         
-        if (g_onvif_cfg.servs[i].serv_port <= 0 || g_onvif_cfg.servs[i].serv_port >= 65535) 
-    	{
-#ifdef HTTPS
-    		if (g_onvif_cfg.https_enable)
-    		{
-    			g_onvif_cfg.servs[i].serv_port = 443;
-    		}
-    		else
-    		{
-    			g_onvif_cfg.servs[i].serv_port = 8000;
-    		}
-#else
-    		g_onvif_cfg.servs[i].serv_port = 8000;
-#endif
-    	}
+//         if (g_onvif_cfg.servs[i].serv_port <= 0 || g_onvif_cfg.servs[i].serv_port >= 65535) 
+//     	{
+// #ifdef HTTPS
+//     		if (g_onvif_cfg.https_enable)
+//     		{
+//     			g_onvif_cfg.servs[i].serv_port = 443;
+//     		}
+//     		else
+//     		{
+//     			g_onvif_cfg.servs[i].serv_port = 8000;
+//     		}
+// #else
+//     		g_onvif_cfg.servs[i].serv_port = 8000;
+// #endif
+//     	}
 
-    	if (g_onvif_cfg.servs[i].serv_ip[0] == '\0')
-    	{
-			const char * ip = onvif_get_local_ip();
-    		if (ip)
-    		{
-    			strcpy(g_onvif_cfg.servs[i].serv_ip, ip);
-    		}
-    	}
-    }    
-}
+//     	if (g_onvif_cfg.servs[i].serv_ip[0] == '\0')
+//     	{
+// 			const char * ip = onvif_get_local_ip();
+//     		if (ip)
+//     		{
+//     			strcpy(g_onvif_cfg.servs[i].serv_ip, ip);
+//     		}
+//     	}
+//     }    
+// }
 
 void onvif_init()
 {
@@ -5825,15 +5977,15 @@ void onvif_init()
 	memset(&g_onvif_cfg, 0, sizeof(ONVIF_CFG));
 	memset(&g_onvif_cls, 0, sizeof(ONVIF_CLS));
 	
-	system_ex("route add -net 224.0.0.0 netmask 224.0.0.0 eth0");
+	// system_ex("route add -net 224.0.0.0 netmask 224.0.0.0 eth0");
 	
 	onvif_init_cfg();
 
     onvif_init_net();    
 
-    onvif_chk_server_cfg();
+    // onvif_chk_server_cfg();
     
-    // onvif_init_net();        // 放到 onvif_chk_server_cfg()  前面
+    // // onvif_init_net();        // 放到 onvif_chk_server_cfg()  前面
 
     onvif_eua_init();
     
