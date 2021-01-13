@@ -129,37 +129,8 @@ BOOL onvif_parse_user(XMLN * p_node, onvif_User * p_user)
 	return TRUE;
 }
 
-/* void onvif_parse_h264_options(XMLN * p_video_encoder, ONVIF_VideoEncoder2Configuration * p_v_enc_cfg)
-{
-	XMLN * p_h264;
-	XMLN * p_gov_length;
-	XMLN * p_h264_profile;
-
-	p_h264 = xml_node_get(p_video_encoder, "h264");
-	if (NULL == p_h264)
-	{
-		return;
-	}
-	
-	p_gov_length = xml_node_get(p_h264, "gov_length");
-	if (p_gov_length && p_gov_length->data)
-	{
-	    p_v_enc_cfg->Configuration.GovLengthFlag = 1;
-		p_v_enc_cfg->Configuration.GovLength = atoi(p_gov_length->data);
-	}
-
-	p_h264_profile = xml_node_get(p_h264, "h264_profile");
-	if (p_h264_profile && p_h264_profile->data)
-	{
-	    p_v_enc_cfg->Configuration.ProfileFlag = 1;
-		strncpy(p_v_enc_cfg->Configuration.Profile, p_h264_profile->data, sizeof(p_v_enc_cfg->Configuration.Profile)-1);
-	}
-} */
-
 void onvif_parse_h264_options(Encoding_profile * p_encoding_profile, ONVIF_VideoEncoder2Configuration * p_v_enc_cfg)
-{	
-	// printf("xxx onvif_parse_h264_option | gov_length关键帧=%d, encode_profile编码级别=%d.(0:Baseline 1:Main)\n", p_encoding_profile->gov_length,p_encoding_profile->encode_profile);
-	
+{		
 	if(p_encoding_profile->gov_length){
 		p_v_enc_cfg->Configuration.GovLengthFlag = 1;
 		p_v_enc_cfg->Configuration.GovLength = p_encoding_profile->gov_length;  //关键帧
@@ -174,8 +145,6 @@ void onvif_parse_h264_options(Encoding_profile * p_encoding_profile, ONVIF_Video
 #ifdef MEDIA2_SUPPORT
 void onvif_parse_h265_options(Encoding_profile * p_encoding_profile, ONVIF_VideoEncoder2Configuration * p_v_enc_cfg)
 {	
-	//printf("xxx onvif_parse_h265_option | gov_length关键帧=%d, encode_profile编码级别=%s.\n", p_encoding_profile->gov_length,p_encoding_profile->encode_profile);
-	
 	if(p_encoding_profile->gov_length){
 		p_v_enc_cfg->Configuration.GovLengthFlag = 1;
 		p_v_enc_cfg->Configuration.GovLength = p_encoding_profile->gov_length;  //关键帧
@@ -190,8 +159,6 @@ void onvif_parse_h265_options(Encoding_profile * p_encoding_profile, ONVIF_Video
 
 void onvif_parse_mpeg4_options(Encoding_profile * p_encoding_profile, ONVIF_VideoEncoder2Configuration * p_v_enc_cfg)
 {	
-	//printf("xxx onvif_parse_mpeg4_option | gov_length关键帧=%d, encode_profile编码级别=%s.\n", p_encoding_profile->gov_length,p_encoding_profile->encode_profile);
-	
 	if(p_encoding_profile->gov_length){
 		p_v_enc_cfg->Configuration.GovLengthFlag = 1;
 		p_v_enc_cfg->Configuration.GovLength = p_encoding_profile->gov_length;  //关键帧
@@ -231,7 +198,6 @@ ONVIF_VideoSourceConfiguration * onvif_parse_video_source_cfg()
 	return p_v_src_cfg;
 }
 
-// ONVIF_VideoEncoder2Configuration * onvif_parse_video_encoder_cfg(XMLN * p_video_encoder)
 ONVIF_VideoEncoder2Configuration * onvif_parse_video_encoder_cfg()
 {
     ONVIF_VideoEncoder2Configuration * p_v_enc_cfg;
@@ -239,23 +205,11 @@ ONVIF_VideoEncoder2Configuration * onvif_parse_video_encoder_cfg()
 	
 	memset(&v_enc_cfg, 0, sizeof(v_enc_cfg));
 
-	//
 	Video_Encoder encoder;
 	memset(&encoder, 0, sizeof(encoder));
 
 	if( getVideoEncoder(&encoder) !=0 )		//读取 视频编码器参数
 		printf("get Video Encoder para faile.\n");
-
-	//printf("xxx 1.getVideoEncoder | encoder:width=%d,height=%d, bitrate_limit=%d, framerate帧率=%d, gov关键帧=%d, 编码级别=%d(0:Baseline 1:Main)\n",
-			// encoder.width,encoder.height,
-			// encoder.bitrate_limit,
-			// encoder.framerate,
-			// encoder.video_encoding.v_encoding_profile.gov_length,
-			// encoder.video_encoding.v_encoding_profile.encode_profile);
-	//printf("xxx 2.getVideoEncoder | encoder.video_encoding.v_encoding = %s xxx\n",encoder.video_encoding.v_encoding);
-
-	// p_width = xml_node_get(p_video_encoder, "width");
-	// if (p_width && p_width->data)
 	if (encoder.width){
 		// v_enc_cfg.Configuration.Resolution.Width = atoi(p_width->data);		
 		v_enc_cfg.Configuration.Resolution.Width = encoder.width;	//分辨率 宽
@@ -290,27 +244,21 @@ ONVIF_VideoEncoder2Configuration * onvif_parse_video_encoder_cfg()
 		strncpy(v_enc_cfg.Configuration.Encoding, encoder.video_encoding.v_encoding, sizeof(v_enc_cfg.Configuration.Encoding)-1);
 		v_enc_cfg.Configuration.VideoEncoding = onvif_StringToVideoEncoding(encoder.video_encoding.v_encoding);
 	}
-
- //printf("xxx xml_node_get(p_video_encoder, encoding )/v_enc_cfg.Configuration.Encoding = %s \n",v_enc_cfg.Configuration.Encoding);
-
 	if (strcasecmp(v_enc_cfg.Configuration.Encoding, "MPEG4") == 0 || 
 	    strcasecmp(v_enc_cfg.Configuration.Encoding, "MPV4-ES") == 0)
 	{
 	    strcpy(v_enc_cfg.Configuration.Encoding, "MPV4-ES");
 	    v_enc_cfg.Configuration.VideoEncoding = VideoEncoding_MPEG4;
 	    
-		// onvif_parse_mpeg4_options(p_video_encoder, &v_enc_cfg);
 		onvif_parse_mpeg4_options(&encoder.video_encoding.v_encoding_profile, &v_enc_cfg); //修改的
 	}
 	else if (strcasecmp(v_enc_cfg.Configuration.Encoding, "H264") == 0)
 	{
-		// onvif_parse_h264_options(p_video_encoder, &v_enc_cfg);
 		onvif_parse_h264_options(&encoder.video_encoding.v_encoding_profile, &v_enc_cfg);  //修改的
 	}
 #ifdef MEDIA2_SUPPORT	
 	else if (strcasecmp(v_enc_cfg.Configuration.Encoding, "H265") == 0)
 	{
-		// onvif_parse_h265_options(p_video_encoder, &v_enc_cfg);
 		onvif_parse_h265_options(&encoder.video_encoding.v_encoding_profile, &v_enc_cfg);  //修改的
 	}	
 #endif
@@ -332,7 +280,6 @@ ONVIF_VideoEncoder2Configuration * onvif_parse_video_encoder_cfg()
 
 #ifdef AUDIO_SUPPORT
 
-// ONVIF_AudioSourceConfiguration * onvif_parse_audio_source_cfg(XMLN * p_audio_source)
 ONVIF_AudioSourceConfiguration * onvif_parse_audio_source_cfg()
 {		
 	ONVIF_AudioSourceConfiguration * p_a_src_cfg = g_onvif_cfg.a_src_cfg;
@@ -346,68 +293,6 @@ ONVIF_AudioSourceConfiguration * onvif_parse_audio_source_cfg()
 	return p_a_src_cfg;
 }
 
-ONVIF_AudioEncoder2Configuration * onvif_parse_audio_encoder_cfg(XMLN * p_audio_encoder)
-{
-    XMLN * p_session_timeout;
-    XMLN * p_sample_rate;
-    XMLN * p_bitrate;
-    XMLN * p_encoding;
-    ONVIF_AudioEncoder2Configuration * p_a_enc_cfg;    
-	ONVIF_AudioEncoder2Configuration a_enc_cfg;
-	
-	memset(&a_enc_cfg, 0, sizeof(ONVIF_AudioEncoder2Configuration));
-	
-	p_session_timeout = xml_node_get(p_audio_encoder, "session_timeout");
-	if (p_session_timeout && p_session_timeout->data)
-	{
-		a_enc_cfg.Configuration.SessionTimeout = atoi(p_session_timeout->data);
-	}
-
-	p_sample_rate = xml_node_get(p_audio_encoder, "sample_rate");
-	if (p_sample_rate && p_sample_rate->data)
-	{
-		a_enc_cfg.Configuration.SampleRate = atoi(p_sample_rate->data);
-	}
-
-	p_bitrate = xml_node_get(p_audio_encoder, "bitrate");
-	if (p_bitrate && p_bitrate->data)
-	{
-		a_enc_cfg.Configuration.Bitrate = atoi(p_bitrate->data);
-	}	
-
-	p_encoding = xml_node_get(p_audio_encoder, "encoding");
-	if (p_encoding && p_encoding->data)
-	{
-		strncpy(a_enc_cfg.Configuration.Encoding, p_encoding->data, sizeof(a_enc_cfg.Configuration.Encoding)-1);
-		a_enc_cfg.Configuration.AudioEncoding = onvif_StringToAudioEncoding(p_encoding->data);
-	}
-
-#ifdef MEDIA2_SUPPORT
-    if (strcasecmp(a_enc_cfg.Configuration.Encoding, "PCMU") == 0 || 
-	    strcasecmp(a_enc_cfg.Configuration.Encoding, "G711") == 0)
-	{
-	    strcpy(a_enc_cfg.Configuration.Encoding, "PCMU");
-	    a_enc_cfg.Configuration.AudioEncoding = AudioEncoding_G711;
-	}
-	else if (strcasecmp(a_enc_cfg.Configuration.Encoding, "AAC") == 0 || 
-	    strcasecmp(a_enc_cfg.Configuration.Encoding, "MP4A-LATM") == 0)
-	{
-	    strcpy(a_enc_cfg.Configuration.Encoding, "MP4A-LATM");
-	    a_enc_cfg.Configuration.AudioEncoding = AudioEncoding_AAC;
-	}
-#endif
-
-	p_a_enc_cfg = onvif_find_AudioEncoderConfiguration_by_param(&a_enc_cfg);
-	if (p_a_enc_cfg)
-	{
-		return p_a_enc_cfg;
-	}
-
-	p_a_enc_cfg = onvif_add_AudioEncoderConfiguration(&a_enc_cfg);
-
-	return p_a_enc_cfg;
-}
-// ONVIF_AudioEncoder2Configuration * onvif_parse_audio_encoder_cfg(XMLN * p_audio_encoder)
 ONVIF_AudioEncoder2Configuration * onvif_parse_audio_encoder_cfg_t()
 {
     ONVIF_AudioEncoder2Configuration * p_a_enc_cfg;    
@@ -420,12 +305,7 @@ ONVIF_AudioEncoder2Configuration * onvif_parse_audio_encoder_cfg_t()
 	if( getAudioEncoder(&audio_encoder) !=0 )	  //读取音频编码器参数
 		printf("get Camera Encoder para faile.\n");
 
-	//printf("xxx 1.getAudioEncode | sample_rate采样率 = %d,bitrate码率 = %d,a_encoding编码 = %s\n",
-			// audio_encoder.sample_rate, audio_encoder.bitrate, audio_encoder.a_encoding);
-
-	
 	if (audio_encoder.session_timeout){
-		// a_enc_cfg.Configuration.SessionTimeout = atoi(p_session_timeout->data);
 		a_enc_cfg.Configuration.SessionTimeout = audio_encoder.session_timeout;
 	}
 
@@ -437,28 +317,22 @@ ONVIF_AudioEncoder2Configuration * onvif_parse_audio_encoder_cfg_t()
 		a_enc_cfg.Configuration.Bitrate = audio_encoder.bitrate;
 	}	
 
-	// p_encoding = xml_node_get(p_audio_encoder, "encoding");
-	// if (p_encoding && p_encoding->data)
 	if (audio_encoder.a_encoding[0] != '\0')
 	{
 		strncpy(a_enc_cfg.Configuration.Encoding, audio_encoder.a_encoding, sizeof(a_enc_cfg.Configuration.Encoding)-1);
 		a_enc_cfg.Configuration.AudioEncoding = onvif_StringToAudioEncoding(audio_encoder.a_encoding);
-	//    printf("xxx 2.1a_enc_cfg.Configuration.Encoding = %s, a_enc_cfg.Configuration.AudioEncoding = %d(0:g711)\n",
-	// 		a_enc_cfg.Configuration.Encoding, a_enc_cfg.Configuration.AudioEncoding);
 	}
 
 #ifdef MEDIA2_SUPPORT
     if (strcasecmp(a_enc_cfg.Configuration.Encoding, "PCMU") == 0 || 
 	    strcasecmp(a_enc_cfg.Configuration.Encoding, "G711") == 0)
 	{
-		//printf("xxx strcasecmp(a_enc_cfg.Configuration.Encoding, PCMU/G711) == 0\n");
 	    strcpy(a_enc_cfg.Configuration.Encoding, "PCMU");
 	    a_enc_cfg.Configuration.AudioEncoding = AudioEncoding_G711;
 	}
 	else if (strcasecmp(a_enc_cfg.Configuration.Encoding, "AAC") == 0 || 
 	    strcasecmp(a_enc_cfg.Configuration.Encoding, "MP4A-LATM") == 0)
 	{
-		//printf("xxx strcasecmp(a_enc_cfg.Configuration.Encoding, AAC/GMP4A) == 0\n");
 	    strcpy(a_enc_cfg.Configuration.Encoding, "MP4A-LATM");
 	    a_enc_cfg.Configuration.AudioEncoding = AudioEncoding_AAC;
 	}
@@ -477,7 +351,6 @@ ONVIF_AudioEncoder2Configuration * onvif_parse_audio_encoder_cfg_t()
 
 #endif // end of AUDIO_SUPPORT
 
-// void onvif_parse_profile(XMLN * p_profile)
 void onvif_parse_profile()
 {
 	ONVIF_PROFILE * profile;
@@ -505,8 +378,6 @@ void onvif_parse_profile()
 	profile->a_enc_cfg->Configuration.UseCount++;
 #endif
 }
-
-// void onvif_parse_event_cfg(XMLN * p_event)
 void onvif_parse_event_cfg()
 {
 	g_onvif_cfg.evt_renew_time = 60;
@@ -518,16 +389,7 @@ void onvif_parse_event_cfg()
 
 BOOL onvif_parse_server(ONVIF_SRV * p_req)
 {
-    /* p_serv_ip = xml_node_get(p_node, "server_ip");
-	if (NULL == p_serv_ip)
-	{
-	    return FALSE;
-	}
-	else if (p_serv_ip->data)
-	{
-		strncpy(p_req->serv_ip, p_serv_ip->data, sizeof(p_req->serv_ip)-1);
-	}
-	*/
+
 	p_req->serv_port = 8000;
 	if (p_req->serv_port < 0 || p_req->serv_port > 65535)
 		return FALSE;
@@ -535,9 +397,6 @@ BOOL onvif_parse_server(ONVIF_SRV * p_req)
 	return TRUE;
 }
 
-
-// void onvif_parse_cfg(char * xml_buff, int rlen)
-// void onvif_parse_cfg()
 void onvif_load_cfg()
 {
 	/* 服务端口 */
@@ -545,25 +404,6 @@ void onvif_load_cfg()
     {
         g_onvif_cfg.servs_num++;
     }
-
-/* 	p_servers = xml_node_get(p_node, "servers");
-	while (p_servers && strcmp(p_servers->name, "servers") == 0)
-	{
-	    int idx = g_onvif_cfg.servs_num;
-
-	    if (onvif_parse_server(p_servers, &g_onvif_cfg.servs[idx]))
-	    {
-	        g_onvif_cfg.servs_num++;
-
-	        if (g_onvif_cfg.servs_num >= ARRAY_SIZE(g_onvif_cfg.servs))
-	        {
-	            break;
-	        }
-	    }
-	    
-	    p_servers = p_servers->next;
-	} */
-
 	g_onvif_cfg.http_max_users = 16;
 
 #ifdef HTTPS
@@ -610,47 +450,6 @@ void onvif_load_cfg()
 
 	onvif_parse_event_cfg();
 }
-
-/* void onvif_load_cfg()
-{
-	int len;
-    int rlen;
-    FILE * fp;
-    char * xml_buff;
-
-    // read config file
-	fp = fopen("config.xml", "r");
-	if (NULL == fp)
-	{
-		return;
-	}
-	
-	fseek(fp, 0, SEEK_END);
-	
-	len = ftell(fp);
-	if (len <= 0)
-	{
-		fclose(fp);
-		return;
-	}
-	fseek(fp, 0, SEEK_SET);
-	
-	xml_buff = (char *) malloc(len + 1);	
-	if (NULL == xml_buff)
-	{
-		fclose(fp);
-		return;
-	}
-
-	rlen = fread(xml_buff, 1, len, fp);
-	
-	fclose(fp);
-
-	// onvif_parse_cfg(xml_buff, rlen);
-	// onvif_parse_cfg();    // by xieqingpu
-
-	free(xml_buff);
-} */
 
 
 BOOL onvif_read_device_uuid(char * buff, int bufflen)

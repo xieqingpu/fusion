@@ -10,15 +10,22 @@ else ifeq ($(PLATFORM), GPT)
 	LIB_DIR=gpt-lib
 endif
 
+#对应芯片音视频SDK所在目录
+ifeq ($(HWMODEL), HI3519AV100)
+COMPILEOPTION  += -DHI3519AV100
+else ifeq ($(HWMODEL), HI3516DV300)
+COMPILEOPTION  += -DHI3516DV300
+endif
+
 COMPILEOPTION += -DEPOLL
 # COMPILEOPTION += -DHTTPS
 COMPILEOPTION += -DHTTPD
 COMPILEOPTION += -DDEVICEIO_SUPPORT
 #COMPILEOPTION += -DPROFILE_G_SUPPORT
 #COMPILEOPTION += -DPROFILE_C_SUPPORT
-COMPILEOPTION += -DCREDENTIAL_SUPPORT     
+COMPILEOPTION += -DCREDENTIAL_SUPPORT
 #COMPILEOPTION += -DACCESS_RULES
-#COMPILEOPTION += -DSCHEDULE_SUPPORT    
+#COMPILEOPTION += -DSCHEDULE_SUPPORT
 COMPILEOPTION += -DAUDIO_SUPPORT
 COMPILEOPTION += -DMEDIA2_SUPPORT
 COMPILEOPTION += -DPTZ_SUPPORT
@@ -35,9 +42,6 @@ INCLUDEDIR += -I../include
 INCLUDEDIR += -I./camCtl
 INCLUDEDIR += -I./camCtl/pelco_ptz 
 INCLUDEDIR += -I./camCtl/visca
-INCLUDEDIR += -I../../fireware/hisi
-INCLUDEDIR += -I../../fireware/hisi/include
-INCLUDEDIR += -I../../dula_fusion_main/
 
 LINKOPTION = -g -o onvifserver
 #LIBDIRS = -L./openssl/lib/linux -L./libical/lib/linux
@@ -53,8 +57,7 @@ OBJS = bm/word_analyse.o bm/util.o bm/sys_os.o bm/sys_log.o bm/sys_buf.o bm/ppst
 	  ./camCtl/pelco_ptz/ptz.o ./camCtl/ntp_conf.o \
 	   ./camCtl/visca/libvisca.o ./camCtl/visca/libvisca_posix.o ./camCtl/visca/rw_config.o ./camCtl/visca/visca_api.o \
 	   ./camCtl/set_config.o \
-	   ./camCtl/cfg_file.o \
-	   ../../fireware/hisi/gpt_video.o 
+	   ./camCtl/cfg_file.o 
 	#    main.o
 
 STATIC_LIB =  libonvifserver.a

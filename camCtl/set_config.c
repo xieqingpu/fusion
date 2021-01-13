@@ -26,10 +26,52 @@
 #include "onvif.h"
 #include "utils_log.h"
 #include "ir.h"
-#include "gpt_video.h"
 
 
-#define  __REALSE__    1
+/*******************************************************
+    enum define
+*******************************************************/
+
+typedef enum hiPIC_SIZE_E
+{
+    PIC_CIF,
+    PIC_360P,      /* 640 * 360 */
+    PIC_D1_PAL,    /* 720 * 576 */
+    PIC_D1_NTSC,   /* 720 * 480 */
+    PIC_720P,      /* 1280 * 720  */
+    PIC_1080P,     /* 1920 * 1080 */
+    PIC_2560x1440,
+    PIC_2592x1520,
+    PIC_2592x1536,
+    PIC_2592x1944,
+    PIC_2688x1536,
+    PIC_2716x1524,
+    PIC_3840x2160,
+    PIC_4096x2160,
+    PIC_3000x3000,
+    PIC_4000x3000,
+    PIC_7680x4320,
+    PIC_3840x8640,
+    PIC_BUTT
+} PIC_SIZE_E;
+typedef int 					HI_S32;
+typedef unsigned int			HI_U32;
+typedef HI_S32 VENC_CHN;
+
+//设置编码器的GOP
+extern HI_S32 COMM_Video_SetVencChnGOP(VENC_CHN VencChn, HI_U32 u32Gop);
+
+//设置编码器的分辨率
+extern HI_S32 COMM_SetVencChnResolution(VENC_CHN VencChn, PIC_SIZE_E enSize);
+
+//设置编码器的码流
+extern HI_S32 COMM_SetVencChnBitrate(VENC_CHN VencChn, HI_U32 u32BitRate);
+
+//设置编码器的帧率
+extern HI_S32 COMM_SetVencChnFrameRate(VENC_CHN VencChn, HI_U32 u32FrameRate);
+
+//设置编码器的编码级别
+extern HI_S32 COMM_SetVencChnProfile(VENC_CHN VencChn, HI_U32 u32Profile);
 
 extern ONVIF_CFG g_onvif_cfg;
 
@@ -73,7 +115,7 @@ int writeUsers(onvif_User *p_users, int cnt)
 int devInit(char *ptzDevID, const char *cameraDEVID)
 {
 	int ret;
-#if __REALSE__
+#ifdef HI3519AV100
 	//visca 设备初始化 
 	for(int i=0;i<10;i++)
 	{
@@ -92,8 +134,8 @@ int devInit(char *ptzDevID, const char *cameraDEVID)
     UTIL_ERR("pelco ptz init failed!!!");
   }
 
-    return ret;
-  #endif 
+  return ret;
+#endif 
 }
 
 
@@ -308,7 +350,7 @@ int getThermalBaseParam(ThermalBaseParam *param)
 /*  保存 热成像参数配置_1 */
 int setThermalParam1(ThermalBaseParam *thermalParam1)
 {
-#if __REALSE__
+#ifdef HI3519AV100
 	setThermalBaseParam((ThermalBaseParam*)thermalParam1);
 #endif
 	//保存参数
@@ -346,7 +388,7 @@ int getThermalEnvParam(ThermalEnvParam *param)
 int setThermalParam2(ThermalEnvParam *thermalParam2)
 {
 	//设置热成像环境参数，成功返回0，失败返回-1
-#if __REALSE__	
+#ifdef HI3519AV100	
 	setThermalEnvParam((ThermalEnvParam *)thermalParam2);
 #endif
 	//保存参数
@@ -356,31 +398,46 @@ int setThermalParam2(ThermalEnvParam *thermalParam2)
 	return 0;
 }
 
-
-
-/* 读取 dula数据参数 */
-#define  DULAFILE  ("/user/cfg_files/Dula.dat")
-int getDulaParam(DulaInformation_t *dulaInfo)
+#define FUSION_PARAM_FILE			"/user/cfg_files/fusion.dat"
+//获取参数,成功返回0，失败返回-1
+int getFusionParam(DulaInformation_t *dalaInfo)
 {
-	if (read_cfg_from_file(DULAFILE, (char *)dulaInfo,sizeof(DulaInformation_t)) != 0) {
-		//如果获取失败，则初始化并保存于文件中
-		dulaInfo->focal = 0;
-		dulaInfo->lens = 0.50;
-		dulaInfo->distance = 0.90;
-		dulaInfo->dula_model = 0;
-		dulaInfo->x = 466;
-		dulaInfo->y = 114;
-		dulaInfo->scale = 2.46;
+	//system_ex("chmod 777 %s\n",FUSION_PARAM_FILE);
+	if (read_cfg_from_file((char*)FUSION_PARAM_FILE,(char*)dalaInfo, sizeof(DulaInformation_t)) < 0)
+	{
+		dalaInfo->focal = 1;
+		dalaInfo->weightIrY = 0.5f;
+		dalaInfo->weightIrC = 0.5f;
 
-		UTIL_ERR("read ir env param fail\n");
-		
+		dalaInfo->dula_model = 0;
+		dalaInfo->x = 100;
+		dalaInfo->y = 100;
+		dalaInfo->scale = 2.40;
 		//保存参数
-		if (save_cfg_to_file((char*)DULAFILE, (char*)dulaInfo, sizeof(DulaInformation_t)) < 0)
-			UTIL_ERR("save fusion param fail\n");
+		if (save_cfg_to_file((char*)FUSION_PARAM_FILE,(char*) dalaInfo, sizeof(DulaInformation_t))<0) 
+		{
+			UTIL_ERR("save fusion param fail");	
+		}
 
-		return -1;
+		return 0;
 	}
+	else 
+	{		
+		//UTIL_INFO("focal=%d weightIrY=%3f weightIrC=%3f dula_model=%d x=%d  y=%d scale=%3f", 
+		//	dalaInfo->focal, dalaInfo->weightIrY, dalaInfo->weightIrC, dalaInfo->dula_model,dalaInfo->x,dalaInfo->y, dalaInfo->scale);
+        float b = -1.00;
+		if ( dalaInfo->focal == -1) 				      dalaInfo->focal = 1;
+		if ((fabs((dalaInfo->weightIrY)-(b))) < (1e-8))    dalaInfo->weightIrY = 0.5f;
+		if ((fabs((dalaInfo->weightIrC)-(b))) < (1e-8))    dalaInfo->weightIrC = 0.5f;
+		if ( dalaInfo->dula_model == -1)                  dalaInfo->dula_model = 0;
+		if ( dalaInfo->x == (signed short int)-1) 		  dalaInfo->x = 100;
+		if ( dalaInfo->y == (signed short int)-1) 		  dalaInfo->y = 100;
+		if ((fabs((dalaInfo->scale)-(b))) < (1e-8)) 		  dalaInfo->scale = 2.4;
+	}
+	UTIL_INFO("focal=%d weightIrY=%3f weightIrC=%3f dula_model=%d x=%d  y=%d scale=%3f", 
+		dalaInfo->focal, dalaInfo->weightIrY, dalaInfo->weightIrC, dalaInfo->dula_model,dalaInfo->x,dalaInfo->y, dalaInfo->scale);
 
+	
 	return 0;
 }
 
@@ -388,34 +445,89 @@ extern int setFusionParam(DulaInformation_t *dulaInfo);
 /* 保存 dula数据参数 */
 int setDulaParam(DulaInformation_t *dulaInfo)
 {
-	UTIL_INFO("set_config |focal:%d, lens:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, scale:%0.2f\n",
-							 dulaInfo->focal, dulaInfo->lens, dulaInfo->distance, dulaInfo->dula_model, dulaInfo->x, dulaInfo->y, dulaInfo->scale);
-#if __REALSE__
 	/* add your code of set Thermal Param2 here */
 	setFusionParam(dulaInfo);
-#endif
 
 	//更新数据保存于文件
+	//此处包含自我修复的功能，在获取参数不合法的情况下，参数自动修复为设备可以正常操作的参数
 	DulaInformation_t  readDulaInfo;
 	memset(&readDulaInfo, 0 ,sizeof(DulaInformation_t));
-	if (read_cfg_from_file(DULAFILE, (char *)&readDulaInfo, sizeof(DulaInformation_t)) == 0)
+	if (read_cfg_from_file(FUSION_PARAM_FILE, (char *)&readDulaInfo, sizeof(DulaInformation_t)) == 0)
 	{
-		if ( dulaInfo->focal == -1)				     dulaInfo->focal = readDulaInfo.focal;
-		if ( dulaInfo->lens == -1)					  dulaInfo->lens = readDulaInfo.lens;
-		if ( dulaInfo->distance == -1)			 dulaInfo->distance = readDulaInfo.distance;
-		if ( dulaInfo->dula_model == -1)   dulaInfo->dula_model = readDulaInfo.dula_model;
-		if ( dulaInfo->x == -1)							 dulaInfo->x = readDulaInfo.x;
-		if ( dulaInfo->y == -1)						     dulaInfo->y = readDulaInfo.y;
-		if ( dulaInfo->scale == -1)					 dulaInfo->scale = readDulaInfo.scale;
+		//UTIL_INFO("focal:%d, weightIrY:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f", 
+		//		dulaInfo->focal, dulaInfo->weightIrY, dulaInfo->weightIrC, dulaInfo->dula_model, 
+		//		dulaInfo->x, dulaInfo->y, dulaInfo->scale); 
+		float b = -1.00;
+		if ( dulaInfo->focal == -1 && -1 == readDulaInfo.focal)		
+		{
+			dulaInfo->focal = 1;
+		}
+		else 
+		{
+			dulaInfo->focal = readDulaInfo.focal;
+		}
+		if ((fabs((dulaInfo->weightIrY)-(b))) < (1e-8) && (fabs((readDulaInfo.weightIrY)-(b))) < (1e-8))
+		{
+			dulaInfo->weightIrY = 0.5f;
+		}
+		else 
+		{
+			dulaInfo->weightIrY = readDulaInfo.weightIrY;
+		}
+		
+		if ((fabs((dulaInfo->weightIrC)-(b))) < (1e-8) && (fabs((readDulaInfo.weightIrC)-(b))) < (1e-8))		
+		{
+			dulaInfo->weightIrC = 0.5f;
+		}
+		else 
+		{
+			dulaInfo->weightIrC = readDulaInfo.weightIrC;
+		}
+		
+		if ( dulaInfo->dula_model == -1 && -1 == readDulaInfo.dula_model)                  
+		{
+			dulaInfo->dula_model = 0;
+		}
+
+		if ( dulaInfo->x == (signed short int)-1 && readDulaInfo.x == (signed short int)-1)		
+		{
+			dulaInfo->x = 100;
+		}
+		else 
+		{
+			dulaInfo->x = readDulaInfo.x;
+		}
+		
+		if ( dulaInfo->y == (signed short int)-1 && readDulaInfo.y == (signed short int)-1)		
+		{
+			dulaInfo->y = 100;
+		}
+		else 
+		{
+			dulaInfo->y = readDulaInfo.y;
+		}
+		
+		if ((fabs((dulaInfo->scale)-(b))) < (1e-8) && (fabs((readDulaInfo.scale)-(b))) < (1e-8)) 
+		{
+			dulaInfo->scale = 2.4;
+		}
+		else 
+		{
+			dulaInfo->scale = readDulaInfo.scale;
+		}
 	}
 
-	if (save_cfg_to_file(DULAFILE, (char*) dulaInfo, sizeof(DulaInformation_t)) != 0) {
+	if (save_cfg_to_file(FUSION_PARAM_FILE, (char*) dulaInfo, sizeof(DulaInformation_t)) != 0) {
 		return -1;
 	}
+	
+	UTIL_INFO("focal:%d, weightIrY:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f", 
+			dulaInfo->focal, dulaInfo->weightIrY,
+					dulaInfo->weightIrC, dulaInfo->dula_model, 
+					dulaInfo->x, dulaInfo->y, dulaInfo->scale); 
 
 	return 0;
 }
-
 
 #define  AUDIO_ENCODER_FILE  ("/user/cfg_files/AudioEncoder.dat")
 /* 读取 设置音频编码器参数 */
@@ -440,11 +552,9 @@ int getAudioEncoder(Audio_Encoder *p_audio_encoder)
 	return 0;
 }
 
-
 int get_Resolution_Type(onvif_VideoResolution * resolution)
 {
 	if(resolution->Width == 1920 && resolution->Height == 1080){
-		// printf("xxxxxxxxxxxxx get_Resolution_Type | resolution->Width == 1920 , Height == 1080 XXXXXXXXXXX\n");
 		return PIC_1080P;
 	}
 	else if (resolution->Width == 1280 && resolution->Height == 720){
@@ -498,7 +608,7 @@ int getVideoEncoder(Video_Encoder *p_video_encoder)
 /* 设置 视频编码器参数 ,同时保存到文件 */
 int setVideoEncoder(Video_Encoder *p_video_encoder)
 {
-	UTIL_INFO("set_config |分辨率width:%d,height:%d, 码率:%d, 帧率:%d, GOP(关键帧):%d, 编码级别:%d(0:Baseline 1:Main)\n",
+	UTIL_INFO("width:%d,height:%d, bitrate_limit:%d, framerate:%d, GOP:%d, encode_profile:%d(0:Baseline 1:Main)\n",
 				p_video_encoder->width, p_video_encoder->height,
 				p_video_encoder->bitrate_limit,
 				p_video_encoder->framerate,
@@ -562,8 +672,6 @@ int setVideoEncoder(Video_Encoder *p_video_encoder)
 
 	return 0;
 }
-
-
 
 /* 读取NTPInformation数据参数 */
 #define  NTPFILE  ("/user/cfg_files/ntp.dat")
@@ -747,26 +855,23 @@ void set_system_clock_timezone(onvif_DateTime *pUTCDateTime, int utc)
 
 /* 保存SystemDateTime数据参数*/
 int SetSystemDateTime(onvif_SystemDateTime	 *pDataTimeInfo, 
-								onvif_DateTime *pUTCDateTime, BOOL isSave)
+								onvif_DateTime *pUTCDateTime, BOOL isTZChange, BOOL isSave)
 {
 	// check datetime
-	UTIL_INFO("TimeZoneFlag==%d TimeZone.TZ====%s", 
-			pDataTimeInfo->TimeZoneFlag, 
-			pDataTimeInfo->TimeZone.TZ);
 	char linuxTz[16] = {0};
 	int ret = -1;
 	
-	//东八区是GMT-8而不是GMT+8，要不就设为了西八区	
-	snprintf(linuxTz, sizeof(linuxTz), (char *)"GMT%s", 
-						&pDataTimeInfo->TimeZone.TZ[3]);
+	UTIL_INFO("linuxTz : %s",pDataTimeInfo->TimeZone.TZ);
+	if (isTZChange) {
+		//东八区是GMT-8而不是GMT+8，要不就设为了西八区 
+		snprintf(linuxTz, sizeof(linuxTz), (char *)"GMT%s", 
+							&pDataTimeInfo->TimeZone.TZ[3]);
 
-	UTIL_INFO("linuxTz : %s",linuxTz);
-	
-	ret = setenv("TZ", linuxTz, 1);
-	if (ret != 0) {
-		UTIL_INFO("fail to set Tz %s", linuxTz);
+		ret = setenv("TZ", linuxTz, 1);
+		if (ret != 0) {
+			UTIL_INFO("fail to set Tz %s", linuxTz);
+		}
 	}
-	
     //开启NTP服务器获取时间
 	if (isSave && pDataTimeInfo->DateTimeType == SetDateTimeType_NTP) {
 		Set_Start_NTP_Server(1);
@@ -780,6 +885,10 @@ int SetSystemDateTime(onvif_SystemDateTime	 *pDataTimeInfo,
 	if (isSave && save_cfg_to_file(DATATIMEFILE, (char*)pDataTimeInfo, 
 		sizeof(onvif_SystemDateTime)) != 0) {
 		return -1;
+	}
+
+	if (isTZChange) {
+		UTIL_ZONE("TZChange");
 	}
 
 	return 0;
@@ -944,7 +1053,7 @@ int opt_SetNetworkInterfaces(onvif_NetworkInterface	*pNetworkInterface)
 				return -1;
 			}
 			
-			UTIL_INFO("Opt_SetDeviceIpAddr success!!!");
+			UTIL_INFO("Opt_SetDeviceIpAddr success token=%s!!!", pNetworkInterface->token);
 	    }
 		else {//dhcp获取ip地址与子网掩码
 			system_ex("killall udhcpc; udhcpc -i eth0");
@@ -993,7 +1102,7 @@ int SetNetworkGateway(onvif_NetworkGateway		     *pNetworkGateway, BOOL isSave)
 			return -1;
 		}
 		
-		UTIL_INFO("Opt_SetDeviceGateway success!!!");
+		UTIL_INFO("Opt_SetDeviceGateway=%s success!!!", pNetworkGateway->IPv4Address[0]);
     }
 		
 	if (isSave && save_cfg_to_file(GATEWAYFILE, (char*)pNetworkGateway, 

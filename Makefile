@@ -3,6 +3,13 @@ include ../../product_list_conf
 
 COMPILEOPTION = -g -c -O3
 
+#对应芯片音视频SDK所在目录
+ifeq ($(HWMODEL), HI3519AV100)
+COMPILEOPTION  += -DHI3519AV100
+else ifeq ($(HWMODEL), HI3516DV300)
+COMPILEOPTION  += -DHI3516DV300
+endif
+
 COMPILEOPTION += -DEPOLL
 # COMPILEOPTION += -DHTTPS
 COMPILEOPTION += -DHTTPD
@@ -28,9 +35,6 @@ INCLUDEDIR += -I../include
 INCLUDEDIR += -I./camCtl
 INCLUDEDIR += -I./camCtl/pelco_ptz 
 INCLUDEDIR += -I./camCtl/visca
-# INCLUDEDIR += -I../../fireware/hisi
-# INCLUDEDIR += -I../../fireware/hisi/include
-# INCLUDEDIR += -I../../dula_fusion_main/
 
 LINKOPTION = -g -o onvifserver
 #LIBDIRS = -L./openssl/lib/linux -L./libical/lib/linux
@@ -47,7 +51,6 @@ OBJS = bm/word_analyse.o bm/util.o bm/sys_os.o bm/sys_log.o bm/sys_buf.o bm/ppst
 	   ./camCtl/visca/libvisca.o ./camCtl/visca/libvisca_posix.o ./camCtl/visca/rw_config.o ./camCtl/visca/visca_api.o \
 	   ./camCtl/set_config.o \
 	   ./camCtl/cfg_file.o \
-	#    ../../fireware/hisi/gpt_video.o \
 	   main.o
 
 OUTPUT = onvifserver

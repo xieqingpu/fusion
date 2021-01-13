@@ -110,7 +110,7 @@ SOCKET onvif_probe_init()
 #else
     mcast.imr_interface.s_addr = htonl(INADDR_ANY);
 #endif
-	//Ö÷ÒªÊÇÎª½â¾ö¼ÓÈë×é²¥  No such deviceÊ§°ÜµÄÎÊÌâ
+	//ä¸»è¦æ˜¯ä¸ºè§£å†³åŠ å…¥ç»„æ’­  No such deviceå¤±è´¥çš„é—®é¢˜
 	system_ex("route add -net 224.0.0.0 netmask 224.0.0.0 eth0");
 	if (setsockopt(fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (char*)&mcast, sizeof(mcast)) < 0)
 	{

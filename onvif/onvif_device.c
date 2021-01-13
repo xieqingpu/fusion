@@ -31,7 +31,7 @@
 /***************************************************************************************/
 extern ONVIF_CFG g_onvif_cfg;
 extern ONVIF_CLS g_onvif_cls;
-
+extern void onvif_init_capabilities();
 /***************************************************************************************/
 
 void onvif_LastClockSynchronizationNotify()
@@ -97,6 +97,7 @@ ONVIF_RET onvif_GetSystemLog(GetSystemLog_REQ * p_req, GetSystemLog_RES * p_res)
 ONVIF_RET onvif_SetSystemDateAndTime(SetSystemDateAndTime_REQ * p_req)
 {
 	// check datetime
+	BOOL isTZChange = 0;
 	if (p_req->SystemDateTime.DateTimeType == SetDateTimeType_Manual)
 	{
 		if (p_req->UTCDateTime.Date.Month < 1 || p_req->UTCDateTime.Date.Month > 12 ||
@@ -119,13 +120,15 @@ ONVIF_RET onvif_SetSystemDateAndTime(SetSystemDateAndTime_REQ * p_req)
 
 	g_onvif_cfg.SystemDateTime.DateTimeType = p_req->SystemDateTime.DateTimeType;
 	g_onvif_cfg.SystemDateTime.DaylightSavings = p_req->SystemDateTime.DaylightSavings;
-	if (/*p_req->SystemDateTime.TimeZoneFlag && */p_req->SystemDateTime.TimeZone.TZ[0] != '\0')
+	if (/*p_req->SystemDateTime.TimeZoneFlag && */p_req->SystemDateTime.TimeZone.TZ[0] != '\0'
+		&& !strcasecmp(g_onvif_cfg.SystemDateTime.TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ))
 	{
 		strcpy(g_onvif_cfg.SystemDateTime.TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ);
+		isTZChange = 1;
 	}
 	
 	// todo : add set system date time code ...
-	SetSystemDateTime(&p_req->SystemDateTime, &p_req->UTCDateTime, TRUE);
+	SetSystemDateTime(&p_req->SystemDateTime, &p_req->UTCDateTime, isTZChange, TRUE);
 
     // send notify message ...
     onvif_LastClockSynchronizationNotify();

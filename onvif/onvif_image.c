@@ -19,9 +19,8 @@
 
 #include "sys_inc.h"
 #include "onvif_image.h"
-
-#include "set_config.h"  // add by xieqingpu
-
+#include "set_config.h"  
+#include "utils_log.h"
 
 /***************************************************************************************/
 extern ONVIF_CFG g_onvif_cfg;
@@ -182,7 +181,7 @@ ONVIF_RET onvif_SetImagingSettings(SetImagingSettings_REQ * p_req)
 		setImgParams.sharp =  p_req->ImagingSettings.Sharpness;
 
 		if (setImgParam(&setImgParams) != 0)
-			printf("set img param faile.\n");
+			UTIL_ERR("set img param faile");
 	}
 
 
@@ -202,7 +201,7 @@ ONVIF_RET onvif_SetImagingSettings(SetImagingSettings_REQ * p_req)
 		thermalParam_1.actime =  p_req->ImagingSettings.ThermalSettings.ThermalSet1.Actime;
 
 		if (setThermalParam1(&thermalParam_1) != 0)
-			printf("set thermal param1 faile.\n");
+			UTIL_ERR("set thermal param1 failed!");
 	}
 	else if (p_req->ImagingSettings.ThermalSettings.ThermalSet_ext2Flag == 1) {
 	   	/* 
@@ -224,7 +223,7 @@ ONVIF_RET onvif_SetImagingSettings(SetImagingSettings_REQ * p_req)
 
 		
 		if (setThermalParam2(&thermalParam_2) != 0)
-			printf("set thermal param2 faile.\n");
+			UTIL_ERR("set thermal param2 failed!!");
 	}
 			
 	if ( p_req->ImagingSettings.DulaInformationFlag == 1 )
@@ -234,17 +233,20 @@ ONVIF_RET onvif_SetImagingSettings(SetImagingSettings_REQ * p_req)
 	    memset(&onvifDulaInfo, 0, sizeof(DulaInformation_t));
 
 		onvifDulaInfo.focal = p_req->ImagingSettings.DulaInfo.focal;
-		onvifDulaInfo.lens  =  p_req->ImagingSettings.DulaInfo.lens;
-		onvifDulaInfo.distance = p_req->ImagingSettings.DulaInfo.distance;
+		onvifDulaInfo.weightIrY  =  p_req->ImagingSettings.DulaInfo.lens;
+		onvifDulaInfo.weightIrC = p_req->ImagingSettings.DulaInfo.distance;
 		onvifDulaInfo.dula_model = 	p_req->ImagingSettings.DulaInfo.dula_model;
 		onvifDulaInfo.x  = p_req->ImagingSettings.DulaInfo.x;
 		onvifDulaInfo.y  = p_req->ImagingSettings.DulaInfo.y;
 		onvifDulaInfo.scale = p_req->ImagingSettings.DulaInfo.scale;
-		/* printf("focal:%d, lens:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f\n", onvifDulaInfo.focal, onvifDulaInfo.lens,
-						onvifDulaInfo.distance, onvifDulaInfo.dula_model, onvifDulaInfo.x, onvifDulaInfo.y, onvifDulaInfo.scale); */
+		UTIL_INFO("focal:%d, weightIrY:%0.2f, weightIrC:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f", 
+				onvifDulaInfo.focal, onvifDulaInfo.weightIrY,
+						onvifDulaInfo.weightIrC, onvifDulaInfo.dula_model, 
+						onvifDulaInfo.x, onvifDulaInfo.y, onvifDulaInfo.scale);
 
-		if (setDulaParam(&onvifDulaInfo)!= 0)
-			printf("set Dula faile.\n");
+		if (setDulaParam(&onvifDulaInfo) != 0) {
+			UTIL_ERR("set Dula faile!!");
+		}
 	}
 
 

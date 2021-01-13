@@ -999,14 +999,12 @@ void onvif_init_ImagingSettings()
 		DulaInformation_t dulaInfomation;
 		memset(&dulaInfomation, 0, sizeof(DulaInformation_t));
 
-		if (getDulaParam(&dulaInfomation) != 0){
+		if (getFusionParam(&dulaInfomation) != 0)
 			printf("get dula faile.\n");
-		}
-
 		g_onvif_cfg.ImagingSettings.DulaInformationFlag = 1;
 		g_onvif_cfg.ImagingSettings.DulaInfo.focal = dulaInfomation.focal;
-		g_onvif_cfg.ImagingSettings.DulaInfo.lens = dulaInfomation.lens;
-		g_onvif_cfg.ImagingSettings.DulaInfo.distance = dulaInfomation.distance;
+		g_onvif_cfg.ImagingSettings.DulaInfo.lens = dulaInfomation.weightIrY;
+		g_onvif_cfg.ImagingSettings.DulaInfo.distance = dulaInfomation.weightIrC;
 		g_onvif_cfg.ImagingSettings.DulaInfo.dula_model = dulaInfomation.dula_model;
 		g_onvif_cfg.ImagingSettings.DulaInfo.x = dulaInfomation.x;
 		g_onvif_cfg.ImagingSettings.DulaInfo.y = dulaInfomation.y;
@@ -1731,7 +1729,7 @@ void onvif_init_SystemDateTime()
 {
     int ret = -1;
     ret = GetSystemDateTime(&g_onvif_cfg.SystemDateTime);
-	if (ret < 0) {
+	if (ret < 0 || g_onvif_cfg.SystemDateTime.TimeZone.TZ[0] == '\0') {
 		g_onvif_cfg.SystemDateTime.DateTimeType = SetDateTimeType_Manual;
 	    g_onvif_cfg.SystemDateTime.DaylightSavings = FALSE;
 	    g_onvif_cfg.SystemDateTime.TimeZoneFlag = 1;
@@ -5869,7 +5867,7 @@ void onvif_init_cfg()
 
 	onvif_init_SystemDateTime();
 
-	// onvif_init_VideoSource();
+	//onvif_init_VideoSource();
 	onvif_init_VideoSourceConfigurationOptions();
 	onvif_init_VideoEncoderConfigurationOptions();	
 

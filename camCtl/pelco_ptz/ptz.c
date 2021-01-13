@@ -11,10 +11,11 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <time.h>
+#include <errno.h>
 #include "ptz.h"
+#include "utils_log.h"
 
 unsigned char pelco[7];
-unsigned char resp[4];
 int addr = 1;
 
 struct baud_rates {
@@ -37,13 +38,6 @@ static const struct baud_rates baud_rates[] = {
         {      0, B38400  }
 };
 
-struct termios newtio;
-static int verb = 0;	/* reporting verbosity */
-int got_ready = 0;
-int got_connect = 0;
-
-static int mlog( char *s,... );
-
 int fdOut = -1;
 int fdIn = -1;
 int *fd=&fdOut;
@@ -62,23 +56,23 @@ error_code pelco_Init( char* device, u_int32 baud_rate)
 {
 	u_int32 ticks = 0;
     int ret = RET_ERR;
-	char *f = "pelcoInit";
+	struct termios newtio;
+	
     if (NULL == device) {
 		return ret;
     }
 
 	if (device && 0 != access(device, F_OK)) {
-		printf("device==%s no exsit!!!\n", device);
+		UTIL_ERR("device==%s no exsit!!!", device);
 		return ret;
 	}
 	
 	if( (*fd = open(device,O_RDWR|O_NOCTTY)) < 0 )
 	{
-		printf("ERROR:%s:\n",f);
-		perror(device);
+		UTIL_ERR("ERROR:%s:%d!!", __FUNCTION__, errno);
 		return ret;
 	}
-	//mlog("%s: port %s dev %s baud %u fd[%u]\n",f,buf,buf,baud_rate,*fd);
+
 	//tcgetattr(*fd,&oldtio);
 	bzero(&newtio,sizeof(newtio));
 
@@ -119,7 +113,7 @@ error_code pelcoPut( unsigned char c )
 	{
 		if( write(fdOut,&c,1) < 0)
 		{
-			mlog("error:pelcoput:write\n");
+			UTIL_ERR("error:pelcoput:write");
 			return -1;
 		}
 		return 0;
@@ -134,7 +128,6 @@ error_code pelcoWrite( unsigned char *buf, u_int32 size )
 {
 	error_code ec = 0;
 	int count = 0;
-	char *f = "pelcoWrite";
 
 	if( size == 0 ) return ec;
     usleep(100);
@@ -142,7 +135,7 @@ error_code pelcoWrite( unsigned char *buf, u_int32 size )
 	{
 		if( count < 0 )
 		{
-			mlog("ERROR: %s:WRITE %s",f,strerror(errno));
+			UTIL_ERR("ERROR: %s:WRITE %s", __FUNCTION__, strerror(errno));
 			ec = 1;
 			sleep(2);
 		}
@@ -156,15 +149,11 @@ error_code pelcoWrite( unsigned char *buf, u_int32 size )
 */
 error_code pelcoGet( unsigned char *c,int fd )
 {
-	char *f = "pelcoGet";
 	if(fd)
 	{   
-        //printf("%s,%d\r\n",__FUNCTION__,__LINE__);
 		if( read(fd,c,1) < 0 )
 		{
-			char buf[80];
-			mlog("ERROR:%s[%u] %s",f,fd,strerror(errno));
-			perror(buf);
+			UTIL_ERR("ERROR:%s[%u] %s", __FUNCTION__, fd, strerror(errno));
 			return -1;
 		}
         //printf("%s,%d\r\n",__FUNCTION__,__LINE__);
@@ -181,20 +170,16 @@ error_code pelcoRead( unsigned char *buf, u_int32 size,int fd )
 	u_int32 i;
 	int count = 0;
 	error_code ec = 0;
-	char *f = "pelcoRead";
 
     if( fd != fdIn ) return 0;
 	memset(buf,0,size);
-    printf("%s,%d\r\n",__FUNCTION__,__LINE__);
 	while( !pelcoGet(&buf[0],fd) && (buf[0] != 0xff) )
 	{
-
-          printf("read data start:%02x\r\n",buf[0]);
-
+        UTIL_ERR("read data start:%02x",buf[0]);
     }
 	if( (count = read(fd,&buf[1],size-1)) != size-1)
 	{
-		mlog("WARNING:%s: %u vs. %u bytes\n",f,count,size);
+		UTIL_ERR("WARNING:%s: %u vs. %u bytes",__FUNCTION__,count,size);
 		ec = 1;
 	}
 
@@ -210,7 +195,6 @@ error_code pelcoRead_test( unsigned char *buf, u_int32 size,int fd)
 	int count = 0;
     int read_times=25;
 	error_code ec = 0;
-	char *f = "pelcoRead";
 
     if( fd != fdIn ) return 0;
 	memset(buf,0,size);
@@ -218,31 +202,22 @@ error_code pelcoRead_test( unsigned char *buf, u_int32 size,int fd)
     while( !pelcoGet(&buf[0],fd) && (buf[0] != 0xff)&& read_times--)
     {
         sleep(1);
-        printf("read unknow data start:%02x\r\n",buf[0]);
+        UTIL_ERR("read unknow data start:%02x",buf[0]);
 
 
     }
 	if( buf[0] != 0xff) 
 	{
-
-          printf("read error data start:%02x\r\n",buf[0]);
+          UTIL_ERR("read error data start:%02x",buf[0]);
 
     }
     else
     {
-           printf("%s,%d\r\n",__FUNCTION__,__LINE__);
         	if( (count = read(fd,&buf[1],size-1)) != size-1)
         	{
-        		mlog("WARNING:%s: %u vs. %u bytes\n",f,count,size);
+        		UTIL_ERR("WARNING:%s: %u vs. %u bytes", __FUNCTION__, count, size);
         		ec = 1;
         	}
-        	if(1)
-        	{
-        		printf("READ [");
-        		for( i = 0; i < size; printf("%02X ",buf[i++]));
-        		printf("]\n");
-        	}
-
     }
 	return ec;
 }
@@ -267,11 +242,9 @@ void pelcoChecksum(void)
 //////////////////////////
 error_code pelco_Left(unsigned short force)
 {
-	char *f = "pelcoLeft";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
     
-	mlog("%s: start\n",f);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -287,10 +260,8 @@ error_code pelco_Left(unsigned short force)
 }
 error_code pelco_Right(unsigned short force)
 {
-	char *f = "pelcoRight";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
-	mlog("%s: start\n",f);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -309,10 +280,8 @@ error_code pelco_Right(unsigned short force)
 
 error_code pelco_Up(unsigned short force)
 {
-	char *f = "pelcoUp";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
-	mlog("%s: start\n",f);
     int num=0;
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
@@ -329,11 +298,9 @@ error_code pelco_Up(unsigned short force)
 }
 error_code pelco_Down(unsigned short force)
 {
-	char *f = "pelcoDown";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
 
-	mlog("%s: start\n",f);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -348,11 +315,9 @@ error_code pelco_Down(unsigned short force)
 }
 error_code pelco_left_down(unsigned short force)
 {
-	char *f = "pelcoIn";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
 
-	mlog("%s: start\n",f);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -369,11 +334,9 @@ error_code pelco_left_down(unsigned short force)
 }
 error_code pelco_left_up(unsigned short force)
 {
-	char *f = "pelcoIn";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
 
-	mlog("%s: start\n",f);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -390,11 +353,9 @@ error_code pelco_left_up(unsigned short force)
 }
 error_code pelco_right_down(unsigned short force)
 {
-	char *f = "pelcoNear";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
 
-	mlog("%s: start\n",f);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -411,11 +372,9 @@ error_code pelco_right_down(unsigned short force)
 }
 error_code pelco_right_up(unsigned short force)
 {
-	char *f = "pelcoFar";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
 
-	mlog("%s: start\n",f);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -432,11 +391,9 @@ error_code pelco_right_up(unsigned short force)
 }
 error_code pelco_Stop(void)
 {
-	char *f = "pelcoStop";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
 
-	mlog("%s: start\n",f);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -452,11 +409,9 @@ error_code pelco_Stop(void)
 }
 error_code pelco_set_point(unsigned short location)
 {
-	char *f = "pelcoSet";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
 
-	mlog("%s: %d\n",f,location);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -472,10 +427,8 @@ error_code pelco_set_point(unsigned short location)
 }
 error_code pelco_get_point(unsigned short  location)
 {
-	char *f = "pelcoGo";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
-	mlog("%s: %d\n",f,location);
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;
@@ -492,10 +445,8 @@ error_code pelco_get_point(unsigned short  location)
 
 error_code pelco_set_vertical(unsigned short location)
 {
-	char *f = "set_vertical";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
-	mlog("%s: %d\n",f,location);
 	memset(pelco,0,sizeof(pelco));
     //FF 01 00 02 10 00 13
 	pelco[p_sync] = 0xff;
@@ -512,11 +463,9 @@ error_code pelco_set_vertical(unsigned short location)
 }
 error_code pelco_get_vertical(unsigned short *location)
 {
-	char *f = "get_vertical";
     int ret=-1;
     if(fdOut<0)return ret;
     unsigned short real_data=0;
-	mlog("%s\n",f);
 	memset(pelco,0,sizeof(pelco));
     //FF 01 00 02 10 00 13
 	pelco[p_sync] = 0xff;
@@ -542,11 +491,9 @@ error_code pelco_get_vertical(unsigned short *location)
 }
 error_code pelco_get_horizontal(unsigned short* location)
 {
-	char *f = "get_vertical";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
     unsigned short real_data=0;
-	mlog("%s\n",f);
 	memset(pelco,0,sizeof(pelco));
     //FF 01 00 02 10 00 13
 	pelco[p_sync] = 0xff;
@@ -574,10 +521,8 @@ error_code pelco_get_horizontal(unsigned short* location)
 
 error_code pelco_set_horizontal(unsigned short location)
 {
-	char *f = "set_horizontal";
     int ret=RET_ERR;
     if(fdOut<0)return ret;
-	mlog("%s: %d\n",f,location);
 	memset(pelco,0,sizeof(pelco));
     //FF 01 00 02 10 00 13
 	pelco[p_sync] = 0xff;
@@ -592,12 +537,3 @@ error_code pelco_set_horizontal(unsigned short location)
 	return ret;
 }
 
-static int mlog( char *s,... )
-{
-	return 0;
-}
-
-
-/*
-
-*/

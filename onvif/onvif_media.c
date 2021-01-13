@@ -251,7 +251,7 @@ ONVIF_RET onvif_SetVideoEncoderConfiguration(SetVideoEncoderConfiguration_REQ * 
     onvif_VideoResolution * p_VideoResolution;
 	ONVIF_VideoEncoder2Configuration * p_v_enc_cfg;
 
-	p_v_enc_cfg = onvif_find_VideoEncoderConfiguration(p_req->Configuration.token);  // &g_onvif_cfg.v_enc_cfg
+	p_v_enc_cfg = onvif_find_VideoEncoderConfiguration(p_req->Configuration.token);
 	if (NULL == p_v_enc_cfg)
 	{
 		return ONVIF_ERR_NoConfig;
@@ -344,9 +344,6 @@ ONVIF_RET onvif_SetVideoEncoderConfiguration(SetVideoEncoderConfiguration_REQ * 
 	h264_encoder.framerate = p_req->Configuration.RateControl.FrameRateLimit;
 	h264_encoder.video_encoding.v_encoding_profile.gov_length = p_req->Configuration.H264.GovLength;
 	h264_encoder.video_encoding.v_encoding_profile.encode_profile = p_req->Configuration.H264.H264Profile;
-
-	// printf("xxxxxxxxxxxxxxxxxxxxxxxx 1 xxxxxxxxxxxxxxxxxxxxxxxxxxxx\n");
-
 	/* 设置视频编码器参数 */
 	if( setVideoEncoder(&h264_encoder) != 0)
 		printf("set Video Encoder parameter faile.\n");

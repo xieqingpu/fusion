@@ -121,14 +121,14 @@ typedef struct
 
 typedef struct
 {
-	int focal;                      //焦点
-    float lens;                    //长度
-    float distance;           //距离
+	int focal;                //焦点
+	float weightIrY;          //亮度权重
+	float weightIrC;          //色度权重
 
-    int dula_model;          //融合模式
-    signed short int x;      //x偏移
-    signed short int y;      //y偏移
-    float scale;                     //缩放
+	int dula_model;          //融合模式
+	signed short int x;      //x偏移
+	signed short int y;      //y偏移
+	float scale;             //缩放
 } DulaInformation_t;
 
 /*********************************************
@@ -260,14 +260,14 @@ int setImgParam(ImgParam_t *imgParams);
 int img_Stop();
 
 /*********************************************
-* FuncName: getDulaParam        
+* FuncName: getFusionParam        
 * Describe:  从保存的文件读取 dula参数数据
 * Params  :                                
 * [IN]      
 *   dulaInfo :  获取dulaInfo数据参数
 * Return  : 成功返回0，失败返回-1                                                 
 **********************************************/
-int getDulaParam(DulaInformation_t *dulaInfo);
+int getFusionParam(DulaInformation_t *dulaInfo);
 
 /*********************************************
 * FuncName: setDulaParam        
@@ -341,7 +341,7 @@ time_t SystemTimeToTM(onvif_DateTime stStartTime);
 	
 /* 保存SystemDateTime数据参数*/
 int SetSystemDateTime(onvif_SystemDateTime *pDataTimeInfo, 
-								onvif_DateTime *pUTCDateTime, BOOL isSave);
+								onvif_DateTime *pUTCDateTime, BOOL isTZChange, BOOL isSave);
 
 
 /*1 读取TCPIP数据参数 */
