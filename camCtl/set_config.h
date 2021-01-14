@@ -67,14 +67,10 @@ typedef struct
     onvif_H264Profile    encode_profile;
 } Encoding_profile; 
 
-#define  VIEDO_ENCODE_JPEG   "JPEG" 
-#define  VIEDO_ENCODE_MPEG4  "MPEG4"
-#define  VIEDO_ENCODE_H264   "H264"
-#define  VIEDO_ENCODE_H265   "H265"
+
 typedef struct 
 {
-    // u8_t       v_encoding[64];              // VIEDO_ENCODE_XXX
-    u8ptr_t    v_encoding;                  // VIEDO_ENCODE_XXX
+    onvif_VideoEncoding    v_encoding;          
     Encoding_profile    v_encoding_profile; 
 } Video_encode;
 

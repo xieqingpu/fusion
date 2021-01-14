@@ -176,8 +176,8 @@ ONVIF_VideoSourceConfiguration * onvif_parse_video_source_cfg()
 	ONVIF_VideoSourceConfiguration * p_v_src_cfg = NULL;
 	
 	onvif_VideoResolution videoSource;
-	videoSource.Width = 1280;
-	videoSource.Height = 720;
+	videoSource.Width = 1920;
+	videoSource.Height = 1080;
 
 	w = videoSource.Width;
 	h = videoSource.Height;
@@ -210,13 +210,51 @@ ONVIF_VideoEncoder2Configuration * onvif_parse_video_encoder_cfg()
 
 	if( getVideoEncoder(&encoder) !=0 )		//读取 视频编码器参数
 		printf("get Video Encoder para faile.\n");
-	if (encoder.width){
-		// v_enc_cfg.Configuration.Resolution.Width = atoi(p_width->data);		
-		v_enc_cfg.Configuration.Resolution.Width = encoder.width;	//分辨率 宽
+
+	//判断读出的分辨率是否符合
+	if ( encoder.width != 1920 && encoder.height != 1080 ||
+		 encoder.width != 1280 && encoder.height != 720 ||
+		 encoder.width != 720 && encoder.height != 576 ||
+		 encoder.width != 640 && encoder.height != 360 ||
+		 encoder.width != 352 && encoder.height != 288 )	
+	{
+		encoder.width = 1920;
+		encoder.height = 1080;
 	}
-	if (encoder.height){
-		v_enc_cfg.Configuration.Resolution.Height = encoder.height;	 //分辨率 高
+	// printf("xxx getVideoEncode | 分辨率encoder.width = %d,encoder.height = %d xxx\n",encoder.width, encoder.height);//分辨率
+	v_enc_cfg.Configuration.Resolution.Width = encoder.width;	//分辨率 宽
+	v_enc_cfg.Configuration.Resolution.Height = encoder.height;	 //分辨率 高
+
+	//判断读出的编码器的码流(码率)
+	if (encoder.bitrate_limit < 1 || encoder.bitrate_limit > 4096)
+	{
+		encoder.bitrate_limit = 2048;
 	}
+	v_enc_cfg.Configuration.RateControl.BitrateLimit = encoder.bitrate_limit; //码率
+
+	//判断读出的编码器的帧率
+	if (encoder.framerate < 1 || encoder.framerate > 30 )
+	{
+		encoder.framerate = 25;
+	}
+	v_enc_cfg.Configuration.RateControl.FrameRateLimit = encoder.framerate; //帧率
+
+
+	//判断读出的编码器的GOP(关键帧)
+	if (encoder.video_encoding.v_encoding_profile.gov_length < 10 ||
+	    encoder.video_encoding.v_encoding_profile.gov_length > 60 )
+	{
+		encoder.video_encoding.v_encoding_profile.gov_length = 50;
+	}
+	// v_enc_cfg.Configuration.GovLength = encoder.video_encoding.v_encoding_profile.gov_length;  //关键帧
+		
+	//判断读出的编码器的编码级别
+	if (encoder.video_encoding.v_encoding_profile.encode_profile != 0 ||
+		encoder.video_encoding.v_encoding_profile.encode_profile != 1 )
+	{
+		encoder.video_encoding.v_encoding_profile.encode_profile = 1;
+	}
+
 
 	if (encoder.quality){
 		v_enc_cfg.Configuration.Quality = (float)(encoder.quality);
@@ -226,23 +264,28 @@ ONVIF_VideoEncoder2Configuration * onvif_parse_video_encoder_cfg()
 		v_enc_cfg.Configuration.SessionTimeout = encoder.session_timeout; 
 	}
 
-	v_enc_cfg.Configuration.RateControlFlag = 1;
+	v_enc_cfg.Configuration.RateControlFlag = 1;  ////
 	
-	if (encoder.framerate){
-		v_enc_cfg.Configuration.RateControl.FrameRateLimit = encoder.framerate; //帧率
-	}
 
 	if (encoder.encoding_interval){
 		v_enc_cfg.Configuration.RateControl.EncodingInterval = encoder.encoding_interval;
 	}
 
-	if (encoder.bitrate_limit){
-		v_enc_cfg.Configuration.RateControl.BitrateLimit = encoder.bitrate_limit; //码率
+	//判断读出的编码器的类型JPEG=0,MPEG4=1，H264=2，H265=3...
+	/* if (encoder.video_encoding.v_encoding != 0 ||
+		encoder.video_encoding.v_encoding != 1 ||
+		encoder.video_encoding.v_encoding != 2 ) */
+	if ( encoder.video_encoding.v_encoding != 2 )  //因为现在只有一个H264编码器,所以只判断是否为H264
+	{
+		encoder.video_encoding.v_encoding = 2;
 	}
-
-	if (encoder.video_encoding.v_encoding){
-		strncpy(v_enc_cfg.Configuration.Encoding, encoder.video_encoding.v_encoding, sizeof(v_enc_cfg.Configuration.Encoding)-1);
-		v_enc_cfg.Configuration.VideoEncoding = onvif_StringToVideoEncoding(encoder.video_encoding.v_encoding);
+	// printf("xxx getVideoEncode | encoder.video_encoding.v_encoding = %d (H264=2)xxx\n",encoder.video_encoding.v_encoding );
+	if (encoder.video_encoding.v_encoding > -1 && encoder.video_encoding.v_encoding < 4 )
+	{
+		// strncpy(v_enc_cfg.Configuration.Encoding, encoder.video_encoding.v_encoding, sizeof(v_enc_cfg.Configuration.Encoding)-1);
+		strncpy(v_enc_cfg.Configuration.Encoding, onvif_VideoEncodingToString(encoder.video_encoding.v_encoding), sizeof(v_enc_cfg.Configuration.Encoding)-1);
+		// v_enc_cfg.Configuration.VideoEncoding = onvif_StringToVideoEncoding(encoder.video_encoding.v_encoding);
+		v_enc_cfg.Configuration.VideoEncoding = encoder.video_encoding.v_encoding;
 	}
 	if (strcasecmp(v_enc_cfg.Configuration.Encoding, "MPEG4") == 0 || 
 	    strcasecmp(v_enc_cfg.Configuration.Encoding, "MPV4-ES") == 0)

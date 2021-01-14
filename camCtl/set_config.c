@@ -582,19 +582,19 @@ int getVideoEncoder(Video_Encoder *p_video_encoder)
 {
 	if (read_cfg_from_file(VIDEO_ENCODER_FILE, (char *)p_video_encoder,sizeof(Video_Encoder)) != 0) {
 		//如果读取失败，则初始化它
-		p_video_encoder->width = 1280;	  //分辨率 宽
-		p_video_encoder->height = 720;	  //分辨率 高	
+		p_video_encoder->width = 1920;	  //分辨率 宽
+		p_video_encoder->height = 1080;	  //分辨率 高	
 		p_video_encoder->quality = 4;
 		p_video_encoder->session_timeout = 10;
 		p_video_encoder->framerate = 25;	  //帧率	
 		p_video_encoder->encoding_interval = 50;
 		p_video_encoder->bitrate_limit = 2048;	//码流(码率) 
 
-		p_video_encoder->video_encoding.v_encoding = VIEDO_ENCODE_H264; 
+		p_video_encoder->video_encoding.v_encoding = VideoEncoding_H264; 
 		p_video_encoder->video_encoding.v_encoding_profile.gov_length = 50; //GOP(关键帧)
 		p_video_encoder->video_encoding.v_encoding_profile.encode_profile = H264Profile_Main; //编码级别
 		
-		UTIL_ERR("Init read Video Encoder param fail\n");
+		UTIL_ERR("\033[0;33mInit read Video Encoder param fail\033[0m\n");
 		
 		//保存初始参数
 		if (save_cfg_to_file(VIDEO_ENCODER_FILE, (char*)p_video_encoder, sizeof(Video_Encoder)) < 0)
@@ -621,6 +621,40 @@ int setVideoEncoder(Video_Encoder *p_video_encoder)
 	if (read_cfg_from_file(VIDEO_ENCODER_FILE, (char *)&readCameraEncoder, sizeof(Video_Encoder)) < 0){
 		UTIL_ERR("read Camera Encoder param fail\n");
 	}
+
+	//判断读出的分辨率是否符合
+	if ( readCameraEncoder.width != 1920 && readCameraEncoder.height != 1080 ||
+		 readCameraEncoder.width != 1280 && readCameraEncoder.height != 720 ||
+		 readCameraEncoder.width != 720 && readCameraEncoder.height != 576 ||
+		 readCameraEncoder.width != 640 && readCameraEncoder.height != 360 ||
+		 readCameraEncoder.width != 352 && readCameraEncoder.height != 288 )	
+	{
+		readCameraEncoder.width = 1920;
+		readCameraEncoder.height = 1080;
+	}
+	//判断读出的编码器的码流(码率)
+	if (readCameraEncoder.bitrate_limit < 1 || readCameraEncoder.bitrate_limit > 4096)
+	{
+		readCameraEncoder.bitrate_limit = 2048;
+	}
+	//判断读出的编码器的帧率
+	if (readCameraEncoder.framerate < 1 || readCameraEncoder.framerate > 30 )
+	{
+		readCameraEncoder.framerate = 25;
+	}
+	//判断读出的编码器的GOP(关键帧)
+	if (readCameraEncoder.video_encoding.v_encoding_profile.gov_length < 10 ||
+	    readCameraEncoder.video_encoding.v_encoding_profile.gov_length > 60 )
+	{
+		readCameraEncoder.video_encoding.v_encoding_profile.gov_length = 50;
+	}
+	//判断读出的编码器的编码级别
+	if (readCameraEncoder.video_encoding.v_encoding_profile.encode_profile != 0 ||
+		readCameraEncoder.video_encoding.v_encoding_profile.encode_profile != 1 )
+	{
+		readCameraEncoder.video_encoding.v_encoding_profile.encode_profile = 1;
+	}
+
 
 	//设置分辨率
 	onvif_VideoResolution resolution;
