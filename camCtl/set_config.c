@@ -82,9 +82,9 @@ static pthread_mutex_t m_fusion_param_lock = PTHREAD_MUTEX_INITIALIZER;
 int onvif_get_devinfo(CONFIG_Information * p_devInfo)
 {
 	strncpy(p_devInfo->manufacturer,"Huaxiaxin",sizeof(p_devInfo->manufacturer)-1);
-	strncpy(p_devInfo->model,"IPCamera",sizeof(p_devInfo->model)-1);
-    strncpy(p_devInfo->firmware_version,"2.4",sizeof(p_devInfo->firmware_version)-1);
-	strncpy(p_devInfo->serial_number,"123456",sizeof(p_devInfo->serial_number)-1);
+	strncpy(p_devInfo->model, PRODUCT_NAME, strlen(PRODUCT_NAME));
+    strncpy(p_devInfo->firmware_version, FIRMWARE_VERSION, strlen(FIRMWARE_VERSION));
+	strncpy(p_devInfo->serial_number,g_onvif_cfg.EndpointReference, strlen(g_onvif_cfg.EndpointReference));
 	strncpy(p_devInfo->hardware_id,"1.0",sizeof(p_devInfo->hardware_id )-1);
 
 	if (p_devInfo->manufacturer[0] != '\0' &&
