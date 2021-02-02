@@ -30,51 +30,6 @@
 #include "gptmessagedef.h"
 
 
-/*******************************************************
-    enum define
-*******************************************************/
-
-typedef enum hiPIC_SIZE_E
-{
-    PIC_CIF,
-    PIC_360P,      /* 640 * 360 */
-    PIC_D1_PAL,    /* 720 * 576 */
-    PIC_D1_NTSC,   /* 720 * 480 */
-    PIC_720P,      /* 1280 * 720  */
-    PIC_1080P,     /* 1920 * 1080 */
-    PIC_2560x1440,
-    PIC_2592x1520,
-    PIC_2592x1536,
-    PIC_2592x1944,
-    PIC_2688x1536,
-    PIC_2716x1524,
-    PIC_3840x2160,
-    PIC_4096x2160,
-    PIC_3000x3000,
-    PIC_4000x3000,
-    PIC_7680x4320,
-    PIC_3840x8640,
-    PIC_BUTT
-} PIC_SIZE_E;
-typedef int 					HI_S32;
-typedef unsigned int			HI_U32;
-typedef HI_S32 VENC_CHN;
-
-//设置编码器的GOP
-extern HI_S32 COMM_Video_SetVencChnGOP(VENC_CHN VencChn, HI_U32 u32Gop);
-
-//设置编码器的分辨率
-extern HI_S32 COMM_SetVencChnResolution(VENC_CHN VencChn, PIC_SIZE_E enSize);
-
-//设置编码器的码流
-extern HI_S32 COMM_SetVencChnBitrate(VENC_CHN VencChn, HI_U32 u32BitRate);
-
-//设置编码器的帧率
-extern HI_S32 COMM_SetVencChnFrameRate(VENC_CHN VencChn, HI_U32 u32FrameRate);
-
-//设置编码器的编码级别
-extern HI_S32 COMM_SetVencChnProfile(VENC_CHN VencChn, HI_U32 u32Profile);
-
 extern ONVIF_CFG g_onvif_cfg;
 static pthread_mutex_t m_get_ir_param_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t m_fusion_param_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -663,8 +618,8 @@ int setVideoEncoder(Video_Encoder *p_video_encoder)
 	/*目前视频分辨率设置无效处理，因为设置分辨率之后影响双光融合算法*/
 	if( p_video_encoder->width != readCameraEncoder.width && p_video_encoder->height != readCameraEncoder.height ){
 		//GPTMessageSend(GPT_MSG_VIDEO_SETVENCCHNRESOLUTION, 0, (int)&resolution, sizeof(resolution));
-		p_video_encoder->width = 1920;
-		p_video_encoder->height = 1080;
+		// p_video_encoder->width = 1920;
+		// p_video_encoder->height = 1080;
 	}
     
 	/* 更新保存于文件 */
