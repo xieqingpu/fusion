@@ -421,6 +421,7 @@ void onvif_parse_profile()
 	profile->a_enc_cfg->Configuration.UseCount++;
 #endif
 }
+
 void onvif_parse_event_cfg()
 {
 	g_onvif_cfg.evt_renew_time = 60;

@@ -233,8 +233,8 @@ int sync_time(onvif_NTPInformation		*pNTPInformation)
 		}
 	}
 	else {//从默认ntp服务器获取
-		UTIL_INFO("DEFAULT server=%s", sync_server_info[0].server);
 		for (i = 0; i < (sizeof(sync_server_info)/sizeof(NTP_SERVER_T)); i++) {
+			UTIL_INFO("DEFAULT server=%s", sync_server_info[i].server);
 			result = sync_time_with_server(&(sync_server_info[i]), tv);
 			if (result > 0) {
 				UTIL_INFO("NTP Success!");
@@ -290,13 +290,14 @@ void * ntpdate_Thread (void * arg)
 				ulllasttimeMs = ullcurtimeMs;
 	        }
 		}
-
+#if 0
         //主要用于心跳
 		COMM_GetSystemUpMSecs(&ullheartcurtimeMs);
         if ((ullheartcurtimeMs - ullheartlasttimeMs) >= 30* 1000){
 			ullheartlasttimeMs = ullheartcurtimeMs;
 			UTIL_ALIVE("MAIN PROCESS!!!");
         }
+#endif
         usleep(10*1000*1000LL);
     }
     

@@ -27,7 +27,7 @@
 #include "util.h"
 #include <math.h>
 
-#include "set_config.h"		//add by xieqingpu
+#include "set_config.h"		
 #include "utils_log.h"
 #ifdef LIBICAL
 #include "icalvcal.h"
@@ -730,6 +730,52 @@ void onvif_free_NotificationMessages(ONVIF_NotificationMessage ** p_head)
 
 	*p_head = NULL;
 }
+
+
+/* add by xieqingpu */
+
+void onvif_free_TourSpots(ONVIF_PTZPresetTourSpot ** p_head)
+{
+    ONVIF_PTZPresetTourSpot * p_next;
+	ONVIF_PTZPresetTourSpot * p_tmp = *p_head;
+
+	while (p_tmp)
+	{
+		p_next = p_tmp->next;
+		
+		free(p_tmp);
+		p_tmp = p_next;
+	}
+
+	*p_head = NULL;
+}
+
+ONVIF_PTZPresetTourSpot * onvif_add_TourSpot(ONVIF_PTZPresetTourSpot ** p_head)
+{
+	ONVIF_PTZPresetTourSpot * p_tmp;
+	ONVIF_PTZPresetTourSpot * p_new = (ONVIF_PTZPresetTourSpot *) malloc(sizeof(ONVIF_PTZPresetTourSpot));
+	if (NULL == p_new)
+	{
+		return NULL;
+	}
+
+	memset(p_new, 0, sizeof(ONVIF_PTZPresetTourSpot));
+
+	p_tmp = *p_head;
+	if (NULL == p_tmp)
+	{
+		*p_head = p_new;
+	}
+	else
+	{
+		while (p_tmp && p_tmp->next) p_tmp = p_tmp->next;
+
+		p_tmp->next = p_new;
+	}	
+
+	return p_new;
+}
+/*  */
 
 ONVIF_SimpleItem * onvif_add_SimpleItem(ONVIF_SimpleItem ** p_head)
 {
@@ -2760,6 +2806,134 @@ ONVIF_PTZPreset * onvif_get_idle_PTZPreset(const char * profile_token)
     return &p_profile->presets[i];
 }
 
+/* add presetTour by xieqingpu */
+
+ONVIF_PresetTour * onvif_get_prev_presetTour(ONVIF_PresetTour ** p_head, ONVIF_PresetTour * p_found)
+{
+	ONVIF_PresetTour * p_prev = *p_head;
+	
+	if (p_found == *p_head)
+	{
+		return NULL;
+	}
+
+	while (p_prev)
+	{
+		if (p_prev->next == p_found)
+		{
+			break;
+		}
+		
+		p_prev = p_prev->next;
+	}
+
+	return p_prev;
+}
+
+ONVIF_PresetTour * onvif_find_PTZPresetTour(const char * profile_token, const char  * PresetTour_token)  //onvif_find_PTZPreset
+{
+    ONVIF_PROFILE * p_profile = onvif_find_profile(profile_token);
+    if (NULL == p_profile)
+    {
+        return NULL;
+    }
+
+	// ONVIF_PresetTour * p_tmp = g_onvif_cfg.ptz_preset_tour;
+	ONVIF_PresetTour * p_tmp = p_profile->PresetTours;
+	while (p_tmp)
+	{
+		if (strcmp(p_tmp->PresetTour.token, PresetTour_token) == 0)
+		{
+			break;
+		}
+
+		p_tmp = p_tmp->next;
+	}
+
+	return p_tmp;
+
+}
+
+ONVIF_PresetTour * onvif_free_PresetTours(ONVIF_PresetTour ** p_head)
+{
+	ONVIF_PresetTour * p_next;
+	ONVIF_PresetTour * p_tmp = *p_head;
+
+	while (p_tmp)
+	{
+		p_next = p_tmp->next;
+
+		// onvif_free_Config(p_tmp);
+		onvif_free_TourSpots(&p_tmp->PresetTour.TourSpot);
+
+		free(p_tmp);
+		p_tmp = p_next;
+	}
+
+	*p_head = NULL;
+}
+
+ONVIF_PresetTour * onvif_add_PresetTour(ONVIF_PresetTour ** p_head)
+{
+	ONVIF_PresetTour * p_tmp;
+	ONVIF_PresetTour * p_new = (ONVIF_PresetTour *) malloc(sizeof(ONVIF_PresetTour));
+	if (NULL == p_new)
+	{
+		return NULL;
+	}
+
+	memset(p_new, 0, sizeof(ONVIF_PresetTour));
+
+	p_tmp = *p_head;
+	if (NULL == p_tmp)
+	{
+		*p_head = p_new;
+	}
+	else
+	{
+		while (p_tmp && p_tmp->next) p_tmp = p_tmp->next;
+
+		p_tmp->next = p_new;
+	}	
+
+	return p_new;
+}
+
+void onvif_remove_PresetTour(ONVIF_PresetTour ** p_head, ONVIF_PresetTour * p_remove)
+{
+	BOOL found = FALSE;
+	ONVIF_PresetTour * p_prev = NULL;
+	ONVIF_PresetTour * p_cfg = *p_head;	
+	
+	while (p_cfg)
+	{
+		if (p_cfg == p_remove)
+		{
+			found = TRUE;
+			break;
+		}
+
+		p_prev = p_cfg;
+		p_cfg = p_cfg->next;
+	}
+
+	if (found)
+	{
+		if (NULL == p_prev)
+		{
+			*p_head = p_cfg->next;
+		}
+		else
+		{
+			p_prev->next = p_cfg->next;
+		}
+
+		// onvif_free_Config(p_cfg);
+		onvif_free_TourSpots(&p_cfg->PresetTour.TourSpot); 
+		free(p_cfg);
+	}	
+}
+/* add presetTour end */
 
 /**
  * init PTZ node
@@ -2879,6 +3053,11 @@ void onvif_init_PTZConfiguration()
     g_onvif_cfg.ptz_cfg->Configuration.Extension.PTControlDirection.EFlip = EFlipMode_OFF;
     g_onvif_cfg.ptz_cfg->Configuration.Extension.PTControlDirection.ReverseFlag = 1;
     g_onvif_cfg.ptz_cfg->Configuration.Extension.PTControlDirection.Reverse= ReverseMode_OFF;
+
+	//add by xieqingpu
+    // g_onvif_cfg.ptz_cfg->Configuration.MoveRampFlag = 1;
+    // g_onvif_cfg.ptz_cfg->Configuration.PresetRampFlag = 1;
+    // g_onvif_cfg.ptz_cfg->Configuration.PresetTourRampFlag = 1;
 }
 
 void onvif_init_PTZConfigurationOptions()
@@ -5950,7 +6129,7 @@ void onvif_init()
 	onvif_init_ptz();
 	
 	// add PTZ node to profile
-	p_profile = g_onvif_cfg.profiles;
+	p_profile = g_onvif_cfg.profiles;  //初次初始化在 onvif_parse_profile() / onvif_add_profile()
 	while (p_profile)
 	{
 		p_profile->ptz_cfg = g_onvif_cfg.ptz_cfg;

@@ -37,7 +37,7 @@ extern ONVIF_CLS g_onvif_cls;
 #define ScopeMatchByUuid    "ScopeMatchByUuid"
 #define ScopeMatchByNone    "ScopeMatchByNone"
 
-#define ONVIF_GRP_ADDR      "239.255.255.250"
+#define ONVIF_GRP_ADDR      "239.255.255.250"   //多播地址,IPC摄像头用的是239.255.255.250（端口3702)
 #define ONVIF_GRP_PORT      3702
 
 /***************************************************************************************/
@@ -662,6 +662,8 @@ void onvif_bye()
 void * onvif_discovery_thread(void * argv)
 {
 	onvif_hello();
+	
+	prctl(PR_SET_NAME, (unsigned long)"onvifdisThr");
 	
 	while (g_onvif_cls.discovery_flag)
 	{

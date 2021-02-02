@@ -195,7 +195,9 @@ typedef enum
     ONVIF_ERR_IPFilterListIsFull  = -120,                   // It is not possible to add more IP filters since the IP filter list is full. 
     ONVIF_ERR_NoIPv4Address = -121,                         // The IPv4 address to be removed does not exist
     ONVIF_ERR_NoIPv6Address = -122,                         // The IPv6 address to be removed does not exist
-    
+    // add by xieqingpu
+	ONVIF_ERR_OTHER = -250,
+	    
 } ONVIF_RET;
 
 /***************************************************************************************/

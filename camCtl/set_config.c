@@ -26,6 +26,8 @@
 #include "onvif.h"
 #include "utils_log.h"
 #include "ir.h"
+#include "gptmessage.h"
+#include "gptmessagedef.h"
 
 
 /*******************************************************
@@ -74,6 +76,8 @@ extern HI_S32 COMM_SetVencChnFrameRate(VENC_CHN VencChn, HI_U32 u32FrameRate);
 extern HI_S32 COMM_SetVencChnProfile(VENC_CHN VencChn, HI_U32 u32Profile);
 
 extern ONVIF_CFG g_onvif_cfg;
+static pthread_mutex_t m_get_ir_param_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t m_fusion_param_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int onvif_get_devinfo(CONFIG_Information * p_devInfo)
 {
@@ -91,6 +95,7 @@ int onvif_get_devinfo(CONFIG_Information * p_devInfo)
 	{
 		return 0;
 	}
+	UTIL_INFO("p_devInfo->firmware_version==%s", p_devInfo->firmware_version);
 }
 
 #define USERSFILE ("/user/cfg_files/User.dat")
@@ -129,7 +134,7 @@ int devInit(char *ptzDevID, const char *cameraDEVID)
 
 #ifdef PTZ_SUPPORT
   ret =RET_ERR;
-  ret=pelco_Init(ptzDevID,9600);
+  ret=pelco_Init(ptzDevID, 9600);
   if (ret != 0) {
     UTIL_ERR("pelco ptz init failed!!!");
   }
@@ -154,22 +159,29 @@ void controlPtzPos(float X, float Y, float Z , unsigned short Speed)
 {
 	UTIL_INFO(" ctlPTZ:  x=%0.3f , y = %0.3f , z = %0.3f, Speed:%d",X, Y, Z , Speed);
 
-	if (X > 0 && Y == 0){		    //右
-		pelco_Right(Speed);
-	} else if (X < 0 && Y == 0){		//左
-		pelco_Left(Speed);
-	} else if (Y > 0 && X == 0){		//上
-		pelco_Up(Speed);
-	} else if(Y < 0 && X == 0){	       //下
-		pelco_Down(Speed);
-	} else if (X > 0 && Y > 0) {		      // 右上
-		pelco_right_up(Speed);
-	} else if (X > 0 && Y < 0) {              // 右下
-		pelco_right_down(Speed);
-	} else if (X < 0 && Y > 0) {              // 左上
-		pelco_left_up(Speed);
-	} else if (X < 0 && Y < 0) {    		 // 左下
-		pelco_left_down(Speed);
+	if (X > 0 && Y == 0) {	//右	    
+		if ( pelco_Right(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_Right faile.\n");
+	} 
+	else if (X < 0 && Y == 0) {	 //左
+		if ( pelco_Left(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_Left faile.\n");
+	} 
+	else if (Y > 0 && X == 0) { //上		
+		if ( pelco_Up(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_Up faile.\n");
+	} 
+	else if(Y < 0 && X == 0)  { //下    
+		if ( pelco_Down(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_Down faile.\n");
+	} 
+	else if (X > 0 && Y > 0) { // 右上		      
+		if ( pelco_right_up(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_right_up faile.\n");
+	} 
+	else if (X > 0 && Y < 0) { // 右下           
+		if ( pelco_right_down(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_right_down faile.\n");
+	} 
+	else if (X < 0 && Y > 0) { // 左上
+		if ( pelco_left_up(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_left_up faile.\n");
+	} 
+	else if (X < 0 && Y < 0) { // 左下
+		if ( pelco_left_down(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_left_down faile.\n");
 	}
 
 	uint16_t Zspeed = switchToZspeed(Z);
@@ -186,7 +198,8 @@ void ptzStop()
 	if (pelco_Stop() != 0)
 			printf("set_config | send ptz  Stop error !!!\r\n");
 
-	set_zoom_stop();
+	if (get_visca_status()==1)
+		set_zoom_stop();
 }
 
 
@@ -340,7 +353,6 @@ int getThermalBaseParam(ThermalBaseParam *param)
 		//保存参数
 		if (save_cfg_to_file((char*)IR_BASE_PARAM_FILE, (char*)param, sizeof(ThermalBaseParam))<0)
 			UTIL_ERR("save ir base param fail\n");
-		return -1;
 	}
 	return 0;
 }
@@ -350,9 +362,7 @@ int getThermalBaseParam(ThermalBaseParam *param)
 /*  保存 热成像参数配置_1 */
 int setThermalParam1(ThermalBaseParam *thermalParam1)
 {
-#ifdef HI3519AV100
-	setThermalBaseParam((ThermalBaseParam*)thermalParam1);
-#endif
+    GPTMessageSend(GPT_MSG_IR_SETBASEPARAM, 0, (int)thermalParam1, sizeof(ThermalBaseParam));
 	//保存参数
 	if (save_cfg_to_file((char*)IR_BASE_PARAM_FILE, (char*)thermalParam1, sizeof(ThermalBaseParam))<0)
 		UTIL_ERR("save ir base param fail\n");
@@ -378,7 +388,6 @@ int getThermalEnvParam(ThermalEnvParam *param)
 		//保存参数
 		if (save_cfg_to_file((char*)IR_ENV_PARAM_FILE, (char*)param, sizeof(ThermalEnvParam)) < 0)
 			UTIL_ERR("save fusion param fail\n");
-		return -1;
 	}
 	return 0;
 
@@ -388,9 +397,7 @@ int getThermalEnvParam(ThermalEnvParam *param)
 int setThermalParam2(ThermalEnvParam *thermalParam2)
 {
 	//设置热成像环境参数，成功返回0，失败返回-1
-#ifdef HI3519AV100	
-	setThermalEnvParam((ThermalEnvParam *)thermalParam2);
-#endif
+	GPTMessageSend(GPT_MSG_IR_SETENVPARAM, 0, (int)thermalParam2, sizeof(ThermalEnvParam));
 	//保存参数
 	if (save_cfg_to_file((char*)IR_ENV_PARAM_FILE, (char*)thermalParam2, sizeof(ThermalEnvParam)) < 0)
 		UTIL_ERR("save fusion param fail\n");
@@ -441,90 +448,84 @@ int getFusionParam(DulaInformation_t *dalaInfo)
 	return 0;
 }
 
-extern int setFusionParam(DulaInformation_t *dulaInfo);
 /* 保存 dula数据参数 */
 int setDulaParam(DulaInformation_t *dulaInfo)
 {
-	/* add your code of set Thermal Param2 here */
-	setFusionParam(dulaInfo);
-
 	//更新数据保存于文件
 	//此处包含自我修复的功能，在获取参数不合法的情况下，参数自动修复为设备可以正常操作的参数
 	DulaInformation_t  readDulaInfo;
 	memset(&readDulaInfo, 0 ,sizeof(DulaInformation_t));
-	if (read_cfg_from_file(FUSION_PARAM_FILE, (char *)&readDulaInfo, sizeof(DulaInformation_t)) == 0)
+	if (read_cfg_from_file(FUSION_PARAM_FILE, (char *)&readDulaInfo, sizeof(DulaInformation_t)) == 0 && dulaInfo)
 	{
-		//UTIL_INFO("focal:%d, weightIrY:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f", 
-		//		dulaInfo->focal, dulaInfo->weightIrY, dulaInfo->weightIrC, dulaInfo->dula_model, 
-		//		dulaInfo->x, dulaInfo->y, dulaInfo->scale); 
+		UTIL_INFO("focal:%d, weightIrY:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f", 
+				dulaInfo->focal, dulaInfo->weightIrY, dulaInfo->weightIrC, dulaInfo->dula_model, 
+				dulaInfo->x, dulaInfo->y, dulaInfo->scale); 
 		float b = -1.00;
-		if ( dulaInfo->focal == -1 && -1 == readDulaInfo.focal)		
+		//切换模式focal:-1, weightIrY:-1.00, weightIrC:-1.00, dula_model:0, x:-1, y:-1, xscale:-1.00
+		if ((dulaInfo->focal == -1) && (fabs((dulaInfo->weightIrY)-(b))) < (1e-8)
+			&& (fabs((dulaInfo->weightIrC)-(b))) < (1e-8) && (dulaInfo->x == (signed short int)-1) 
+			&& (dulaInfo->y == (signed short int)-1) && (fabs((dulaInfo->scale)-(b))) < (1e-8)
+			&& dulaInfo->dula_model ==  readDulaInfo.dula_model)
 		{
-			dulaInfo->focal = 1;
+			return 0;
 		}
-		else 
+						
+		if ((dulaInfo->focal == -1) && (fabs((dulaInfo->weightIrY)-(b))) < (1e-8)
+			&& (fabs((dulaInfo->weightIrC)-(b))) < (1e-8) && (dulaInfo->x == (signed short int)-1) 
+			&& (dulaInfo->y == (signed short int)-1) && (fabs((dulaInfo->scale)-(b))) < (1e-8)
+			&& dulaInfo->dula_model !=  readDulaInfo.dula_model)
 		{
-			dulaInfo->focal = readDulaInfo.focal;
-		}
-		if ((fabs((dulaInfo->weightIrY)-(b))) < (1e-8) && (fabs((readDulaInfo.weightIrY)-(b))) < (1e-8))
-		{
-			dulaInfo->weightIrY = 0.5f;
-		}
-		else 
-		{
-			dulaInfo->weightIrY = readDulaInfo.weightIrY;
-		}
-		
-		if ((fabs((dulaInfo->weightIrC)-(b))) < (1e-8) && (fabs((readDulaInfo.weightIrC)-(b))) < (1e-8))		
-		{
-			dulaInfo->weightIrC = 0.5f;
-		}
-		else 
-		{
-			dulaInfo->weightIrC = readDulaInfo.weightIrC;
+			readDulaInfo.dula_model = dulaInfo->dula_model;
+			goto __EXIT;
 		}
 		
-		if ( dulaInfo->dula_model == -1 && -1 == readDulaInfo.dula_model)                  
+		if ( dulaInfo->focal != readDulaInfo.focal)		
 		{
-			dulaInfo->dula_model = 0;
+			readDulaInfo.focal = dulaInfo->focal;
+		}
+		if ((fabs((dulaInfo->weightIrY)-(readDulaInfo.weightIrY))) < (1e-8))
+		{
+			readDulaInfo.weightIrY = dulaInfo->weightIrY;
+		}
+		
+		if ((fabs((dulaInfo->weightIrC)-(readDulaInfo.weightIrC))) < (1e-8))		
+		{
+			readDulaInfo.weightIrC = dulaInfo->weightIrC;
+		}
+		
+		if (dulaInfo->dula_model != readDulaInfo.dula_model)                  
+		{
+			readDulaInfo.dula_model = dulaInfo->dula_model;
 		}
 
-		if ( dulaInfo->x == (signed short int)-1 && readDulaInfo.x == (signed short int)-1)		
+		if (dulaInfo->x != readDulaInfo.x)		
 		{
-			dulaInfo->x = 100;
-		}
-		else 
-		{
-			dulaInfo->x = readDulaInfo.x;
+			readDulaInfo.x = dulaInfo->x;
 		}
 		
-		if ( dulaInfo->y == (signed short int)-1 && readDulaInfo.y == (signed short int)-1)		
+		if (dulaInfo->y != readDulaInfo.y)		
 		{
-			dulaInfo->y = 100;
-		}
-		else 
-		{
-			dulaInfo->y = readDulaInfo.y;
+			readDulaInfo.y = dulaInfo->y;
 		}
 		
-		if ((fabs((dulaInfo->scale)-(b))) < (1e-8) && (fabs((readDulaInfo.scale)-(b))) < (1e-8)) 
+		if ((fabs((dulaInfo->scale)-(readDulaInfo.scale))) < (1e-8)) 
 		{
-			dulaInfo->scale = 2.4;
-		}
-		else 
-		{
-			dulaInfo->scale = readDulaInfo.scale;
+			readDulaInfo.scale = dulaInfo->scale;
 		}
 	}
 
-	if (save_cfg_to_file(FUSION_PARAM_FILE, (char*) dulaInfo, sizeof(DulaInformation_t)) != 0) {
+__EXIT:
+	/* add your code of set Thermal Param2 here */
+	GPTMessageSend(GPT_MSG_DULA_SETFUSIONPARAM, 0, (int)&readDulaInfo, sizeof(DulaInformation_t));
+
+	if (save_cfg_to_file(FUSION_PARAM_FILE, (char*)&readDulaInfo, sizeof(DulaInformation_t)) != 0) {
 		return -1;
 	}
 	
 	UTIL_INFO("focal:%d, weightIrY:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f", 
-			dulaInfo->focal, dulaInfo->weightIrY,
-					dulaInfo->weightIrC, dulaInfo->dula_model, 
-					dulaInfo->x, dulaInfo->y, dulaInfo->scale); 
+			readDulaInfo.focal, readDulaInfo.weightIrY,
+					readDulaInfo.weightIrC, readDulaInfo.dula_model, 
+					readDulaInfo.x, readDulaInfo.y, readDulaInfo.scale); 
 
 	return 0;
 }
@@ -545,35 +546,9 @@ int getAudioEncoder(Audio_Encoder *p_audio_encoder)
 		//保存初始参数
 		if (save_cfg_to_file(AUDIO_ENCODER_FILE, (char*)p_audio_encoder, sizeof(Video_Encoder)) < 0)
 			UTIL_ERR("save Audio Encoder param fail\n");
-
-		return -1;
 	}
 
 	return 0;
-}
-
-int get_Resolution_Type(onvif_VideoResolution * resolution)
-{
-	if(resolution->Width == 1920 && resolution->Height == 1080){
-		return PIC_1080P;
-	}
-	else if (resolution->Width == 1280 && resolution->Height == 720){
-		return PIC_720P;
-	}
-	else if (resolution->Width == 720 && resolution->Height == 576){
-		return PIC_D1_PAL;
-	}
-	else if (resolution->Width == 640 && resolution->Height == 360){
-		return PIC_360P;
-	}
-	else if (resolution->Width == 352 && resolution->Height == 288){
-		return PIC_CIF;
-	}else
-	{
-		return PIC_720P;
-	}
-	
-	return PIC_720P;
 }
 
 #define VIDEO_ENCODER_FILE  ("/user/cfg_files/VideoEncoder.dat")
@@ -594,13 +569,11 @@ int getVideoEncoder(Video_Encoder *p_video_encoder)
 		p_video_encoder->video_encoding.v_encoding_profile.gov_length = 50; //GOP(关键帧)
 		p_video_encoder->video_encoding.v_encoding_profile.encode_profile = H264Profile_Main; //编码级别
 		
-		UTIL_ERR("\033[0;33mInit read Video Encoder param fail\033[0m\n");
+		UTIL_ERR("Init read Video Encoder param fail");
 		
 		//保存初始参数
 		if (save_cfg_to_file(VIDEO_ENCODER_FILE, (char*)p_video_encoder, sizeof(Video_Encoder)) < 0)
-			UTIL_ERR("save Video Encoder param fail\n");
-
-		return -1;
+			UTIL_ERR("save Video Encoder param fail");
 	}
 
 	return 0;
@@ -608,7 +581,7 @@ int getVideoEncoder(Video_Encoder *p_video_encoder)
 /* 设置 视频编码器参数 ,同时保存到文件 */
 int setVideoEncoder(Video_Encoder *p_video_encoder)
 {
-	UTIL_INFO("width:%d,height:%d, bitrate_limit:%d, framerate:%d, GOP:%d, encode_profile:%d(0:Baseline 1:Main)\n",
+	UTIL_INFO("width:%d,height:%d, bitrate_limit:%d, framerate:%d, GOP:%d, encode_profile:%d(0:Baseline 1:Main)",
 				p_video_encoder->width, p_video_encoder->height,
 				p_video_encoder->bitrate_limit,
 				p_video_encoder->framerate,
@@ -657,11 +630,10 @@ int setVideoEncoder(Video_Encoder *p_video_encoder)
 
 
 	//设置分辨率
-	onvif_VideoResolution resolution;
-	resolution.Width = p_video_encoder->width;
-	resolution.Height = p_video_encoder->height;
+	//onvif_VideoResolution resolution;
+	//resolution.Width = p_video_encoder->width;
+	//resolution.Height = p_video_encoder->height;
 
-	u32_t resolution_type = get_Resolution_Type(&resolution);  //分辨率
 	u32_t bitrate = p_video_encoder->bitrate_limit;  	       //码流(码率)
 	u32_t framerate = p_video_encoder->framerate; 		       //帧率
 	u32_t gop = p_video_encoder->video_encoding.v_encoding_profile.gov_length;  //GOP(关键帧)
@@ -670,32 +642,29 @@ int setVideoEncoder(Video_Encoder *p_video_encoder)
 	
 	//设置编码器的码流(码率)
 	if( p_video_encoder->bitrate_limit != readCameraEncoder.bitrate_limit ){
-		if( COMM_SetVencChnBitrate(0, bitrate) == -1)  
-			return OTHER_FAILE;
+		GPTMessageSend(GPT_MSG_VIDEO_SETVENCCHNBITRATE, 0, bitrate, sizeof(int));
 	}
 	
 	//设置编码器的帧率
 	if( p_video_encoder->framerate != readCameraEncoder.framerate ){
-		if( COMM_SetVencChnFrameRate(0, framerate) == -1)  
-			return OTHER_FAILE;
+		GPTMessageSend(GPT_MSG_VIDEO_SETVENCCHNFRAMERATE, 0, framerate, sizeof(int));
 	}
 
 	//设置编码器的GOP(关键帧) GovLength
 	if( p_video_encoder->video_encoding.v_encoding_profile.gov_length != readCameraEncoder.video_encoding.v_encoding_profile.gov_length ){
-		if( COMM_Video_SetVencChnGOP(0, gop) == -1)  
-			return OTHER_FAILE;
+		GPTMessageSend(GPT_MSG_VIDEO_SETVENCCHNGOP, 0, gop, sizeof(int));
 	}
 	
 	//设置编码器的编码级别
 	if( p_video_encoder->video_encoding.v_encoding_profile.encode_profile != readCameraEncoder.video_encoding.v_encoding_profile.encode_profile){
-		if( COMM_SetVencChnProfile(0, encode_profile) == -1);
-			return OTHER_FAILE;
+		GPTMessageSend(GPT_MSG_VIDEO_SETVENCCHNPROFILE, 0, encode_profile, sizeof(int));
 	}
 
-	// printf("xxx 设置分辨率 / resolution_type resolution_type = %d\n", resolution_type);
+	/*目前视频分辨率设置无效处理，因为设置分辨率之后影响双光融合算法*/
 	if( p_video_encoder->width != readCameraEncoder.width && p_video_encoder->height != readCameraEncoder.height ){
-		if( COMM_SetVencChnResolution(0, resolution_type) == -1)  
-			return OTHER_FAILE;
+		//GPTMessageSend(GPT_MSG_VIDEO_SETVENCCHNRESOLUTION, 0, (int)&resolution, sizeof(resolution));
+		p_video_encoder->width = 1920;
+		p_video_encoder->height = 1080;
 	}
     
 	/* 更新保存于文件 */
@@ -1016,7 +985,7 @@ int Opt_SetDeviceIpAddr(const char *ifname, const char *ipaddr,
 		return -1;
 	}
 	
-	UTIL_INFO("ipaddr=%s,netmask==%s", ipaddr, mask);
+	UTIL_INFO("ifname=%s,ipaddr=%s,netmask==%s", ifname, ipaddr, mask);
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
@@ -1044,7 +1013,7 @@ int Opt_SetDeviceIpAddr(const char *ifname, const char *ipaddr,
     memcpy(&ifr.ifr_addr, &sin, sizeof(struct sockaddr));
 
     if (ioctl(fd, SIOCSIFADDR, &ifr) < 0) {     
-        UTIL_ERR("ioctl SIOCSIFADDR error");     
+        UTIL_ERR("ioctl SIOCSIFADDR error:%d,%s", errno, strerror(errno));     
         ret = -1;
 		goto __EXIT;
     }
@@ -1058,7 +1027,7 @@ int Opt_SetDeviceIpAddr(const char *ifname, const char *ipaddr,
 	
     memcpy(&ifr.ifr_addr, &sin, sizeof(struct sockaddr));
     if (ioctl(fd, SIOCSIFNETMASK, &ifr) < 0) {
-        UTIL_ERR("ioctl SIOCSIFNETMASK failed!!");
+        UTIL_ERR("ioctl SIOCSIFNETMASK :%d,%s", errno, strerror(errno));
         ret = -1;
 		goto __EXIT;
     }
@@ -1404,3 +1373,83 @@ int sync_hwclock_tosys()
     return 0;  
 }  
 
+int IRParamGetHanldeMsg(int msgtype, int chan,
+	                                   int u32DataParam, int u32DataLen, 
+	                                   void * parg)
+{
+    int ret = 0;
+	pthread_mutex_lock(&m_get_ir_param_lock);
+
+	switch(msgtype) {
+		case GPT_MSG_IR_GETBASEPARAM:
+		{
+			if(sizeof(ThermalBaseParam) != u32DataLen){
+				pthread_mutex_unlock(&m_get_ir_param_lock);
+				return -1;
+			}
+			getThermalBaseParam((ThermalBaseParam *)u32DataParam);
+		}
+		break;
+
+		case GPT_MSG_IR_GETENVPARAM:
+		{
+			if(sizeof(ThermalEnvParam) != u32DataLen){
+				pthread_mutex_unlock(&m_get_ir_param_lock);
+				return -1;
+			}
+			getThermalEnvParam((ThermalEnvParam *)u32DataParam);
+		}
+		break;
+		default:
+			break;
+	}
+	pthread_mutex_unlock(&m_get_ir_param_lock);
+	return ret;
+
+}
+
+int FusionParamGetHanldeMsg(int msgtype, int chan, int u32DataParam, int u32DataLen, void * parg)
+{
+   int ret = 0;
+   pthread_mutex_lock(&m_fusion_param_lock);
+
+   switch(msgtype) {
+	   case GPT_MSG_DULA_GETFUSIONPARAM:
+	   {
+		   if(sizeof(DulaInformation_t) != u32DataLen){
+			   pthread_mutex_unlock(&m_fusion_param_lock);
+			   return -1;
+		   }
+		   getFusionParam((DulaInformation_t *)u32DataParam);
+	   }
+	   break;
+	   default:
+		   break;
+   }
+   pthread_mutex_unlock(&m_fusion_param_lock);
+   return ret;
+
+}
+
+int onvif_ir_message_register()
+{
+   GPTMessageRegister(GPT_MSG_IR_GETBASEPARAM, IRParamGetHanldeMsg, 0, NULL);
+   GPTMessageRegister(GPT_MSG_IR_GETENVPARAM, IRParamGetHanldeMsg, 0, NULL);
+   return 0;
+
+}
+
+int onvif_fusion_message_register()
+{
+   GPTMessageRegister(GPT_MSG_DULA_GETFUSIONPARAM, FusionParamGetHanldeMsg, 0, NULL);
+   return 0;
+
+}
+
+int onvif_message_init()
+{
+	onvif_ir_message_register();
+	onvif_fusion_message_register();
+
+	return 0;
+}

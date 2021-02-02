@@ -135,6 +135,28 @@ typedef struct
 } GetCompatibleConfigurations_REQ;
 
 
+/* add by xieqingpu */
+typedef struct 
+{
+	char    ProfileToken[ONVIF_TOKEN_LEN];		    /* required element of type tt:ReferenceToken */
+    char	PresetTourToken[ONVIF_TOKEN_LEN];		// optional, A requested PresetTour token
+    // char    PresetTourName[ONVIF_NAME_LEN];			// optional, A requested PresetTour name
+} PresetTour_REQ;
+
+typedef struct 
+{
+	char    ProfileToken[ONVIF_TOKEN_LEN];		/* required element of type tt:ReferenceToken */
+    char	PresetTourToken[ONVIF_TOKEN_LEN];	/* required element of type tt:ReferenceToken */
+	onvif_PTZPresetTourOperation Operation;  	/* required element of type tt:PTZPresetTourOperation */
+} OperatePresetTour_REQ;
+
+typedef struct 
+{
+	char    ProfileToken[ONVIF_TOKEN_LEN];		/* required element of type tt:ReferenceToken */
+	ONVIF_PresetTour * PresetTour_req;
+} ModifyPresetTour_REQ;
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -151,6 +173,12 @@ ONVIF_RET onvif_GotoPreset(GotoPreset_REQ * p_req);
 ONVIF_RET onvif_GotoHomePosition(GotoHomePosition_REQ * p_req);
 ONVIF_RET onvif_SetHomePosition(const char * token);
 ONVIF_RET onvif_SetConfiguration(SetConfiguration_REQ * p_req);
+// add by xieqingpu
+ONVIF_RET onvif_CreatePresetTour(PresetTour_REQ * p_req);
+ONVIF_RET onvif_OperatePresetTour(OperatePresetTour_REQ * p_req);
+ONVIF_RET onvif_RemovePresetTour(PresetTour_REQ * p_req);
+ONVIF_RET onvif_ModifyPresetTour(ModifyPresetTour_REQ * p_req);
+
 
 #ifdef __cplusplus
 }

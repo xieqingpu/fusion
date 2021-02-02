@@ -23,6 +23,7 @@
 #include "onvif.h"
 #include "onvif_cfg.h"
 #include "soap.h"
+#include <sys/prctl.h>
 
 #ifdef HTTPD
 #include "httpd.h"
@@ -527,6 +528,8 @@ void * http_rx_thread(void * argv)
     fd_set fdr;
 #endif    
 	
+	prctl(PR_SET_NAME, (unsigned long)"httprxThread");
+
 	HTTPSRV * p_srv = (HTTPSRV *)argv;
 	if (p_srv == NULL)
 	{

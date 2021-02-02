@@ -185,6 +185,13 @@ int build_RemovePreset_rly_xml(char * p_buf, int mlen, const char * argv);
 int build_GotoPreset_rly_xml(char * p_buf, int mlen, const char * argv);
 int build_GotoHomePosition_rly_xml(char * p_buf, int mlen, const char * argv);
 int build_SetHomePosition_rly_xml(char * p_buf, int mlen, const char * argv);   
+/* add by xieqingpu */
+int build_CreatPresetTour_rly_xml(char * p_buf, int mlen, const char * argv);
+int build_GetPresetTours_rly_xml(char * p_buf, int mlen, const char * argv);
+int build_OperatePresetTour_rly_xml(char * p_buf, int mlen, const char * argv);
+int build_RemovePresetTour_rly_xml(char * p_buf, int mlen, const char * argv);
+int build_ModifyPresetTour_rly_xml(char * p_buf, int mlen, const char * argv);
+
 
 #endif // end of PTZ_SUPPORT
 

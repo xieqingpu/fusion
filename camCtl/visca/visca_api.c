@@ -1,4 +1,4 @@
-
+#include <sys/prctl.h>
 #include <errno.h> 
 #include <pthread.h>
 #include "visca_api.h"
@@ -390,14 +390,11 @@ int set_zoom_stop()
 	return VISCA_set_zoom_stop(&iface, &camera);
 }
 
-
-static const char* com_dev = NULL;
-static pthread_t gs_pid;
-
 static int visca_status = 0;
-void set_visca_status(int visca_flag)
+int set_visca_status(int viscastatus)
 {
-	visca_status = visca_flag;
+	visca_status = viscastatus;
+	return 0;
 }
 
 int get_visca_status()
@@ -405,17 +402,26 @@ int get_visca_status()
 	return visca_status;
 }
 
-
 void* visca_init_thread(void* param)
 {
 	int ret;
+	prctl(PR_SET_NAME, (unsigned long)"ViscaThread");
+	char com_dev[128] = {0};
+	if (param)
+	{
+		memcpy(com_dev, (char *)param, strlen(param));
+		free(param);
+		param = NULL;
+		UTIL_INFO("com_dev=%s", com_dev);
+	}
+	
 	while(1)
 	{
 		//打开串口
 		if (VISCA_open_serial(&iface, com_dev)!=VISCA_SUCCESS)
 		{
-			UTIL_ERR("unable to open serial device %s\n", com_dev);
-			sleep(1);
+			UTIL_ERR("unable to open serial device %s", com_dev);
+			sleep(2);
 			continue;
 		}
 		else
@@ -430,8 +436,8 @@ void* visca_init_thread(void* param)
 	
 		if(VISCA_set_address(&iface, &camera_num)!=VISCA_SUCCESS)
 		{
-			UTIL_ERR("visca VISCA_set_address fail\n");
-			sleep(1);
+			UTIL_ERR("visca VISCA_set_address fail");
+			sleep(2);
 			continue;
 		}
 		else
@@ -463,10 +469,32 @@ void* visca_init_thread(void* param)
 
 int visca_init(const char* device)
 {
-	com_dev = device;
+	int ret;
+	char* com_dev = NULL;
+	if (!device) return -1;
 
-	pthread_create(&gs_pid, 0, visca_init_thread, NULL);
-	return 0;
+	com_dev = (char *)malloc(128);
+	if (!com_dev)
+	{
+		UTIL_ERR("malloc com_dev failed!");
+		return -1;
+	}
+
+    memcpy(com_dev, device, strlen(device));
+
+	pthread_t viscathreadid;
+	pthread_attr_t viscaAttr;
+	pthread_attr_init(&viscaAttr);
+	pthread_attr_setdetachstate(&viscaAttr, PTHREAD_CREATE_DETACHED); 
+	
+    ret = pthread_create(&viscathreadid, &viscaAttr, visca_init_thread, com_dev);
+    if(ret != 0)
+    {
+        UTIL_ERR("create visca thread failed !!!!");
+    }
+    pthread_attr_destroy(&viscaAttr);
+
+    return 0;
 }
 
 int visca_deinit()

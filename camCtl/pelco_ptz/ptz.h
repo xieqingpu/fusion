@@ -20,6 +20,10 @@
 #include <stdarg.h>
 #include <time.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define RET_OK  0
 #define RET_ERR  -1
 
@@ -28,46 +32,49 @@ typedef unsigned int u_int32;
 
 typedef enum {p_sync,p_addr,p_cmd1,p_cmd2,p_data1,p_data2,p_cksum}pelco_t;
 /*
-Ê®ËÄÌõ»ù±¾ÃüÁî£¬Ó¦ÓÃ²ã¿ÉÒÔÈÎÒâ×éºÏ³ö·á¸»¸´ÔÓµÄ¿ØÖÆÔÆÌ¨ÃüÁî
-ÒÔÏÂº¯Êı·µ»ØÖ»ÊÇµ±Ç°µÄÃüÁî¶ÁĞ´×´Ì¬ÕıÈ·Óë·ñ£¬²¢²»ÄÜ±£Ö¤ÔÆÌ¨ÕıÈ·½ÓÊÕºÍÖ´ĞĞ£¬ĞèÒªÓ¦ÓÃ²ãÍ¨¹ı²éÑ¯Ö´ĞĞÇ°ºóµÄ±ä»¯×ö³öÅĞ¶Ï
+åå››æ¡åŸºæœ¬å‘½ä»¤ï¼Œåº”ç”¨å±‚å¯ä»¥ä»»æ„ç»„åˆå‡ºä¸°å¯Œå¤æ‚çš„æ§åˆ¶äº‘å°å‘½ä»¤
+ä»¥ä¸‹å‡½æ•°è¿”å›åªæ˜¯å½“å‰çš„å‘½ä»¤è¯»å†™çŠ¶æ€æ­£ç¡®ä¸å¦ï¼Œå¹¶ä¸èƒ½ä¿è¯äº‘å°æ­£ç¡®æ¥æ”¶å’Œæ‰§è¡Œï¼Œéœ€è¦åº”ç”¨å±‚é€šè¿‡æŸ¥è¯¢æ‰§è¡Œå‰åçš„å˜åŒ–åšå‡ºåˆ¤æ–­
 */
 
 
-/* device:´ò¿ªµÄ´®¿ÚÉè±¸Ãû³Æ,baud_rate:baud_rate */
+/* device:æ‰“å¼€çš„ä¸²å£è®¾å¤‡åç§°,baud_rate:baud_rate */
 error_code pelco_Init(char* device, u_int32 baud_rate);
 error_code  pelco_close();
-/* force:Speed  ÉÏÏÂ×óÓÒËÙ¶ÈÖ»È¡µÍ8Î»*/
+/* force:Speed  ä¸Šä¸‹å·¦å³é€Ÿåº¦åªå–ä½8ä½*/
 error_code pelco_Left(unsigned short force);
 error_code pelco_Right(unsigned short force);
 error_code pelco_Up(unsigned short force);
 error_code pelco_Down(unsigned short force);
 
-/* force:Speed  µÍ8Î»ÊÇË®Æ½·½ÏòËÙ¶ÈÈ¡ÖµÇø¼ä(0x00-0x3F)£¬¸ß8Î»ÊÇ´¹Ö±·½ÏòµÄËÙ¶ÈÈ¡ÖµÇø¼ä(0x00-0x3F)*/
+/* force:Speed  ä½8ä½æ˜¯æ°´å¹³æ–¹å‘é€Ÿåº¦å–å€¼åŒºé—´(0x00-0x3F)ï¼Œé«˜8ä½æ˜¯å‚ç›´æ–¹å‘çš„é€Ÿåº¦å–å€¼åŒºé—´(0x00-0x3F)*/
 
 error_code pelco_left_down(unsigned short force);
 error_code pelco_right_down(unsigned short force);
 error_code pelco_left_up(unsigned short force);
 error_code pelco_right_up(unsigned short force);
 
-/* Ô¤ÖÃµãÉèÖÃºÍµ÷ÓÃÃüÁî
-location:location  Ö»ÓÃµÍ8Î»,È¡Öµ·¶Î§0-0x80 
+/* é¢„ç½®ç‚¹è®¾ç½®å’Œè°ƒç”¨å‘½ä»¤
+location:location  åªç”¨ä½8ä½,å–å€¼èŒƒå›´0-0x80 
 */
 error_code pelco_set_point(unsigned short location);
 error_code pelco_get_point(unsigned short location);
 
 
-/*ÉèÖÃÎ»ÖÃ  location:locationÒªÉèÖÃµÄÎ»ÖÃÊı¾İ   */
+/*è®¾ç½®ä½ç½®  location:locationè¦è®¾ç½®çš„ä½ç½®æ•°æ®   */
 error_code pelco_set_vertical(unsigned short location);
 error_code pelco_set_horizontal(unsigned short location);
 
 
-/*»ñÈ¡Î»ÖÃ  location:location ·µ»ØµÄÎ»ÖÃÊı¾İ */
+/*è·å–ä½ç½®  location:location è¿”å›çš„ä½ç½®æ•°æ® */
 
 error_code pelco_get_vertical(unsigned short *location);
 error_code pelco_get_horizontal(unsigned short* location);
 
-/*Í£Ö¹ÔË¶¯*/
+/*åœæ­¢è¿åŠ¨*/
 error_code pelco_Stop(void);
+#ifdef __cplusplus
+}
+#endif
 
 
 #endif /* ptz */

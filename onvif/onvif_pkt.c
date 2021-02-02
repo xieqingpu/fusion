@@ -7470,6 +7470,249 @@ int build_SetHomePosition_rly_xml(char * p_buf, int mlen, const char * argv)
 	return offset;
 }
 
+
+/* add PresetTour by xieqingpu */
+
+int build_ModifyPresetTour_rly_xml(char * p_buf, int mlen, const char * argv)
+{
+	int offset = 0;
+	offset += snprintf(p_buf+offset, mlen-offset, "<tan:ModifyPresetTourResponse />");
+	return offset;
+}
+
+int build_RemovePresetTour_rly_xml(char * p_buf, int mlen, const char * argv)
+{
+    int offset = 0;
+	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:RemovePresetTourResponse />");	
+	return offset;
+}
+
+int build_OperatePresetTour_rly_xml(char * p_buf, int mlen, const char * argv)
+{
+    int offset = 0;
+	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:OperatePresetTourResponse />");	
+	return offset;
+}
+
+int build_CreatPresetTour_rly_xml(char * p_buf, int mlen, const char * argv)
+{
+    int offset = 0;
+	
+	offset += snprintf(p_buf+offset, mlen-offset, 
+	    "<tptz:CreatePresetTourResponse>"
+	    	"<tptz:PresetTourToken>%s</tptz:PresetTourToken>"
+	    "</tptz:CreatePresetTourResponse>", argv);	
+
+	return offset;
+}
+
+
+int build_PTZPosition_xml(char * p_buf, int mlen, onvif_PTZVector * p_req)
+{
+	int offset = 0;
+
+	if (p_req->PanTiltFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, 
+		"<tptz:PanTilt>"
+			"<tt:X>%f</tt:X>"
+			"<tt:Y>%f</tt:Y>"
+		"</tptz:PanTilt>",
+		p_req->PanTilt.x,
+		p_req->PanTilt.y);
+	}
+	if (p_req->ZoomFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, 
+		"<tptz:Zoom>"
+			"<tt:X>%f</tt:X>"
+		"</tptz:Zoom>",
+		p_req->Zoom.x);
+	}
+
+	return offset;
+}
+int build_PTZSpeed_xml(char * p_buf, int mlen, onvif_PTZSpeed * p_req)
+{
+	int offset = 0;
+
+	if (p_req->PanTiltFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, 
+		"<tptz:PanTilt>"
+			"<tt:X>%f</tt:X>"
+			"<tt:Y>%f</tt:Y>"
+		"</tptz:PanTilt>",
+		p_req->PanTilt.x,
+		p_req->PanTilt.y);
+	}
+	if (p_req->ZoomFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, 
+		"<tptz:Zoom>"
+			"<tt:X>%f</tt:X>"
+		"</tptz:Zoom>",
+		p_req->Zoom.x);
+	}
+
+	return offset;
+}
+int build_CurrentTourSpot_xml(char * p_buf, int mlen, onvif_PTZPresetTourSpot * p_req)
+{
+	int offset = 0;
+	
+	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:PresetDetail>");
+		if (p_req->PresetDetail.PresetTokenFlag){
+    		offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetToken>%s</tt:PresetToken>", p_req->PresetDetail.PresetToken);	
+		}
+		if (p_req->PresetDetail.HomeFlag){
+    		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Home>%s</tt:Home>", p_req->PresetDetail.Home ? "true" : "false");	
+		}
+		if (p_req->PresetDetail.PTZPositionFlag){
+			offset += snprintf(p_buf+offset, mlen-offset, "<tt:PTZPosition>");
+			offset += build_PTZPosition_xml(p_buf+offset, mlen-offset, &p_req->PresetDetail.PTZPosition);
+	        offset += snprintf(p_buf+offset, mlen-offset, "</tt:PTZPosition>");		
+		}
+	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:PresetDetail>");		
+
+	if (p_req->SpeedFlag)
+	{
+		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:Speed>");
+		offset += build_PTZSpeed_xml(p_buf+offset, mlen-offset, &p_req->Speed);
+		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:Speed>");	
+	}
+	
+	if (p_req->StayTimeFlag)
+	{
+    	offset += snprintf(p_buf+offset, mlen-offset, "<tt:StayTime>%d</tt:StayTime>", p_req->StayTime);	
+	}
+
+	return offset;
+}
+int build_Status_xml(char * p_buf, int mlen, onvif_PTZPresetTourStatus * p_req)
+{
+	int offset = 0;
+
+	offset += snprintf(p_buf+offset, mlen-offset, "<tt:State>%d</tt:State>", p_req->State);
+
+	if (p_req->CurrentTourSpotFlag)
+	{
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:CurrentTourSpot>");
+		offset += build_CurrentTourSpot_xml(p_buf+offset, mlen-offset, &p_req->CurrentTourSpot);
+		offset += snprintf(p_buf+offset, mlen-offset, "</tt:CurrentTourSpot>");		
+    }
+
+	return offset;
+}
+int build_StartingCondition_xml(char * p_buf, int mlen, onvif_PTZPresetTourStartingCondition * p_req)
+{
+	int offset = 0;
+
+	if (p_req->RandomPresetOrderFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:RandomPresetOrder>%s</tt:RandomPresetOrder>", 
+			p_req->RandomPresetOrder ? "true" : "false");
+	}
+
+	if (p_req->RecurringTimeFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:RecurringTime>%d</tt:RecurringTime>", 
+			p_req->RecurringTime);	
+	}
+	
+	if (p_req->RecurringDurationFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:RecurringDuration>%d</tt:RecurringDuration>",
+			p_req->RecurringDuration);	
+	}
+
+	if (p_req->DirectionFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Direction>%d</tt:Direction>",
+			p_req->Direction);
+	}
+	
+	return offset;
+}
+int build_TourSpot_xml(char * p_buf, int mlen, onvif_PTZPresetTourSpot * p_req)
+{
+	int offset = 0;
+	
+	offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetDetail>");
+		if (p_req->PresetDetail.PresetTokenFlag){
+    		offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetToken>%s</tt:PresetToken>", p_req->PresetDetail.PresetToken);	
+		}
+		if (p_req->PresetDetail.HomeFlag){
+    		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Home>%s</tt:Home>", p_req->PresetDetail.Home ? "true" : "false");	
+		}
+		if (p_req->PresetDetail.PTZPositionFlag){
+			offset += snprintf(p_buf+offset, mlen-offset, "<tt:PTZPosition>");
+			offset += build_PTZPosition_xml(p_buf+offset, mlen-offset, &p_req->PresetDetail.PTZPosition);
+	        offset += snprintf(p_buf+offset, mlen-offset, "</tt:PTZPosition>");		
+		}
+	offset += snprintf(p_buf+offset, mlen-offset, "</tt:PresetDetail>");		
+
+	if (p_req->SpeedFlag)
+	{
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Speed>");
+		offset += build_PTZSpeed_xml(p_buf+offset, mlen-offset, &p_req->Speed);
+		offset += snprintf(p_buf+offset, mlen-offset, "</tt:Speed>");	
+	}
+	
+	if (p_req->StayTimeFlag)
+	{
+    	offset += snprintf(p_buf+offset, mlen-offset, "<tt:StayTime>%d</tt:StayTime>", p_req->StayTime);	
+	}
+
+	return offset;
+}
+int build_GetPresetTours_rly_xml(char * p_buf, int mlen, const char * argv)
+{
+	int offset = 0;
+
+	ONVIF_PresetTour * p_PresetTour;
+	ONVIF_PROFILE * p_profile = onvif_find_profile(argv);  // g_onvif_cfg.profiles
+    if (NULL == p_profile)
+    {
+        return ONVIF_ERR_NoProfile;
+    }
+
+	// p_PresetTour = g_onvif_cfg.ptz_preset_tour;
+	p_PresetTour = p_profile->PresetTours;
+	
+	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:GetPresetToursResponse>");
+
+	while (p_PresetTour)
+	{
+		offset += snprintf(p_buf+offset, mlen-offset, 
+			"<tptz:PresetTour token=\"%s\">",
+			p_PresetTour->PresetTour.token); 
+		offset += snprintf(p_buf+offset, mlen-offset, 
+			"<tt:Name>%s</tt:Name>", 
+			p_PresetTour->PresetTour.Name);  
+		
+		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:Status>");
+		offset += build_Status_xml(p_buf+offset, mlen-offset, &p_PresetTour->PresetTour.Status);
+		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:Status>");
+		
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:AutoStart>%s</tt:AutoStart>",p_PresetTour->PresetTour.AutoStart ? "true" : "false");	
+		
+		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:StartingCondition>");
+		offset += build_StartingCondition_xml(p_buf+offset, mlen-offset, &p_PresetTour->PresetTour.StartingCondition);	
+		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:StartingCondition>");
+		
+		ONVIF_PTZPresetTourSpot * p_TourSpot = p_PresetTour->PresetTour.TourSpot;
+		while (p_TourSpot)
+		{
+			offset += snprintf(p_buf+offset, mlen-offset, "<tptz:TourSpot>");
+			offset += build_TourSpot_xml(p_buf+offset, mlen-offset, &p_TourSpot->PTZPresetTourSpot);
+			offset += snprintf(p_buf+offset, mlen-offset, "</tt:TourSpot>");
+
+			p_TourSpot = p_TourSpot->next;
+		}
+
+        offset += snprintf(p_buf+offset, mlen-offset, "</tptz:PresetTour>");
+
+    	p_PresetTour = p_PresetTour->next;
+	}
+
+	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:GetPresetToursResponse>");
+
+	return offset;
+}
+
 #endif // end of PTZ_SUPPORT
 
 

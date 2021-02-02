@@ -25,8 +25,11 @@
 #include "ntp_conf.h"
 
 #define VISCA_COM	"/dev/ttyAMA3"
+#ifdef HI3519AV100
 #define PTZ_COM     "/dev/ttyAMA2"
-
+#elif HI3516DV300
+#define PTZ_COM     "/dev/ttyAMA1"
+#endif
 void init_network()
 {
 #if __WINDOWS_OS__
@@ -35,7 +38,7 @@ void init_network()
 #endif	
 }
 
-void onvifStart(int     bdebug)
+void onvifStart()
 {
 #if 0 //heguohuo
 #if __LINUX_OS__
@@ -52,13 +55,13 @@ void onvifStart(int     bdebug)
 		
 #endif
 #endif
+    onvif_message_init();
+
     //设备初始化
     devInit(PTZ_COM, VISCA_COM);
 
 	//打开onvif log开关
-	if (1 == bdebug) {
-    	logOpen();
-	}
+    // logOpen();
 	
 	sys_buf_init(32);
 	http_msg_buf_init(16);

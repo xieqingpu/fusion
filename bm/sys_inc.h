@@ -149,7 +149,7 @@ typedef unsigned long long  uint64;
 #include "word_analyse.h"
 #include "sys_buf.h"
 #include "util.h"
-
+#include <sys/prctl.h>
 
 #ifdef __cplusplus
 extern "C" {

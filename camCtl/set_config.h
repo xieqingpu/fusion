@@ -26,7 +26,6 @@ typedef unsigned char*         u8ptr_t;
 typedef float                               float32_t;
 typedef unsigned short int   u16_t;
 
-#define OTHER_FAILE  (-123)
 
 /* *********************************** */
 #define NAME_LEN    	 100
@@ -254,6 +253,41 @@ int getImgParam(ImgParam_t *imgParams);
 int setImgParam(ImgParam_t *imgParams);
 
 int img_Stop();
+/*********************************************
+* FuncName: getThermalBaseParam       
+* Describe:  获取 热成像参数配置_1 , 获取:色板、宽动态、亮度补偿、清晰度 (锐度)
+* Params  :                                
+* [IN]      
+* Return  : 成功返回0，失败返回-1                              
+**********************************************/
+int getThermalBaseParam(ThermalBaseParam *thermalParam1);
+
+/*********************************************
+* FuncName: setThermalParam1       
+* Describe:  热成像参数配置设置_1 , 设置:色板、宽动态、亮度补偿、清晰度 (锐度)
+* Params  :                                
+* [OUT]      
+* Return  : 成功返回0，失败返回-1                             
+**********************************************/
+int setThermalParam1(ThermalBaseParam *thermalParam1);
+
+/*********************************************
+* FuncName: getThermalEnvParam       
+* Describe:  获取 热成像参数配置设置_1 , 获取:发射率、距离、湿度、修正、反射温度、环境温度
+* Params  :                                
+* [IN]      
+* Return  : 成功返回0，失败返回-1                             
+**********************************************/
+int getThermalEnvParam(ThermalEnvParam *param);
+
+/*********************************************
+* FuncName: setThermalParam2       
+* Describe:  热成像参数配置设置_1 , 设置:发射率、距离、湿度、修正、反射温度、环境温度
+* Params  :                                
+* [OUT]      
+* Return  : 成功返回0，失败返回-1                             
+**********************************************/
+int setThermalParam2(ThermalEnvParam *thermalParam2);
 
 /*********************************************
 * FuncName: getFusionParam        
@@ -271,7 +305,7 @@ int getFusionParam(DulaInformation_t *dulaInfo);
 * Params  :                                
 * [OUT]      
 *   dulaInfo :  设置dulaInfo数据
-* Return  : 成功返回0，失败返回-1                                           int      
+* Return  : 成功返回0，失败返回-1      
 **********************************************/
 int setDulaParam(DulaInformation_t *dulaInfo);
 
@@ -375,6 +409,7 @@ void SystemReboot();
 void SetSystemFactoryDefault(int type /* 0:soft, 1:hard */);
 struct tm * GetSystemUTCTime();
 int sync_hwclock_tosys(); 
+int onvif_message_init();
 
 
 #ifdef __cplusplus

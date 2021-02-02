@@ -23,6 +23,8 @@
 #include "onvif_utils.h"
 #include "ir.h"
 #include "set_config.h"
+#include "gptmessage.h"
+#include "gptmessagedef.h"
 
 /***************************************************************************************/
 extern ONVIF_CFG g_onvif_cfg;
@@ -494,7 +496,7 @@ ONVIF_RET onvif_GetSnapshot(char *buff, int * rlen, char * profile_token)
     ONVIF_PROFILE * p_profile;
 	char *p_bufs = NULL;	
 	int tlen = 0;
-	char * acFile = "/user/snapshot.jpg";
+	char * acFile = "/tmp/snapshot.jpg";
     
     onvif_print("onvif_GetSnapshot\r\n");
     p_profile = onvif_find_profile(profile_token);
@@ -507,7 +509,7 @@ ONVIF_RET onvif_GetSnapshot(char *buff, int * rlen, char * profile_token)
 	
     p_bufs = buff;
     // here is the test code, just read the image data from file ...
-	if (0 == Common_Venc_SnapProcess(acFile))
+	if (0 == GPTMessageSend(GPT_MSG_VIDEO_SNAPJPEGPROCESS, 0, (int)acFile, strlen(acFile)))
 	{
 	    fp = fopen(acFile, "rb");
 		if (NULL == fp)

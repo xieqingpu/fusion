@@ -243,6 +243,8 @@ typedef struct ONVIF_PROFILE     // ONVIF_PROFILE
 
 #ifdef PTZ_SUPPORT
     ONVIF_PTZPreset   	  	presets[MAX_PTZ_PRESETS];	// ptz presets
+	// add by xieqingpu
+	ONVIF_PresetTour		* PresetTours;
 #endif
 
     char name[ONVIF_NAME_LEN];						    // profile name
@@ -309,6 +311,8 @@ typedef struct
 #ifdef PTZ_SUPPORT
 	ONVIF_PTZNode      		                * ptz_node;
 	ONVIF_PTZConfiguration	                * ptz_cfg;
+	//add by xieqingpu
+	ONVIF_PresetTour						* ptz_preset_tour;
 #endif
 
 #ifdef VIDEO_ANALYTICS
@@ -417,6 +421,8 @@ typedef struct
 
 #ifdef PTZ_SUPPORT
     int             preset_idx;                         // preset index
+	//add by xieqingpu
+    int             preset_tour_idx;                   // presetTour index
 #endif
 
 #ifdef PROFILE_G_SUPPORT
@@ -575,6 +581,17 @@ ONVIF_PTZNode                             * onvif_find_PTZNode(const char * toke
 ONVIF_PTZConfiguration                    * onvif_find_PTZConfiguration(const char * token);
 ONVIF_PTZPreset                           * onvif_find_PTZPreset(const char * profile_token, const char  * preset_token);
 ONVIF_PTZPreset                           * onvif_get_idle_PTZPreset(const char * profile_token);
+/* add presetTour by xieqingpu */
+ONVIF_PresetTour * onvif_add_PresetTour(ONVIF_PresetTour ** p_head);
+ONVIF_PresetTour * onvif_find_PTZPresetTour(const char * profile_token, const char  * PresetTours_token);
+ONVIF_PresetTour * onvif_find_ModifyPresetTour(const char * profile_token, const char  * PresetTours_token);
+ONVIF_PTZPresetTourSpot * onvif_add_TourSpot(ONVIF_PTZPresetTourSpot ** p_head);
+void onvif_remove_PresetTour(ONVIF_PresetTour ** p_head, ONVIF_PresetTour * p_remove);
+void onvif_free_TourSpots(ONVIF_PTZPresetTourSpot ** p_head);
+ONVIF_PresetTour * onvif_free_PresetTours(ONVIF_PresetTour ** p_head);
+ONVIF_PresetTour * onvif_get_prev_presetTour(ONVIF_PresetTour ** p_head, ONVIF_PresetTour * p_found);
+
+/*  */
 #endif
 
 /***************************************************************************************/

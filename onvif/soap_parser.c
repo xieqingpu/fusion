@@ -3897,6 +3897,293 @@ ONVIF_RET parse_GotoHomePosition(XMLN * p_node, GotoHomePosition_REQ * p_req)
 	return ONVIF_OK;
 }
 
+/* add PresetTour by xieqingpu */
+
+// parse_PTZVector(p_PTZPosition, &p_req->Status.CurrentTourSpot.PresetDetail.PTZPosition);
+ONVIF_RET parse_TourSpot(XMLN * p_node, onvif_PTZPresetTourSpot * p_req)
+{
+	XMLN * p_PresetDetail;
+	XMLN * p_Speed;
+	XMLN * p_StayTime;
+
+	//1
+	p_PresetDetail = xml_node_soap_get(p_node, "PresetDetail");
+	if (p_PresetDetail)
+	{
+		XMLN * p_PresetToken;
+		XMLN * p_Home;
+		XMLN * p_PTZPosition;
+
+		p_PresetToken = xml_node_soap_get(p_PresetDetail, "PresetToken");
+		if (p_PresetToken && p_PresetToken->data)
+		{
+			p_req->PresetDetail.PresetTokenFlag = 1;
+			strncpy(p_req->PresetDetail.PresetToken, p_PresetToken->data, sizeof(p_req->PresetDetail.PresetToken)-1);
+		}
+
+		p_Home = xml_node_soap_get(p_PresetDetail, "Home");
+		if (p_Home && p_Home->data)
+		{
+			p_req->PresetDetail.HomeFlag = 1;
+			p_req->PresetDetail.Home = parse_Bool(p_Home->data);
+		}	
+
+		p_PTZPosition = xml_node_soap_get(p_PresetDetail, "PTZPosition");
+		if (p_PTZPosition)
+		{
+			p_req->PresetDetail.PTZPositionFlag = 1;
+			parse_PTZVector(p_PTZPosition, &p_req->PresetDetail.PTZPosition);
+
+		}
+	}
+	//2
+	p_Speed = xml_node_soap_get(p_node, "Speed");
+	if (p_Speed)
+	{
+		p_req->SpeedFlag = 1;
+		parse_PTZSpeed(p_Speed, &p_req->Speed);
+	}
+	//3
+	p_StayTime = xml_node_soap_get(p_node, "StayTime");
+	if (p_StayTime && p_StayTime->data)
+	{
+		p_req->StayTimeFlag = 1;
+		p_req->StayTime = (int)atoi(p_StayTime->data);
+	}
+
+	return ONVIF_OK;
+}
+
+ONVIF_RET parse_PresetTour(XMLN * p_node, onvif_PresetTour * p_req)
+{
+	XMLN * p_Name;
+	XMLN * p_Status;
+	XMLN * p_AutoStart;
+	XMLN * p_StartingCondition;
+	XMLN * p_TourSpot;
+	const char * p_token;
+	ONVIF_RET ret;
+
+	p_token = xml_attr_get(p_node, "token");
+	if (p_token)
+	{
+		strncpy(p_req->token, p_token, sizeof(p_req->token)-1);
+	}
+
+	p_Name = xml_node_soap_get(p_node, "Name");
+	if (p_Name && p_Name->data)
+	{
+		strncpy(p_req->Name, p_Name->data, sizeof(p_req->Name)-1);
+	}
+	//一.
+	p_Status = xml_node_soap_get(p_node, "Status");
+	if (p_Status)
+	{
+		XMLN * p_State;
+		XMLN * p_CurrentTourSpot;
+
+		p_State = xml_node_soap_get(p_Status, "State");
+		if (p_State && p_State->data)
+		{
+			p_req->Status.State = onvif_StringToPTZPresetTourState(p_State->data);
+		}
+		
+		p_CurrentTourSpot = xml_node_soap_get(p_Status, "CurrentTourSpot");
+		if (p_CurrentTourSpot)
+		{
+			p_req->Status.CurrentTourSpotFlag = 1;
+			parse_TourSpot(p_CurrentTourSpot, &p_req->Status.CurrentTourSpot);   ////
+		}
+	}
+	//二.
+	p_AutoStart = xml_node_soap_get(p_node, "AutoStart");
+	if (p_AutoStart && p_AutoStart->data)
+	{
+		p_req->AutoStart = parse_Bool(p_AutoStart->data);
+	}
+	//三.
+	p_StartingCondition = xml_node_soap_get(p_node, "StartingCondition");
+	if (p_StartingCondition)
+	{
+		XMLN * p_RandomPresetOrder;
+		XMLN * p_RecurringTime;
+		XMLN * p_RecurringDuration;
+		XMLN * p_Direction;
+
+		p_RandomPresetOrder = xml_node_soap_get(p_StartingCondition, "RandomPresetOrder");
+		if (p_RandomPresetOrder && p_RandomPresetOrder->data)
+		{
+			p_req->StartingCondition.RandomPresetOrderFlag = 1;
+			p_req->StartingCondition.RandomPresetOrder = parse_Bool(p_RandomPresetOrder->data);
+		}
+
+		p_RecurringTime = xml_node_soap_get(p_StartingCondition, "RecurringTime");
+		if (p_RecurringTime && p_RecurringTime->data)
+		{
+			p_req->StartingCondition.RecurringTimeFlag = 1;
+			p_req->StartingCondition.RecurringTime = (int)atoi(p_RecurringTime->data);
+		}
+
+		p_RecurringDuration = xml_node_soap_get(p_StartingCondition, "RecurringDuration");
+		if (p_RecurringDuration && p_RecurringDuration->data)
+		{
+			p_req->StartingCondition.RecurringDurationFlag = 1;
+			p_req->StartingCondition.RecurringDuration = (int)atoi(p_RecurringDuration->data);
+		}
+
+		p_Direction = xml_node_soap_get(p_StartingCondition, "Direction");
+		if (p_Direction && p_Direction->data)
+		{
+			p_req->StartingCondition.DirectionFlag = 1;
+			p_req->StartingCondition.Direction = onvif_StringToPTZPresetTourDirection(p_RecurringDuration->data);
+		}
+	}
+	//四.
+	// p_SimpleItem = xml_node_soap_get(p_Parameters, "SimpleItem");
+	p_TourSpot = xml_node_soap_get(p_node, "TourSpot");
+	while (p_TourSpot && soap_strcmp(p_TourSpot->name, "TourSpot") == 0)  // while (p_TourSpot)
+	{
+		printf("xxx parse_PresetTour | while (p_TourSpot && soap_strcmp(p_TourSpot->name, \"TourSpot\") == 0)\n");
+
+		ONVIF_PTZPresetTourSpot * p_tour_spot = onvif_add_TourSpot(&p_req->TourSpot);
+		if (p_tour_spot)
+		{
+			ret = parse_TourSpot(p_TourSpot, &p_tour_spot->PTZPresetTourSpot);   ////
+			if (ONVIF_OK != ret)
+			{
+				onvif_free_TourSpots(&p_req->TourSpot);
+				break;
+			}
+		}
+
+		p_TourSpot->next;
+	}
+
+	return ONVIF_OK;
+}
+
+ONVIF_RET parse_CreatePresetTour(XMLN * p_node, PresetTour_REQ * p_req)
+{
+	XMLN * p_ProfileToken;
+	// XMLN * p_PresetTourToken;
+	
+	assert(p_node);
+
+    p_ProfileToken = xml_node_soap_get(p_node, "ProfileToken");
+	if (p_ProfileToken && p_ProfileToken->data)
+	{
+		strncpy(p_req->ProfileToken, p_ProfileToken->data, sizeof(p_req->ProfileToken)-1);
+	}
+
+	// p_PresetTourToken = xml_node_soap_get(p_node, "PresetTourToken");
+	// if (p_PresetTourToken && p_PresetTourToken->data)
+	// {
+	// 	p_req->PresetTokenFlag = 1;
+	// 	strncpy(p_req->PresetToken, p_PresetTourToken->data, sizeof(p_req->PresetToken)-1);
+	// }	
+
+	return ONVIF_OK;
+}
+
+ONVIF_RET parse_OperatePresetTour(XMLN * p_node, OperatePresetTour_REQ * p_req)
+{
+	XMLN * p_ProfileToken;
+	XMLN * p_PresetTourToken;
+	XMLN * p_Operation;
+
+	assert(p_node);
+
+    p_ProfileToken = xml_node_soap_get(p_node, "ProfileToken");
+	if (p_ProfileToken && p_ProfileToken->data)
+	{
+		strncpy(p_req->ProfileToken, p_ProfileToken->data, sizeof(p_req->ProfileToken)-1);
+	}else{
+		return ONVIF_ERR_MissingAttribute;
+	}
+
+    p_PresetTourToken = xml_node_soap_get(p_node, "PresetTourToken");
+	if (p_PresetTourToken && p_PresetTourToken->data)
+	{
+		strncpy(p_req->PresetTourToken, p_PresetTourToken->data, sizeof(p_req->PresetTourToken)-1);
+	}else{
+		return ONVIF_ERR_MissingAttribute;
+	}
+
+	p_Operation = xml_node_soap_get(p_node, "Operation");
+	if (p_Operation && p_Operation->data)
+	{
+		p_req->Operation = onvif_StringToPTZPresetTourOperation(p_Operation->data);
+	}
+
+	return ONVIF_OK;
+}
+
+ONVIF_RET parse_RemovePresetTour(XMLN * p_node, PresetTour_REQ * p_req)
+{
+	XMLN * p_ProfileToken;
+	XMLN * p_PresetTourToken;
+
+	assert(p_node);
+
+    p_ProfileToken = xml_node_soap_get(p_node, "ProfileToken");
+	if (p_ProfileToken && p_ProfileToken->data)
+	{
+		strncpy(p_req->ProfileToken, p_ProfileToken->data, sizeof(p_req->ProfileToken)-1);
+	}else{
+		return ONVIF_ERR_NoProfile;
+	}
+
+    p_PresetTourToken = xml_node_soap_get(p_node, "PresetTourToken");
+	if (p_PresetTourToken && p_PresetTourToken->data)
+	{
+		strncpy(p_req->PresetTourToken, p_PresetTourToken->data, sizeof(p_req->PresetTourToken)-1);
+	}else{
+		return ONVIF_ERR_NoToken;
+	}
+
+	return ONVIF_OK;
+}
+
+ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
+{
+	XMLN * p_ProfileToken;
+	XMLN * p_PresetTour;
+	ONVIF_RET ret;
+
+	assert(p_node);
+
+	p_ProfileToken = xml_node_soap_get(p_node, "ProfileToken");
+	if (p_ProfileToken && p_ProfileToken->data)
+	{
+		strncpy(p_req->ProfileToken, p_ProfileToken->data, sizeof(p_req->ProfileToken)-1);
+	}else {
+		return ONVIF_ERR_NoProfile;
+	}
+
+	p_PresetTour = xml_node_soap_get(p_node, "PresetTour"); 
+	while (p_PresetTour && soap_strcmp(p_PresetTour->name, "PresetTour") == 0)
+	{
+		ONVIF_PresetTour * PresetTour_req = onvif_add_PresetTour(&p_req->PresetTour_req);
+		if (PresetTour_req)
+		{
+			ret = parse_PresetTour(p_PresetTour, &PresetTour_req->PresetTour);
+			if (ONVIF_OK != ret)
+			{
+				// onvif_free_Configs(&p_req->AnalyticsModule);
+				onvif_free_PresetTours(&p_req->PresetTour_req);
+
+				return ret;
+			}
+		}
+
+		p_PresetTour = p_PresetTour->next;
+	}
+
+	return ONVIF_OK;
+}
+
+/* add PresetTour end */
+
 #endif // PTZ_SUPPORT
 
 #ifdef PROFILE_G_SUPPORT

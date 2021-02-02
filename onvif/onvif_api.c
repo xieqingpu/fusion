@@ -35,7 +35,7 @@ static HTTPSRV http_srv[MAX_SERVERS];
 extern ONVIF_CLS g_onvif_cls;
 extern ONVIF_CFG g_onvif_cfg;
 
-int logEnable = 0;
+// int logEnable = 0;
 
 #define ONVIF_MAJOR_VERSION 7
 #define ONVIF_MINOR_VERSION 2
@@ -44,14 +44,10 @@ int logEnable = 0;
 
 void logOpen()
 {
-    // g_onvif_cfg.log_enable = 1;
-	logEnable = 1;
 	log_set_level(LOG_DBG);		//log level在[1~5]都可以有打印
 }
 void logClose()
 {
-    // g_onvif_cfg.log_enable = 0;
-	logEnable = 0;
 	log_set_level(LOG_ERR);		//log level在[4~5]可以有打印，错误或者致命信息打印
 }
 
@@ -59,6 +55,7 @@ void logClose()
 void * onvif_task(void * argv)
 {
     OIMSG stm;
+	prctl(PR_SET_NAME, (unsigned long)"onviftaskThread");
 
 	while (1)
 	{
@@ -105,12 +102,11 @@ void onvif_start()
 
 	onvif_init();
 
-	if (logEnable)
-	{
-		printf("log_enable = %d. +++++++ 0:close, 1:open  +++++++\n", logEnable);
-		log_init("onvif_log.txt");
-		// log_set_level(LOG_DBG);
-	}
+	// if (logEnable)
+	// {
+	//	 printf("log_enable = %d. +++++++ 0:close, 1:open  +++++++\n", logEnable);
+		// log_init("onvif_log.txt");
+	// }
 
     g_onvif_cls.msg_queue = hqCreate(100, sizeof(OIMSG), HQ_GET_WAIT);
 	if (g_onvif_cls.msg_queue == NULL)

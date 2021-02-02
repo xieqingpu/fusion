@@ -153,6 +153,12 @@ ONVIF_RET parse_SetPreset(XMLN * p_node, SetPreset_REQ * p_req);
 ONVIF_RET parse_RemovePreset(XMLN * p_node, RemovePreset_REQ * p_req);
 ONVIF_RET parse_GotoPreset(XMLN * p_node, GotoPreset_REQ * p_req);
 ONVIF_RET parse_GotoHomePosition(XMLN * p_node, GotoHomePosition_REQ * p_req);
+// add by xieqingpu
+ONVIF_RET parse_CreatePresetTour(XMLN * p_node, PresetTour_REQ * p_req);
+ONVIF_RET parse_OperatePresetTour(XMLN * p_node, OperatePresetTour_REQ * p_req);
+ONVIF_RET parse_RemovePresetTour(XMLN * p_node, PresetTour_REQ * p_req);
+ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req);
+
 
 #endif // end of PTZ_SUPPORT
 

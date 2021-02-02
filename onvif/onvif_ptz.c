@@ -420,10 +420,6 @@ ONVIF_RET onvif_GotoPreset(GotoPreset_REQ * p_req)
  //// add by xieqingpu
  	int index = onvif_find_PTZPreset_index(p_req->ProfileToken, p_req->PresetToken); //获取preset的下标只是为了设置预置位
 
-    // todo : get PTZ current position ...
-	/* printf(" g_onvif_cls.preset_idx = %d\n", g_onvif_cls.preset_idx);
-	printf(" ####   goto  idx= %d\n", index); */
-
 	short location = index < 0 ? 1 : index;
 	gotoPtzPreset(location);
 
@@ -601,6 +597,164 @@ ONVIF_RET onvif_SetConfiguration(SetConfiguration_REQ * p_req)
 	return ONVIF_OK;
 }
 
+/* add PresetTour by xieqingpu */
+
+ONVIF_RET onvif_CreatePresetTour(PresetTour_REQ * p_req)
+{
+    ONVIF_PresetTour * p_PresetTour = NULL;
+	ONVIF_PROFILE * p_profile;
+
+	p_profile = onvif_find_profile(p_req->ProfileToken);
+	if (NULL == p_profile)
+	{
+		return ONVIF_ERR_NoProfile;
+	}
+	else if (NULL == g_onvif_cfg.ptz_node)
+	{
+		return ONVIF_ERR_NoPTZProfile;
+	}
+	
+
+	p_PresetTour = onvif_add_PresetTour(&p_profile->PresetTours); 
+	if (p_PresetTour)
+	{
+		// memset(p_PresetTour, 0, sizeof(ONVIF_PresetTour));
+
+        sprintf(p_PresetTour->PresetTour.token, "PRESET_TOUR_%d", g_onvif_cls.preset_tour_idx);
+        strcpy(p_req->PresetTourToken, p_PresetTour->PresetTour.token);
+		
+        g_onvif_cls.preset_tour_idx++;
+	}
+
+
+}
+
+ONVIF_RET onvif_OperatePresetTour(OperatePresetTour_REQ * p_req)
+{
+	ONVIF_PROFILE * p_profile;
+    ONVIF_PresetTour * p_PresetTour;
+    
+	p_profile = onvif_find_profile(p_req->ProfileToken);
+	if (NULL == p_profile)
+	{
+		return ONVIF_ERR_NoProfile;
+	}
+
+	if (NULL == g_onvif_cfg.ptz_node)
+	{
+		return ONVIF_ERR_NoPTZProfile;
+	}
+	// if (g_onvif_cfg.ptz_node->PTZNode.Extension.SupportedPresetTourFlag)
+	// {
+	// 	return ONVIF_ERR_OTHER;
+	// }
+
+    // p_preset = onvif_find_PTZPreset(p_req->ProfileToken, p_req->PresetToken);  // &p_profile->presets[i]
+    p_PresetTour = onvif_find_PTZPresetTour(p_req->ProfileToken, p_req->PresetTourToken);
+    if (NULL == p_PresetTour)
+    {
+        return ONVIF_ERR_OTHER;
+    }
+
+    // todo : add Operate Preset Tour code ...
+
+
+    return ONVIF_OK;
+}
+
+ONVIF_RET onvif_RemovePresetTour(PresetTour_REQ * p_req)
+{
+	ONVIF_PROFILE * p_profile;
+    ONVIF_PresetTour * p_PresetTour;
+    
+	p_profile = onvif_find_profile(p_req->ProfileToken);
+	if (NULL == p_profile)
+	{
+		return ONVIF_ERR_NoProfile;
+	}
+
+	if (NULL == g_onvif_cfg.ptz_node)
+	{
+		return ONVIF_ERR_NoPTZProfile;
+	}
+	// if (g_onvif_cfg.ptz_node->PTZNode.Extension.SupportedPresetTourFlag)
+	// {
+	// 	return ONVIF_ERR_OTHER;
+	// }
+
+    // p_preset = onvif_find_PTZPreset(p_req->ProfileToken, p_req->PresetToken);  // &p_profile->presets[i]
+    p_PresetTour = onvif_find_PTZPresetTour(p_req->ProfileToken, p_req->PresetTourToken);  //p_profile->PresetTours
+    if (NULL == p_PresetTour)
+    {
+        return ONVIF_ERR_OTHER;
+    }
+
+	// onvif_remove_Config(&p_va_cfg->Configuration.RuleEngineConfiguration.Rule, p_config);
+	onvif_remove_PresetTour(&p_profile->PresetTours, p_PresetTour);
+
+
+    // todo : add Remove Preset Tour code ...
+
+
+    return ONVIF_OK;
+}
+
+
+ONVIF_RET onvif_ModifyPresetTour(ModifyPresetTour_REQ * p_req)
+{
+	ONVIF_PROFILE * p_profile;
+    ONVIF_PresetTour * p_PresetTour;
+	ONVIF_PresetTour * p_tmp;
+	ONVIF_PresetTour * p_prev;
+    
+	p_profile = onvif_find_profile(p_req->ProfileToken);
+	if (NULL == p_profile)
+	{
+		return ONVIF_ERR_NoProfile;
+	}
+
+	if (NULL == g_onvif_cfg.ptz_node)
+	{
+		return ONVIF_ERR_NoPTZProfile;
+	}
+	// if (g_onvif_cfg.ptz_node->PTZNode.Extension.SupportedPresetTourFlag)
+	// {
+	// 	return ONVIF_ERR_OTHER;
+	// }
+
+	p_tmp = p_req->PresetTour_req;
+	while (p_tmp)
+	{
+		p_PresetTour = onvif_find_PTZPresetTour(p_req->ProfileToken,p_req->PresetTour_req->PresetTour.token);
+		if (NULL == p_PresetTour)
+		{
+			onvif_free_PresetTours(&p_tmp);
+
+			return ONVIF_ERR_OTHER;
+		}
+
+		p_prev = onvif_get_prev_presetTour(&p_profile->PresetTours, p_PresetTour);
+		if (NULL == p_prev)
+		{
+			p_profile->PresetTours = p_tmp;
+			p_tmp->next = p_PresetTour->next;
+		}
+		else
+		{
+			p_prev->next = p_tmp;
+			p_tmp->next = p_PresetTour->next;
+		}
+		
+		onvif_free_TourSpots(&p_PresetTour->PresetTour.TourSpot);
+		free(p_PresetTour);
+
+		p_tmp = p_tmp->next;
+	}
+	
+	return ONVIF_OK;
+}
+
+/* add PresetTour end */
 
 #endif // PTZ_SUPPORT
 

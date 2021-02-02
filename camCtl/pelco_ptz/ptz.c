@@ -69,7 +69,7 @@ error_code pelco_Init( char* device, u_int32 baud_rate)
 	
 	if( (*fd = open(device,O_RDWR|O_NOCTTY)) < 0 )
 	{
-		UTIL_ERR("ERROR:%s:%d!!", __FUNCTION__, errno);
+		UTIL_ERR("device:%s,ERROR:%d(%s)!!", device, errno, strerror(errno));
 		return ret;
 	}
 
@@ -126,17 +126,18 @@ error_code pelcoPut( unsigned char c )
 */
 error_code pelcoWrite( unsigned char *buf, u_int32 size )
 {
-	error_code ec = 0;
+	// error_code ec = 0;
+	error_code ec = RET_OK;
 	int count = 0;
 
-	if( size == 0 ) return ec;
+	if( size == 0 ) return RET_ERR;
     usleep(100);
 	if( (count = write(fdOut,buf,size)) != size )
 	{
 		if( count < 0 )
 		{
 			UTIL_ERR("ERROR: %s:WRITE %s", __FUNCTION__, strerror(errno));
-			ec = 1;
+			ec = RET_ERR;
 			sleep(2);
 		}
 	}
@@ -253,8 +254,8 @@ error_code pelco_Left(unsigned short force)
 	pelco[p_data1] = force;
 	pelco[p_data2] = 0x00;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -270,8 +271,7 @@ error_code pelco_Right(unsigned short force)
 	pelco[p_data1] = force;
 	pelco[p_data2] = 0x00;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
 
 	// printf("pelco_Right,pelco[p_data1] = %x\n",pelco[p_data1]);
 	return ret;
@@ -291,8 +291,8 @@ error_code pelco_Up(unsigned short force)
 	pelco[p_data1] = 0x00;
 	pelco[p_data2] = force;
 	pelcoChecksum();
-    pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+    ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -309,8 +309,8 @@ error_code pelco_Down(unsigned short force)
 	pelco[p_data1] = 0x00;
 	pelco[p_data2] = force;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 }
 error_code pelco_left_down(unsigned short force)
@@ -327,8 +327,8 @@ error_code pelco_left_down(unsigned short force)
 	pelco[p_data2] = force;
 	// pelco[p_data2] = force>>8;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -346,8 +346,8 @@ error_code pelco_left_up(unsigned short force)
 	pelco[p_data2] = force;
 	// pelco[p_data2] = force>>8;
 	pelcoChecksum();	//校验码(第7字节)
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -365,8 +365,8 @@ error_code pelco_right_down(unsigned short force)
 	pelco[p_data2] = force;
 	// pelco[p_data2] = force>>8;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -384,8 +384,8 @@ error_code pelco_right_up(unsigned short force)
 	pelco[p_data2] = force;
 	// pelco[p_data2] = force>>8;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -402,8 +402,8 @@ error_code pelco_Stop(void)
 	pelco[p_data1] = 0x00;
 	pelco[p_data2] = 0x00;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -420,8 +420,8 @@ error_code pelco_set_point(unsigned short location)
 	pelco[p_data1] = 0x00;
 	pelco[p_data2] = location;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -437,8 +437,8 @@ error_code pelco_get_point(unsigned short  location)
 	pelco[p_data1] = 0x00;
 	pelco[p_data2] = location;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -456,8 +456,8 @@ error_code pelco_set_vertical(unsigned short location)
 	pelco[p_data2] = location;
 	pelco[p_data1] = location>>8;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-    ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+    
 	return ret;
 
 }
@@ -532,8 +532,8 @@ error_code pelco_set_horizontal(unsigned short location)
 	pelco[p_data2] = location;
 	pelco[p_data1] = location>>8;
 	pelcoChecksum();
-	pelcoWrite(pelco,sizeof(pelco));
-	ret=RET_OK;
+	ret = pelcoWrite(pelco,sizeof(pelco));
+	
 	return ret;
 }
 

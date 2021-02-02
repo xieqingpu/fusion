@@ -1,14 +1,25 @@
 ################OPTION###################
-include ../../product_list_conf
+include ../../../product_list_conf
 
 COMPILEOPTION = -g -c -O3
+ifeq ($(PLATFORM),HISI)
+	LIB_DIR=hi_lib
+else ifeq ($(PLATFORM), RK)
+	LIB_DIR=rk-lib
+else ifeq ($(PLATFORM), GPT) 
+	LIB_DIR=gpt-lib
+endif
 
-#��ӦоƬ����ƵSDK����Ŀ¼
+#对应芯片音视频SDK所在目录
 ifeq ($(HWMODEL), HI3519AV100)
 COMPILEOPTION  += -DHI3519AV100
 else ifeq ($(HWMODEL), HI3516DV300)
 COMPILEOPTION  += -DHI3516DV300
 endif
+
+VERSIONEXT=$(VERSION).$(shell date "+%Y%m%d%H%M%S")
+
+COMPILEOPTION  += -DFIRMWARE_VERSION=\"$(VERSIONEXT)\" -DPRODUCT_NAME=\"$(PRODUCTNAME)\"
 
 COMPILEOPTION += -DEPOLL
 # COMPILEOPTION += -DHTTPS
@@ -16,9 +27,9 @@ COMPILEOPTION += -DHTTPD
 COMPILEOPTION += -DDEVICEIO_SUPPORT
 #COMPILEOPTION += -DPROFILE_G_SUPPORT
 #COMPILEOPTION += -DPROFILE_C_SUPPORT
-COMPILEOPTION += -DCREDENTIAL_SUPPORT     
+COMPILEOPTION += -DCREDENTIAL_SUPPORT
 #COMPILEOPTION += -DACCESS_RULES
-#COMPILEOPTION += -DSCHEDULE_SUPPORT    
+#COMPILEOPTION += -DSCHEDULE_SUPPORT
 COMPILEOPTION += -DAUDIO_SUPPORT
 COMPILEOPTION += -DMEDIA2_SUPPORT
 COMPILEOPTION += -DPTZ_SUPPORT
@@ -47,13 +58,15 @@ OBJS = bm/word_analyse.o bm/util.o bm/sys_os.o bm/sys_log.o bm/sys_buf.o bm/ppst
        onvif/onvif_cfg.o onvif/onvif_deviceio.o onvif/onvif_media2.o onvif/onvif_thermal.o \
        onvif/onvif_credential.o onvif/onvif_accessrules.o onvif/onvif_schedule.o onvif/onvif_receiver.o \
 	   onvif_main.o	\
-	  ./camCtl/pelco_ptz/ptz.o ./camCtl/ntp_conf.o\
+	  ./camCtl/pelco_ptz/ptz.o ./camCtl/ntp_conf.o \
 	   ./camCtl/visca/libvisca.o ./camCtl/visca/libvisca_posix.o ./camCtl/visca/rw_config.o ./camCtl/visca/visca_api.o \
 	   ./camCtl/set_config.o \
-	   ./camCtl/cfg_file.o \
-	   main.o
+	   ./camCtl/cfg_file.o 
+	#    main.o
 
-OUTPUT = onvifserver
+STATIC_LIB =  libonvifserver.a
+# OUTPUT = onvifserver
+
 SHAREDLIB = -lpthread -ldl
 #if define HTTPS
 #SHAREDLIB += -lssl -lcrypto 
@@ -66,14 +79,14 @@ ESQL_OPTION = -g
 ESQL = esql
 PROC = proc
 
-$(OUTPUT):$(OBJS)
-	$(CPP) $(LINKOPTION) $(LIBDIRS)  $(OBJS) $(SHAREDLIB)
+# 编成静态库
+$(STATIC_LIB):$(OBJS)
+	$(AR) cr $@ $^
+	cp -rf $(STATIC_LIB) ../$(LIB_DIR)
 
+.PHONY:clean all
 
-clean: 
-	rm -f $(OBJS)
-	rm -f $(OUTPUT) $(STATIC_LIB)
-all: clean $(OUTPUT)
+all: clean $(STATIC_LIB)
 .PRECIOUS:%.cpp %.c %.C
 .SUFFIXES:
 .SUFFIXES:  .c .o .cpp .ecpp .pc .ec .C .cc .cxx
@@ -101,3 +114,8 @@ all: clean $(OUTPUT)
 	
 .pc.cpp:
 	$(PROC)  CPP_SUFFIX=cpp $(PROC_OPTION)  $*.pc
+
+clean: 
+	rm -f $(OBJS)
+	rm -f $(STATIC_LIB)
+

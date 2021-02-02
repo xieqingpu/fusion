@@ -59,7 +59,6 @@ HD_AUTH_INFO        g_onvif_auth;
 
 extern ONVIF_CFG    g_onvif_cfg;
 
-extern int logEnable;
 /***************************************************************************************/
 char xml_hdr[] = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>";
 
@@ -4457,7 +4456,140 @@ int soap_SetHomePosition(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN
 	return soap_build_err_rly(p_user, rx_msg, ret);
 }
 
-#endif // PTZ_SUPPORT
+/* add PresetTour by xieqingpu */
+
+int soap_CreatePresetTour(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
+{
+	ONVIF_RET ret;
+	XMLN * p_CreatePresetTour;
+	PresetTour_REQ req;
+	
+    onvif_print("%s\r\n", __FUNCTION__);
+
+    p_CreatePresetTour = xml_node_soap_get(p_body, "CreatePresetTour");
+	assert(p_CreatePresetTour);
+	
+	memset(&req, 0, sizeof(PresetTour_REQ));
+
+	// ret = parse_SetPreset(p_SetPreset, &req);
+	ret = parse_CreatePresetTour(p_CreatePresetTour, &req);
+	if (ONVIF_OK == ret)
+	{
+		// ret = onvif_SetPreset(&req);
+		ret = onvif_CreatePresetTour(&req);
+	    if (ONVIF_OK == ret)
+		{
+			return soap_build_send_rly(p_user, rx_msg, build_CreatPresetTour_rly_xml, req.PresetTourToken, NULL, p_header);
+		}
+	}
+
+	return soap_build_err_rly(p_user, rx_msg, ret);
+}
+
+int soap_GetPresetTours(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
+{
+	XMLN * p_GetPresetTours;
+	XMLN * p_ProfileToken;
+		
+	onvif_print("%s\r\n", __FUNCTION__);
+
+	p_GetPresetTours = xml_node_soap_get(p_body, "GetPresetTours");
+	assert(p_GetPresetTours);
+
+	p_ProfileToken = xml_node_soap_get(p_GetPresetTours, "ProfileToken");
+	if (p_ProfileToken && p_ProfileToken->data)
+	{
+		return soap_build_send_rly(p_user, rx_msg, build_GetPresetTours_rly_xml, p_ProfileToken->data, NULL, p_header);
+	}
+	else 
+	{
+		return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_MISSINGATTR, NULL, "Missing Attribute");
+	}
+}
+
+int soap_OperatePresetTour(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
+{
+	ONVIF_RET ret;
+	XMLN * p_OperatePresetTour;	
+	OperatePresetTour_REQ req;
+	
+    onvif_print("%s\r\n", __FUNCTION__);
+
+    p_OperatePresetTour = xml_node_soap_get(p_body, "OperatePresetTour");
+	assert(p_OperatePresetTour);
+	
+	memset(&req, 0, sizeof(req));
+
+	ret = parse_OperatePresetTour(p_OperatePresetTour, &req);
+	if (ONVIF_OK == ret)
+	{
+		ret = onvif_OperatePresetTour(&req);
+		if (ONVIF_OK == ret)
+		{
+			return soap_build_send_rly(p_user, rx_msg, build_OperatePresetTour_rly_xml, NULL, NULL, p_header);
+		}
+	}
+	
+	return soap_build_err_rly(p_user, rx_msg, ret);
+}
+
+int soap_RemovePresetTour(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
+{
+	ONVIF_RET ret;
+	XMLN * p_RemovePresetTour;	
+	PresetTour_REQ req;
+	
+    onvif_print("%s\r\n", __FUNCTION__);
+
+    p_RemovePresetTour = xml_node_soap_get(p_body, "RemovePresetTour");
+	assert(p_RemovePresetTour);
+	
+	memset(&req, 0, sizeof(req));
+
+	ret = parse_RemovePresetTour(p_RemovePresetTour, &req);
+	if (ONVIF_OK == ret)
+	{
+		// ret = onvif_RemovePreset(&req);
+		ret = onvif_RemovePresetTour(&req);
+		if (ONVIF_OK == ret)
+		{
+			return soap_build_send_rly(p_user, rx_msg, build_RemovePresetTour_rly_xml, NULL, NULL, p_header);
+		}
+	}
+	
+	return soap_build_err_rly(p_user, rx_msg, ret);
+}
+
+int soap_ModifyPresetTour(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
+{
+	ONVIF_RET ret;
+	XMLN * p_ModifyPresetTour;	
+	// onvif_PresetTour req;
+	ModifyPresetTour_REQ req;
+	
+    onvif_print("%s\r\n", __FUNCTION__);
+
+    p_ModifyPresetTour = xml_node_soap_get(p_body, "ModifyPresetTour");
+	assert(p_ModifyPresetTour);
+	
+	memset(&req, 0, sizeof(req));
+
+	ret = parse_ModifyPresetTour(p_ModifyPresetTour, &req);
+	if (ONVIF_OK == ret)
+	{
+		// onvif_ModifyAnalyticsModules(&req);
+		ret = onvif_ModifyPresetTour(&req);
+		if (ONVIF_OK == ret)
+		{
+			return soap_build_send_rly(p_user, rx_msg, build_ModifyPresetTour_rly_xml, NULL, NULL, p_header);
+		}
+	}
+	
+	return soap_build_err_rly(p_user, rx_msg, ret);
+}
+/* add PresetTour end */
+
+#endif /* PTZ_SUPPORT */
 
 #ifdef VIDEO_ANALYTICS
 
@@ -9593,9 +9725,7 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	}
 
 
-	//if (logEnable == 1){
-	//	printf("\r\nsoap_process::rx xml:\r\n%s\r\n", p_xml);		// Print the XML file sent by the client
-	//}
+		// printf("\r\nsoap_process::rx xml:\r\n%s\r\n", p_xml);		// Print the XML file sent by the client
 
 	p_node = xxx_hxml_parse(p_xml, strlen(p_xml));
 	if (NULL == p_node || NULL == p_node->name)
@@ -10523,6 +10653,29 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	{
 		soap_SetHomePosition(p_user, rx_msg, p_body, p_header);
 	}	
+	/* add Preset Tour by xieqingpu */
+	else if (soap_strcmp(p_name, "CreatePresetTour") == 0)
+	{
+		soap_CreatePresetTour(p_user, rx_msg, p_body, p_header);
+	}
+	else if (soap_strcmp(p_name, "GetPresetTours") == 0)
+	{
+		soap_GetPresetTours(p_user, rx_msg, p_body, p_header);
+	}
+	else if (soap_strcmp(p_name, "OperatePresetTour") == 0)
+	{
+		soap_OperatePresetTour(p_user, rx_msg, p_body, p_header);
+	}
+	else if (soap_strcmp(p_name, "RemovePresetTour") == 0)
+	{
+		soap_RemovePresetTour(p_user, rx_msg, p_body, p_header);
+	}
+	else if (soap_strcmp(p_name, "ModifyPresetTour") == 0)
+	{
+		soap_ModifyPresetTour(p_user, rx_msg, p_body, p_header);
+	}
+	/*  */
+
 #endif // PTZ_SUPPORT
 
 #ifdef VIDEO_ANALYTICS	

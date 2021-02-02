@@ -133,6 +133,7 @@ void * onvif_timer_task(void * argv)
 	OIMSG msg;
 	memset(&msg, 0, sizeof(OIMSG));
 	
+	prctl(PR_SET_NAME, (unsigned long)"onviftimerThr");
 	while (g_onvif_cls.sys_timer_run == 1)
 	{		
 		tv.tv_sec = 1;
