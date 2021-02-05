@@ -618,15 +618,21 @@ ONVIF_RET onvif_CreatePresetTour(PresetTour_REQ * p_req)
 	p_PresetTour = onvif_add_PresetTour(&p_profile->PresetTours); 
 	if (p_PresetTour)
 	{
-		// memset(p_PresetTour, 0, sizeof(ONVIF_PresetTour));
-
         sprintf(p_PresetTour->PresetTour.token, "PRESET_TOUR_%d", g_onvif_cls.preset_tour_idx);
         strcpy(p_req->PresetTourToken, p_PresetTour->PresetTour.token);
-		
+
         g_onvif_cls.preset_tour_idx++;
+
+
+		ONVIF_PTZPresetTourSpot * p_tour_spot = onvif_add_TourSpot(&p_PresetTour->PresetTour.TourSpot);
+		if (NULL == p_tour_spot)
+		{
+			free(p_PresetTour);
+			return ONVIF_ERR_OTHER;
+		}
 	}
 
-
+	return ONVIF_OK;
 }
 
 ONVIF_RET onvif_OperatePresetTour(OperatePresetTour_REQ * p_req)
@@ -725,7 +731,7 @@ ONVIF_RET onvif_ModifyPresetTour(ModifyPresetTour_REQ * p_req)
 	p_tmp = p_req->PresetTour_req;
 	while (p_tmp)
 	{
-		p_PresetTour = onvif_find_PTZPresetTour(p_req->ProfileToken,p_req->PresetTour_req->PresetTour.token);
+		p_PresetTour = onvif_find_PTZPresetTour(p_req->ProfileToken, p_tmp->PresetTour.token);
 		if (NULL == p_PresetTour)
 		{
 			onvif_free_PresetTours(&p_tmp);

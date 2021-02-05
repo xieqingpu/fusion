@@ -7513,18 +7513,13 @@ int build_PTZPosition_xml(char * p_buf, int mlen, onvif_PTZVector * p_req)
 
 	if (p_req->PanTiltFlag){
 		offset += snprintf(p_buf+offset, mlen-offset, 
-		"<tptz:PanTilt>"
-			"<tt:X>%f</tt:X>"
-			"<tt:Y>%f</tt:Y>"
-		"</tptz:PanTilt>",
+		"<tt:PanTilt x=\"%0.1f\" y=\"%0.1f\" />",
 		p_req->PanTilt.x,
 		p_req->PanTilt.y);
 	}
 	if (p_req->ZoomFlag){
 		offset += snprintf(p_buf+offset, mlen-offset, 
-		"<tptz:Zoom>"
-			"<tt:X>%f</tt:X>"
-		"</tptz:Zoom>",
+		"<tt:Zoom x=\"%0.1f\" />",
 		p_req->Zoom.x);
 	}
 
@@ -7536,18 +7531,13 @@ int build_PTZSpeed_xml(char * p_buf, int mlen, onvif_PTZSpeed * p_req)
 
 	if (p_req->PanTiltFlag){
 		offset += snprintf(p_buf+offset, mlen-offset, 
-		"<tptz:PanTilt>"
-			"<tt:X>%f</tt:X>"
-			"<tt:Y>%f</tt:Y>"
-		"</tptz:PanTilt>",
+		"<tt:PanTilt x=\"%0.1f\" y=\"%0.1f\" />",
 		p_req->PanTilt.x,
 		p_req->PanTilt.y);
 	}
 	if (p_req->ZoomFlag){
 		offset += snprintf(p_buf+offset, mlen-offset, 
-		"<tptz:Zoom>"
-			"<tt:X>%f</tt:X>"
-		"</tptz:Zoom>",
+		"<tt:Zoom x=\"%0.1f\" />",
 		p_req->Zoom.x);
 	}
 
@@ -7580,7 +7570,7 @@ int build_CurrentTourSpot_xml(char * p_buf, int mlen, onvif_PTZPresetTourSpot * 
 	
 	if (p_req->StayTimeFlag)
 	{
-    	offset += snprintf(p_buf+offset, mlen-offset, "<tt:StayTime>%d</tt:StayTime>", p_req->StayTime);	
+    	offset += snprintf(p_buf+offset, mlen-offset, "<tt:StayTime>PT%dS</tt:StayTime>", p_req->StayTime);	
 	}
 
 	return offset;
@@ -7589,7 +7579,7 @@ int build_Status_xml(char * p_buf, int mlen, onvif_PTZPresetTourStatus * p_req)
 {
 	int offset = 0;
 
-	offset += snprintf(p_buf+offset, mlen-offset, "<tt:State>%d</tt:State>", p_req->State);
+	offset += snprintf(p_buf+offset, mlen-offset, "<tt:State>%s</tt:State>", onvif_PTZPresetTourStateToString(p_req->State));
 
 	if (p_req->CurrentTourSpotFlag)
 	{
@@ -7615,13 +7605,14 @@ int build_StartingCondition_xml(char * p_buf, int mlen, onvif_PTZPresetTourStart
 	}
 	
 	if (p_req->RecurringDurationFlag){
-		offset += snprintf(p_buf+offset, mlen-offset, "<tt:RecurringDuration>%d</tt:RecurringDuration>",
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:RecurringDuration>PT%dS</tt:RecurringDuration>",
 			p_req->RecurringDuration);	
 	}
 
 	if (p_req->DirectionFlag){
-		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Direction>%d</tt:Direction>",
-			p_req->Direction);
+		printf("xxxpt StartingCondition / Direction = %d (0:Forward 1:Backward) xxxxx\n",p_req->Direction);
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Direction>%s</tt:Direction>",
+			onvif_PTZPresetTourDirectionToString(p_req->Direction));
 	}
 	
 	return offset;
@@ -7653,7 +7644,7 @@ int build_TourSpot_xml(char * p_buf, int mlen, onvif_PTZPresetTourSpot * p_req)
 	
 	if (p_req->StayTimeFlag)
 	{
-    	offset += snprintf(p_buf+offset, mlen-offset, "<tt:StayTime>%d</tt:StayTime>", p_req->StayTime);	
+    	offset += snprintf(p_buf+offset, mlen-offset, "<tt:StayTime>PT%dS</tt:StayTime>", p_req->StayTime);	
 	}
 
 	return offset;
@@ -7698,7 +7689,7 @@ int build_GetPresetTours_rly_xml(char * p_buf, int mlen, const char * argv)
 		{
 			offset += snprintf(p_buf+offset, mlen-offset, "<tptz:TourSpot>");
 			offset += build_TourSpot_xml(p_buf+offset, mlen-offset, &p_TourSpot->PTZPresetTourSpot);
-			offset += snprintf(p_buf+offset, mlen-offset, "</tt:TourSpot>");
+			offset += snprintf(p_buf+offset, mlen-offset, "</tptz:TourSpot>");
 
 			p_TourSpot = p_TourSpot->next;
 		}

@@ -75,7 +75,7 @@ int writeUsers(onvif_User *p_users, int cnt)
 int devInit(char *ptzDevID, const char *cameraDEVID)
 {
 	int ret;
-#ifdef HI3519AV100
+	
 	//visca 设备初始化 
 	for(int i=0;i<10;i++)
 	{
@@ -85,7 +85,6 @@ int devInit(char *ptzDevID, const char *cameraDEVID)
 		visca_deinit();
 		sleep(1);
 	}
-#endif
 
 #ifdef PTZ_SUPPORT
   ret =RET_ERR;
@@ -140,12 +139,13 @@ void controlPtzPos(float X, float Y, float Z , unsigned short Speed)
 	}
 
 	uint16_t Zspeed = switchToZspeed(Z);
-	if(Z > 0)
-		// set_zoom_tele();
-		set_zoom_tele_speed(Zspeed);
-	else if(Z < 0)
-		// set_zoom_wide();	
-		set_zoom_wide_speed(Zspeed);
+	if (1 == get_visca_status())
+	{
+		if(Z > 0)
+			set_zoom_tele_speed(Zspeed);
+		else if(Z < 0)
+			set_zoom_wide_speed(Zspeed);
+	}
 }
 
 void ptzStop()
@@ -618,8 +618,8 @@ int setVideoEncoder(Video_Encoder *p_video_encoder)
 	/*目前视频分辨率设置无效处理，因为设置分辨率之后影响双光融合算法*/
 	if( p_video_encoder->width != readCameraEncoder.width && p_video_encoder->height != readCameraEncoder.height ){
 		//GPTMessageSend(GPT_MSG_VIDEO_SETVENCCHNRESOLUTION, 0, (int)&resolution, sizeof(resolution));
-		// p_video_encoder->width = 1920;
-		// p_video_encoder->height = 1080;
+		p_video_encoder->width = 1920;
+		p_video_encoder->height = 1080;
 	}
     
 	/* 更新保存于文件 */
@@ -633,7 +633,6 @@ int setVideoEncoder(Video_Encoder *p_video_encoder)
 
 /* 读取NTPInformation数据参数 */
 #define  NTPFILE  ("/user/cfg_files/ntp.dat")
-static int START_NTP_SERVER_FLAG = 0;
 int GetNTPInformation(onvif_NTPInformation		    *pNTPInformation)
 {
 	if (read_cfg_from_file(NTPFILE, (char *)pNTPInformation, 
@@ -644,19 +643,17 @@ int GetNTPInformation(onvif_NTPInformation		    *pNTPInformation)
 	return 0;
 }
 
-int	Get_Start_NTP_Server()
-{
-	return START_NTP_SERVER_FLAG;
-}
-
-void Set_Start_NTP_Server(int flag)
-{
-	START_NTP_SERVER_FLAG = flag;
-}
-
 /* 保存NTPInformation数据参数*/
-int SetNTPInformation(onvif_NTPInformation		    *pNTPInformation, BOOL isSave)
-{	
+int SetNTPInformation(onvif_NTPInformation *pNTPInformation, BOOL isSave)
+{
+    //开启NTP服务器获取时间
+	if (sync_time(pNTPInformation) > 0) {
+	    UTIL_INFO("Sync time success");
+	}
+    else{
+        UTIL_INFO("fail to sync time");
+    }
+
 	if (isSave && save_cfg_to_file(NTPFILE, (char*)pNTPInformation, 
 		sizeof(onvif_NTPInformation)) != 0) {
 		return -1;
@@ -830,12 +827,8 @@ int SetSystemDateTime(onvif_SystemDateTime	 *pDataTimeInfo,
 			UTIL_INFO("fail to set Tz %s", linuxTz);
 		}
 	}
-    //开启NTP服务器获取时间
-	if (isSave && pDataTimeInfo->DateTimeType == SetDateTimeType_NTP) {
-		Set_Start_NTP_Server(1);
-	}
+	
 	if (isSave && pDataTimeInfo->DateTimeType == SetDateTimeType_Manual){
-		Set_Start_NTP_Server(0);
 		UTIL_INFO("SetDateTimeType_Manual");
 		set_system_clock_timezone(pUTCDateTime, 1);
 	}

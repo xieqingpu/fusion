@@ -232,8 +232,6 @@ int writePtzPreset(ONVIF_PTZPreset * p_presets, int cnt);
 **********************************************/
 void focusMove(float zoom);
 
-
-
 /*********************************************
 * FuncName: getImgParam       
 * Describe:  获取 摄像头参数
@@ -353,10 +351,6 @@ FILE *vpopen(const char* cmdstring, const char *type);
 			vpclose(fp); \
 		}                      \
     }while(0)
-
-void Set_Start_NTP_Server(int flag);
-int Get_Start_NTP_Server();
-
 
 int GetNTPInformation(onvif_NTPInformation		    *pNTPInformation);
 	

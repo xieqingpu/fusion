@@ -132,7 +132,7 @@ int sync_time_with_server(NTP_SERVER_T *ntp_server, struct timeval tv) {
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_socktype = SOCK_DGRAM;
 	if ((error=getaddrinfo(server_addr, port, &hints, &result))!=0) {
-		//UTIL_ERR("getaddrinfo %s failed:errno %s\n", server_addr, gai_strerror(error));
+		UTIL_ERR("getaddrinfo %s failed:errno %s\n", server_addr, gai_strerror(error));
 		return -1;
 	}
 	
@@ -215,8 +215,8 @@ int sync_time(onvif_NTPInformation		*pNTPInformation)
 	int i = 0;
 	int result = 0;
 	struct timeval tv;
-	tv.tv_sec = 20;
-	tv.tv_usec = 0;
+	tv.tv_sec = 0;
+	tv.tv_usec = 10000;
 	
     //从自定义的ntp服务器获取
 	if (pNTPInformation->FromDHCP == FALSE) {
@@ -266,17 +266,6 @@ void * ntpdate_Thread (void * arg)
 	}
 	
     while(1){
-		//客户设置立即生效
-		if (1 == Get_Start_NTP_Server()) {
-			Set_Start_NTP_Server(0);
-			firstflag = 1;
-			if (g_onvif_cfg.SystemDateTime.DateTimeType == SetDateTimeType_NTP)
-				UTIL_INFO("SetDateTimeType_NTP");
-			else 
-				UTIL_INFO("SetDateTimeType_MANUAL");
-		    UTIL_INFO("Start_NTP_Server!!!!");
-		}
-		
 		if (g_onvif_cfg.SystemDateTime.DateTimeType == SetDateTimeType_NTP) {
 	        COMM_GetSystemUpMSecs(&ullcurtimeMs);
 	        if (firstflag == 1 || (ullcurtimeMs - ulllasttimeMs)/1000 >= 12 * 60 * 60){
@@ -290,20 +279,30 @@ void * ntpdate_Thread (void * arg)
 				ulllasttimeMs = ullcurtimeMs;
 	        }
 		}
-#if 0
-        //主要用于心跳
-		COMM_GetSystemUpMSecs(&ullheartcurtimeMs);
-        if ((ullheartcurtimeMs - ullheartlasttimeMs) >= 30* 1000){
-			ullheartlasttimeMs = ullheartcurtimeMs;
-			UTIL_ALIVE("MAIN PROCESS!!!");
-        }
-#endif
         usleep(10*1000*1000LL);
     }
     
 	return NULL;
 }
 
+void set_clock_timezone(int utc)
+{
+	struct timeval tv;
+	struct tm *broken;
+	struct timezone tz;
+
+	gettimeofday(&tv, NULL);
+	broken = localtime(&tv.tv_sec);
+	tz.tz_minuteswest = timezone / 60;
+	if (broken->tm_isdst)
+		tz.tz_minuteswest -= 60;
+	tz.tz_dsttime = 0;
+	gettimeofday(&tv, NULL);
+	if (!utc)
+		tv.tv_sec += tz.tz_minuteswest * 60;
+	if (settimeofday(&tv, &tz))
+		UTIL_ERR("fail to settimeofday");
+}
 
 int Init_TimeZone()
 {
@@ -355,7 +354,7 @@ int Init_TimeZone()
     if (ret != 0){
         UTIL_INFO("fail to set Tz %s", linuxTz);
     }
-	
+	set_clock_timezone(1);
 	return 0;
 }
 

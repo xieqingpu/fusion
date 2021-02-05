@@ -281,7 +281,7 @@ uint16_t get_zoom_val()
 		usleep(50*1000);
 		int ret2 = VISCA_get_zoom_value(&iface, &camera, &zoom_value2);
 
-		if((ret==VISCA_SUCCESS)&&(ret==VISCA_SUCCESS) && (zoom_value==zoom_value2))
+		if((ret==VISCA_SUCCESS)&&(ret2==VISCA_SUCCESS) && (zoom_value==zoom_value2))
 		{
 			return zoom_value;
 		}

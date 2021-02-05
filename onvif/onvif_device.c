@@ -120,8 +120,8 @@ ONVIF_RET onvif_SetSystemDateAndTime(SetSystemDateAndTime_REQ * p_req)
 
 	g_onvif_cfg.SystemDateTime.DateTimeType = p_req->SystemDateTime.DateTimeType;
 	g_onvif_cfg.SystemDateTime.DaylightSavings = p_req->SystemDateTime.DaylightSavings;
-	if (/*p_req->SystemDateTime.TimeZoneFlag && */p_req->SystemDateTime.TimeZone.TZ[0] != '\0'
-		&& !strcasecmp(g_onvif_cfg.SystemDateTime.TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ))
+	if (p_req->SystemDateTime.TimeZone.TZ[0] != '\0'
+		&& 0 != strcasecmp(g_onvif_cfg.SystemDateTime.TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ))
 	{
 		strcpy(g_onvif_cfg.SystemDateTime.TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ);
 		isTZChange = 1;

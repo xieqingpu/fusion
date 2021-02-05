@@ -2140,8 +2140,21 @@ void onvif_build_gateway(char *ipAddr)
 		ipAddr[temp-ipAddr+1] = '1';
 		ipAddr[temp-ipAddr+2] = '\0';
 	}
+}
+
+void onvif_build_dns(char *ipAddr)
+{
+	char *temp = NULL;
+	
+	ONVIF_NetworkInterface * p_net_inf = g_onvif_cfg.network.interfaces;
+	if (p_net_inf && strlen(p_net_inf->NetworkInterface.IPv4.Config.Address) > 4) {
+		strcpy(ipAddr, p_net_inf->NetworkInterface.IPv4.Config.Address);
+		temp = strrchr(ipAddr, '.');
+		ipAddr[temp-ipAddr+1] = '1';
+		ipAddr[temp-ipAddr+2] = '\0';
+	}
 	else {
-		strcpy(ipAddr, "192.168.1.1");
+		strcpy(ipAddr, "8.8.8.8");
 	}
 }
 
@@ -2184,8 +2197,9 @@ void onvif_init_net()
 	ret = GetDNSInformation(&g_onvif_cfg.network.DNSInformation);
 	if (ret < 0) {
 	    g_onvif_cfg.network.DNSInformation.SearchDomainFlag = 1;
-	    g_onvif_cfg.network.DNSInformation.FromDHCP = TRUE;
-	    onvif_build_gateway(g_onvif_cfg.network.DNSInformation.DNSServer[0]);
+	    g_onvif_cfg.network.DNSInformation.FromDHCP = FALSE;
+		strcpy(g_onvif_cfg.network.DNSInformation.DNSServer[0], "114.114.114.114");
+	    onvif_build_dns(g_onvif_cfg.network.DNSInformation.DNSServer[1]);
 		SetDNSInformation(&g_onvif_cfg.network.DNSInformation, FALSE);
 		UTIL_INFO("dns==%s", g_onvif_cfg.network.DNSInformation.DNSServer[0]);
 	}
