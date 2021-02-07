@@ -7525,6 +7525,7 @@ int build_PTZPosition_xml(char * p_buf, int mlen, onvif_PTZVector * p_req)
 
 	return offset;
 }
+
 int build_PTZSpeed_xml(char * p_buf, int mlen, onvif_PTZSpeed * p_req)
 {
 	int offset = 0;
@@ -7543,22 +7544,35 @@ int build_PTZSpeed_xml(char * p_buf, int mlen, onvif_PTZSpeed * p_req)
 
 	return offset;
 }
+
+int build_PresetDetail_xml(char * p_buf, int mlen, onvif_PTZPresetTourPresetDetail * p_req)
+{
+	int offset = 0;
+
+	if (p_req->PresetTokenFlag)
+	{
+    	offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetToken>%s</tt:PresetToken>", p_req->PresetToken);	
+	}
+
+	if (p_req->HomeFlag){
+    	offset += snprintf(p_buf+offset, mlen-offset, "<tt:Home>%s</tt:Home>", p_req->Home ? "true" : "false");	
+	}
+
+	if (p_req->PTZPositionFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:PTZPosition>");
+		offset += build_PTZPosition_xml(p_buf+offset, mlen-offset, &p_req->PTZPosition);
+		offset += snprintf(p_buf+offset, mlen-offset, "</tt:PTZPosition>");		
+	}
+
+	return offset;
+}
+
 int build_CurrentTourSpot_xml(char * p_buf, int mlen, onvif_PTZPresetTourSpot * p_req)
 {
 	int offset = 0;
 	
 	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:PresetDetail>");
-		if (p_req->PresetDetail.PresetTokenFlag){
-    		offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetToken>%s</tt:PresetToken>", p_req->PresetDetail.PresetToken);	
-		}
-		if (p_req->PresetDetail.HomeFlag){
-    		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Home>%s</tt:Home>", p_req->PresetDetail.Home ? "true" : "false");	
-		}
-		if (p_req->PresetDetail.PTZPositionFlag){
-			offset += snprintf(p_buf+offset, mlen-offset, "<tt:PTZPosition>");
-			offset += build_PTZPosition_xml(p_buf+offset, mlen-offset, &p_req->PresetDetail.PTZPosition);
-	        offset += snprintf(p_buf+offset, mlen-offset, "</tt:PTZPosition>");		
-		}
+	offset += build_PresetDetail_xml(p_buf+offset, mlen-offset, &p_req->PresetDetail);
 	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:PresetDetail>");		
 
 	if (p_req->SpeedFlag)
@@ -7610,7 +7624,6 @@ int build_StartingCondition_xml(char * p_buf, int mlen, onvif_PTZPresetTourStart
 	}
 
 	if (p_req->DirectionFlag){
-		printf("xxxpt StartingCondition / Direction = %d (0:Forward 1:Backward) xxxxx\n",p_req->Direction);
 		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Direction>%s</tt:Direction>",
 			onvif_PTZPresetTourDirectionToString(p_req->Direction));
 	}
@@ -7622,17 +7635,7 @@ int build_TourSpot_xml(char * p_buf, int mlen, onvif_PTZPresetTourSpot * p_req)
 	int offset = 0;
 	
 	offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetDetail>");
-		if (p_req->PresetDetail.PresetTokenFlag){
-    		offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetToken>%s</tt:PresetToken>", p_req->PresetDetail.PresetToken);	
-		}
-		if (p_req->PresetDetail.HomeFlag){
-    		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Home>%s</tt:Home>", p_req->PresetDetail.Home ? "true" : "false");	
-		}
-		if (p_req->PresetDetail.PTZPositionFlag){
-			offset += snprintf(p_buf+offset, mlen-offset, "<tt:PTZPosition>");
-			offset += build_PTZPosition_xml(p_buf+offset, mlen-offset, &p_req->PresetDetail.PTZPosition);
-	        offset += snprintf(p_buf+offset, mlen-offset, "</tt:PTZPosition>");		
-		}
+	offset += build_PresetDetail_xml(p_buf+offset, mlen-offset, &p_req->PresetDetail);
 	offset += snprintf(p_buf+offset, mlen-offset, "</tt:PresetDetail>");		
 
 	if (p_req->SpeedFlag)
@@ -7678,7 +7681,8 @@ int build_GetPresetTours_rly_xml(char * p_buf, int mlen, const char * argv)
 		offset += build_Status_xml(p_buf+offset, mlen-offset, &p_PresetTour->PresetTour.Status);
 		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:Status>");
 		
-		offset += snprintf(p_buf+offset, mlen-offset, "<tt:AutoStart>%s</tt:AutoStart>",p_PresetTour->PresetTour.AutoStart ? "true" : "false");	
+		//在双光融合项目中我们把它去掉
+		// offset += snprintf(p_buf+offset, mlen-offset, "<tt:AutoStart>%s</tt:AutoStart>",p_PresetTour->PresetTour.AutoStart ? "true" : "false");	
 		
 		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:StartingCondition>");
 		offset += build_StartingCondition_xml(p_buf+offset, mlen-offset, &p_PresetTour->PresetTour.StartingCondition);	

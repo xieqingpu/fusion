@@ -4032,7 +4032,6 @@ ONVIF_RET parse_PresetTour(XMLN * p_node, onvif_PresetTour * p_req)
 			/* p_req->StartingCondition.RecurringDurationFlag = 1;
 			p_req->StartingCondition.RecurringDuration = (int)atoi(p_RecurringDuration->data); */
 			p_req->StartingCondition.RecurringDurationFlag = parse_XSDDuration(p_RecurringDuration->data, &p_req->StartingCondition.RecurringDuration);
-			printf("xxxpt p_req->StartingCondition.RecurringDuration = %d xxxxxxxxxxx\n",p_req->StartingCondition.RecurringDuration);
 		}
 
 		p_Direction = xml_node_soap_get(p_StartingCondition, "Direction");
@@ -4047,7 +4046,7 @@ ONVIF_RET parse_PresetTour(XMLN * p_node, onvif_PresetTour * p_req)
 	p_TourSpot = xml_node_soap_get(p_node, "TourSpot");
 	while (p_TourSpot && soap_strcmp(p_TourSpot->name, "TourSpot") == 0)  // while (p_TourSpot)
 	{
-		printf("xxxpt ModifyPresetTour|parse_PresetTour| while (p_TourSpot && soap_strcmp(p_TourSpot->name, \"TourSpot\") == 0)\n");
+		// printf("xxxpt ModifyPresetTour|parse_PresetTour| while (p_TourSpot && soap_strcmp(p_TourSpot->name, \"TourSpot\") == 0)\n");
 
 		ONVIF_PTZPresetTourSpot * p_tour_spot = onvif_add_TourSpot(&p_req->TourSpot);
 		if (p_tour_spot)
@@ -4169,7 +4168,7 @@ ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
 	p_PresetTour = xml_node_soap_get(p_node, "PresetTour"); 
 	while (p_PresetTour && soap_strcmp(p_PresetTour->name, "PresetTour") == 0)
 	{
-		printf("xxxpt ModifyPresetTour|parse_ModifyPresetTour| while (p_PresetTour && soap_strcmp(p_PresetTour->name, \"PresetTour\")\n");
+		// printf("xxxpt ModifyPresetTour|parse_ModifyPresetTour| while (p_PresetTour && soap_strcmp(p_PresetTour->name, \"PresetTour\")\n");
 
 		ONVIF_PresetTour * PresetTour_req = onvif_add_PresetTour(&p_req->PresetTour_req);
 		if (PresetTour_req)

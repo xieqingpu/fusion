@@ -9725,7 +9725,7 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	}
 
 
-	// printf("\r\nsoap_process::rx xml:\r\n%s\r\n", p_xml);		// Print the XML file sent by the client
+	printf("\r\nsoap_process::rx xml:\r\n%s\r\n", p_xml);		// Print the XML file sent by the client
 
 	p_node = xxx_hxml_parse(p_xml, strlen(p_xml));
 	if (NULL == p_node || NULL == p_node->name)
