@@ -45,6 +45,7 @@ extern ONVIF_CFG g_onvif_cfg;
 void logOpen()
 {
 	log_set_level(LOG_DBG);		//log level在[1~5]都可以有打印
+	log_init("onvif_log.txt");
 }
 void logClose()
 {
@@ -101,12 +102,6 @@ void onvif_start()
 	int i;
 
 	onvif_init();
-
-	// if (logEnable)
-	// {
-	//	 printf("log_enable = %d. +++++++ 0:close, 1:open  +++++++\n", logEnable);
-		// log_init("onvif_log.txt");
-	// }
 
     g_onvif_cls.msg_queue = hqCreate(100, sizeof(OIMSG), HQ_GET_WAIT);
 	if (g_onvif_cls.msg_queue == NULL)

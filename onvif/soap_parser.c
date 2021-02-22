@@ -4093,7 +4093,6 @@ ONVIF_RET parse_OperatePresetTour(XMLN * p_node, OperatePresetTour_REQ * p_req)
 	XMLN * p_ProfileToken;
 	XMLN * p_PresetTourToken;
 	XMLN * p_Operation;
-	ONVIF_RET ret;
 
 	assert(p_node);
 
@@ -4126,7 +4125,6 @@ ONVIF_RET parse_RemovePresetTour(XMLN * p_node, PresetTour_REQ * p_req)
 {
 	XMLN * p_ProfileToken;
 	XMLN * p_PresetTourToken;
-	ONVIF_RET ret;
 
 	assert(p_node);
 
@@ -4168,8 +4166,6 @@ ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
 	p_PresetTour = xml_node_soap_get(p_node, "PresetTour"); 
 	while (p_PresetTour && soap_strcmp(p_PresetTour->name, "PresetTour") == 0)
 	{
-		// printf("xxxpt ModifyPresetTour|parse_ModifyPresetTour| while (p_PresetTour && soap_strcmp(p_PresetTour->name, \"PresetTour\")\n");
-
 		ONVIF_PresetTour * PresetTour_req = onvif_add_PresetTour(&p_req->PresetTour_req);
 		if (PresetTour_req)
 		{
@@ -4200,7 +4196,6 @@ ONVIF_RET parse_RecordingConfiguration(XMLN * p_node, onvif_RecordingConfigurati
 	XMLN * p_Source;
 	XMLN * p_Content;
 	XMLN * p_MaximumRetentionTime;
-	ONVIF_RET ret;
 
 	p_Source = xml_node_soap_get(p_node, "Source");
 	if (p_Source)

@@ -312,7 +312,7 @@ typedef struct
 	ONVIF_PTZNode      		                * ptz_node;
 	ONVIF_PTZConfiguration	                * ptz_cfg;
 	//add by xieqingpu
-	ONVIF_PresetTour						* ptz_preset_tour;
+	//ONVIF_PresetTour						* ptz_preset_tour;
 #endif
 
 #ifdef VIDEO_ANALYTICS

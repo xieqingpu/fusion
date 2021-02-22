@@ -75,7 +75,7 @@ int writeUsers(onvif_User *p_users, int cnt)
 int devInit(char *ptzDevID, const char *cameraDEVID)
 {
 	int ret;
-	
+
 	//visca 设备初始化 
 	for(int i=0;i<10;i++)
 	{
@@ -412,9 +412,9 @@ int setDulaParam(DulaInformation_t *dulaInfo)
 	memset(&readDulaInfo, 0 ,sizeof(DulaInformation_t));
 	if (read_cfg_from_file(FUSION_PARAM_FILE, (char *)&readDulaInfo, sizeof(DulaInformation_t)) == 0 && dulaInfo)
 	{
-		UTIL_INFO("focal:%d, weightIrY:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f", 
+		UTIL_INFO("focal:%d, weightIrY:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f,%0.2f", 
 				dulaInfo->focal, dulaInfo->weightIrY, dulaInfo->weightIrC, dulaInfo->dula_model, 
-				dulaInfo->x, dulaInfo->y, dulaInfo->scale); 
+				dulaInfo->x, dulaInfo->y, dulaInfo->scale, readDulaInfo.scale); 
 		float b = -1.00;
 		//切换模式focal:-1, weightIrY:-1.00, weightIrC:-1.00, dula_model:0, x:-1, y:-1, xscale:-1.00
 		if ((dulaInfo->focal == -1) && (fabs((dulaInfo->weightIrY)-(b))) < (1e-8)
@@ -438,12 +438,12 @@ int setDulaParam(DulaInformation_t *dulaInfo)
 		{
 			readDulaInfo.focal = dulaInfo->focal;
 		}
-		if ((fabs((dulaInfo->weightIrY)-(readDulaInfo.weightIrY))) < (1e-8))
+		if (!((fabs((dulaInfo->weightIrY)-(readDulaInfo.weightIrY))) < (1e-8)))
 		{
 			readDulaInfo.weightIrY = dulaInfo->weightIrY;
 		}
 		
-		if ((fabs((dulaInfo->weightIrC)-(readDulaInfo.weightIrC))) < (1e-8))		
+		if (!((fabs((dulaInfo->weightIrC)-(readDulaInfo.weightIrC))) < (1e-8)))	
 		{
 			readDulaInfo.weightIrC = dulaInfo->weightIrC;
 		}
@@ -463,7 +463,7 @@ int setDulaParam(DulaInformation_t *dulaInfo)
 			readDulaInfo.y = dulaInfo->y;
 		}
 		
-		if ((fabs((dulaInfo->scale)-(readDulaInfo.scale))) < (1e-8)) 
+		if (!((fabs((dulaInfo->scale)-(readDulaInfo.scale))) < (1e-8)) )
 		{
 			readDulaInfo.scale = dulaInfo->scale;
 		}
@@ -642,6 +642,8 @@ int GetNTPInformation(onvif_NTPInformation		    *pNTPInformation)
 
 	return 0;
 }
+
+extern int sync_time(onvif_NTPInformation		*pNTPInformation);
 
 /* 保存NTPInformation数据参数*/
 int SetNTPInformation(onvif_NTPInformation *pNTPInformation, BOOL isSave)

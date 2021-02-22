@@ -480,7 +480,7 @@ void onvif_load_cfg()
 	strncpy(scope[1].ScopeItem, "onvif://www.onvif.org/location/country/china" ,scope_item_len-1);
 	strncpy(scope[2].ScopeItem, "onvif://www.onvif.org/type/video_encoder" ,scope_item_len-1);
 	strncpy(scope[3].ScopeItem, "onvif://www.onvif.org/name/IP-Camera" ,scope_item_len-1);
-	strncpy(scope[4].ScopeItem, "onvif://www.onvif.org/hardware/HI3518C" ,scope_item_len-1);
+	strncpy(scope[4].ScopeItem, "onvif://www.onvif.org/hardware/GPT" ,scope_item_len-1);
 	// for (i = 0; i < ARRAY_SIZE(g_onvif_cfg.scopes); i++)
 	for (i = 0; i < 5; i++) {
 		// printf("xxx scope[%d].scope_item = %s xxx\n",i, scope[i].ScopeItem);

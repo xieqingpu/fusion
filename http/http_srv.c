@@ -139,7 +139,6 @@ int http_redirect_rly(HTTPCLN * p_user, HTTPMSG * rx_msg)
 void http_msg_handler(HTTPCLN * p_user, HTTPMSG * rx_msg)
 {
     char * post = rx_msg->first_line.value_string;
-	// printf("xxx  http_msg_handler | rx_msg->msg_buf =\n %s\n", rx_msg->msg_buf);
 
     if (strstr(post, "FirmwareUpgrade"))	// must be the same with onvif_StartFirmwareUpgrade ( in soap_StartFirmwareUpgrade() )
 	{
