@@ -34,7 +34,7 @@
 #define VECTOR_LIST_LEN     	    50      //add 
 
 // #define MAX_PTZ_PRESETS         100 
-#define MAX_PTZ_PRESETS         128
+#define MAX_PTZ_PRESETS         100
 #define MAX_DNS_SERVER		    2
 #define MAX_SEARCHDOMAIN	    4
 #define MAX_NTP_SERVER		    2
@@ -195,6 +195,9 @@ typedef enum
     ONVIF_ERR_IPFilterListIsFull  = -120,                   // It is not possible to add more IP filters since the IP filter list is full. 
     ONVIF_ERR_NoIPv4Address = -121,                         // The IPv4 address to be removed does not exist
     ONVIF_ERR_NoIPv6Address = -122,                         // The IPv6 address to be removed does not exist
+
+	ONVIF_ERR_InValidEventHttpUrl = -123, //事件图片上传的http地址无效
+
     // add by xieqingpu
 	ONVIF_ERR_OTHER = -250,
 	    
@@ -2617,6 +2620,14 @@ typedef struct
 	BOOL 	FromDHCP;								    // required, Indicates if NTP information is to be retrieved by using DHCP
 	char	NTPServer[MAX_NTP_SERVER][32];			    // required
 } onvif_NTPInformation;
+
+typedef struct 
+{
+	uint32  EventHttpFlag	: 1;		    			    // Indicates whether the field Name is valid
+	uint32	Reserved	: 31;
+
+	char	HttpServerUrl[256];			    // required
+} onvif_EventSnapUploadInfo;
 
 typedef struct 
 {

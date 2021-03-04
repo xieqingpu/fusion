@@ -180,6 +180,8 @@ typedef struct
 	onvif_DiscoveryMode			    DiscoveryMode;
 	onvif_NetworkZeroConfiguration  ZeroConfiguration;
 	
+	onvif_EventSnapUploadInfo  EventUploadInfo;
+	
 	ONVIF_NetworkInterface        * interfaces;
 } ONVIF_NET;
 
@@ -581,6 +583,9 @@ ONVIF_PTZNode                             * onvif_find_PTZNode(const char * toke
 ONVIF_PTZConfiguration                    * onvif_find_PTZConfiguration(const char * token);
 ONVIF_PTZPreset                           * onvif_find_PTZPreset(const char * profile_token, const char  * preset_token);
 ONVIF_PTZPreset                           * onvif_get_idle_PTZPreset(const char * profile_token);
+int onvif_get_idle_PTZPreset_idx(const char * profile_token);  //add by xieqingpu
+int onvif_get_idle_PresetTour_idx();  //add by xieqingpu
+// PTZ_PresetsTours_t * onvif_find_PresetTour(const char  * preset_token);  //add by xieqingpu
 /* add presetTour by xieqingpu */
 ONVIF_PresetTour * onvif_add_PresetTour(ONVIF_PresetTour ** p_head);
 ONVIF_PresetTour * onvif_find_PTZPresetTour(const char * profile_token, const char  * PresetTours_token);

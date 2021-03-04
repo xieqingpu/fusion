@@ -417,11 +417,13 @@ ONVIF_RET onvif_GetStreamUri(const char * lip, uint32 lport, GetStreamUri_REQ * 
 	    if (p_req->StreamSetup.Transport.Protocol == TransportProtocol_HTTP)
 	    {
 	        offset += sprintf(p_res->MediaUri.Uri, "http://%s/live.sdp", lip);
-	        // offset += sprintf(p_res->MediaUri.Uri, "http://%s/test.mp4", lip);
 	    }
 	    else
 	    {
-	        offset += sprintf(p_res->MediaUri.Uri, "rtsp://%s/live.sdp", lip);
+	        if (strstr(p_req->ProfileToken, "PROFILE_001"))
+	        	offset += sprintf(p_res->MediaUri.Uri, "rtsp://%s/live/chn00_1", lip);
+			else
+				offset += sprintf(p_res->MediaUri.Uri, "rtsp://%s/live/chn00_0", lip);
 	    }
 
 	/*     if (StreamType_RTP_Unicast == p_req->StreamSetup.Stream)
@@ -544,6 +546,7 @@ ONVIF_RET onvif_GetSnapshot(char *buff, int * rlen, char * profile_token)
 
 		tlen += fread(p_bufs+tlen, 1, len, fp);
 		fclose(fp);
+		unlink(acFile);
 	}
 	else {
 		*rlen = 0;

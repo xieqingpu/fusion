@@ -66,6 +66,8 @@ int build_SetScopes_rly_xml(char * p_buf, int mlen, const char * argv);
 int build_RemoveScopes_rly_xml(char * p_buf, int mlen, const char * argv);
 int build_GetHostname_rly_xml(char * p_buf, int mlen, const char * argv);
 int build_SetHostname_rly_xml(char * p_buf, int mlen, const char * argv);
+int build_GetGPTSettings_rly_xml(char * p_buf, int mlen, const char * argv);
+int build_SetGPTSettings_rly_xml(char * p_buf, int mlen, const char * argv);
 int build_SetHostnameFromDHCP_rly_xml(char * p_buf, int mlen, const char * argv);
 int build_GetNetworkProtocols_rly_xml(char * p_buf, int mlen, const char * argv);
 int build_SetNetworkProtocols_rly_xml(char * p_buf, int mlen, const char * argv);

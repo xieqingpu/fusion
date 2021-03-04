@@ -23,6 +23,8 @@
 #include "sys_inc.h"
 #include "onvif.h"
 
+#define MAX_PRESETS_TOUR    10 
+#define MAX_PRESETS_T    64
 
 typedef struct
 {
@@ -142,6 +144,42 @@ typedef struct
     char	PresetTourToken[ONVIF_TOKEN_LEN];		// optional, A requested PresetTour token
     // char    PresetTourName[ONVIF_NAME_LEN];			// optional, A requested PresetTour name
 } PresetTour_REQ;
+
+
+typedef struct 
+{
+	char	PresetToken[ONVIF_TOKEN_LEN];
+	// char    Name[ONVIF_NAME_LEN];
+
+	uint32    index;	  //index指的是哪一个预置位
+	int       StayTime;	
+	uint16    zoomValue;
+} Presets_t;
+
+typedef struct 
+{
+	uint32  runNumberFlag  : 1;	
+	uint32  runTimeFlag    : 1;
+	uint32	Reserved	   : 30;
+
+	Presets_t presets[MAX_PRESETS_T];
+    uint16    presetCount; 		//巡检总共的预置位
+
+	uint16    direction; 		//巡检类型（顺序，倒序，随机）
+	BOOL	  RandomOrder;      //是否随机转动
+    uint32    runNumber; 		//运行次数（次数运行完停止）
+    uint32    runTime; 		    //运行时间（时间运行完停止）
+} PresetsTours_t;
+
+typedef struct 
+{
+	uint32  UsedFlag  : 1;	
+	uint32	Reserved	   : 31;
+
+	char	PresetTourToken[ONVIF_TOKEN_LEN];
+	char    Name[ONVIF_NAME_LEN];
+	PresetsTours_t	PresetsTour;
+}PTZ_PresetsTours_t;
 
 typedef struct 
 {

@@ -216,6 +216,7 @@ extern "C" {
 ONVIF_RET onvif_GetSystemLog(GetSystemLog_REQ * p_req, GetSystemLog_RES * p_res);
 ONVIF_RET onvif_SetSystemDateAndTime(SetSystemDateAndTime_REQ * p_req);
 ONVIF_RET onvif_SetHostname(const char * name, BOOL fromdhcp);
+ONVIF_RET onvif_SetGPTSettings(const char * name);
 ONVIF_RET onvif_SetDNS(SetDNS_REQ * p_req);
 ONVIF_RET onvif_SetNTP(SetNTP_REQ * p_req);
 ONVIF_RET onvif_SetZeroConfiguration(SetZeroConfiguration_REQ * p_req);

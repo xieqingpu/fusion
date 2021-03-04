@@ -13,6 +13,7 @@
 #include "ir.h"
 #include "onvif.h"
 #include "onvif_device.h"
+#include "onvif_ptz.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -222,6 +223,20 @@ int readPtzPreset(ONVIF_PTZPreset * p_presets, int cnt);
 // 将ptz预置位保存到文件  成功返回0，失败返回-1
 int writePtzPreset(ONVIF_PTZPreset * p_presets, int cnt);
 
+
+/*********************************************
+* FuncName: readPtzPresetTour       
+* Describe:  从文件读取ptz巡航
+* Params  :                                
+* [OUT]      
+*   p_preset ：
+* Return  :  成功返回0，失败返回-1                                                  
+**********************************************/
+int readPtzPresetTour(PTZ_PresetsTours_t  *presetTours, int cnt);
+// 将ptz巡航PresetTour保存到文件  成功返回0，失败返回-1
+int writePtzPresetTour(PTZ_PresetsTours_t  *presetTours,  int cnt);
+
+
 /*********************************************
 * FuncName: focusMove       
 * Describe:  摄像头调焦
@@ -391,6 +406,10 @@ int GetDNSInformation(onvif_DNSInformation		     *pDNSInformation);
 /* 设置DNS数据参数*/
 int SetDNSInformation(onvif_DNSInformation		    *pDNSInformation, BOOL isSave);
 
+/*读取事件上传数据参数 */
+int GetEventSnapInformation(onvif_EventSnapUploadInfo	       *pEventSnap);
+/*设置事件上传数据参数 */
+int SetEventSnapInformation(onvif_EventSnapUploadInfo	       *pEventSnap, BOOL isSave);
 
 /*4 读取网络协议数据参数 */
 int GetNetworkProtocols(onvif_NetworkProtocol	*pNetworkProtocol);

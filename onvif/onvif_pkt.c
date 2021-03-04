@@ -70,6 +70,8 @@
 extern ONVIF_CFG g_onvif_cfg;
 extern ONVIF_CLS g_onvif_cls;
 
+extern PTZ_PresetsTours_t  PTZPresetsTour[MAX_PRESETS_TOUR];
+
 extern char xml_hdr[];
 extern char onvif_xmlns[];
 extern char soap_head[];
@@ -3130,6 +3132,27 @@ int build_RemoveScopes_rly_xml(char * p_buf, int mlen, const char * argv)
 	
     offset += snprintf(p_buf+offset, mlen-offset, "</tds:RemoveScopesResponse>");    
 
+	return offset;
+}
+
+int build_GetGPTSettings_rly_xml(char * p_buf, int mlen, const char * argv)
+{
+	int offset = 0;
+    /*<SetGPTSettings xmlns="http://www.onvif.org/ver10/device/wsdl">
+    <EventServerUrl>http://192.168.3.157/submitEvent</EventServerUrl></SetGPTSettings>*/
+    offset += snprintf(p_buf+offset, mlen-offset, 
+        "<tds:GetGPTSettingsResponse>"
+            "<tt:EventServerUrl>%s</tt:EventServerUrl>"
+       	"</tds:GetGPTSettingsResponse>",
+      	g_onvif_cfg.network.EventUploadInfo.EventHttpFlag ? g_onvif_cfg.network.EventUploadInfo.HttpServerUrl : "");
+
+	return offset;
+}
+
+int build_SetGPTSettings_rly_xml(char * p_buf, int mlen, const char * argv)
+{
+	int offset = 0;
+    offset += snprintf(p_buf+offset, mlen-offset, "<tds:SetGPTSettingsResponse />");
 	return offset;
 }
 
@@ -7364,7 +7387,7 @@ int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
     }
 
 	//// add by xieqingpu
-	if (readPtzPreset(p_profile->presets, 128) != 0)		// 128:由于云台设备支持128个预置位
+	if (readPtzPreset(p_profile->presets, MAX_PTZ_PRESETS) != 0)  // MAX_PTZ_PRESETS:其实该云台设备支持256个预置位，但我只设置最多100个
 	{
 		printf("read PTZ preset faile.\n");
 	}
@@ -7532,13 +7555,13 @@ int build_PTZSpeed_xml(char * p_buf, int mlen, onvif_PTZSpeed * p_req)
 
 	if (p_req->PanTiltFlag){
 		offset += snprintf(p_buf+offset, mlen-offset, 
-		"<tt:PanTilt x=\"%0.1f\" y=\"%0.1f\" />",
+		"<tt:PanTilt x=\"%0.2f\" y=\"%0.2f\" />",
 		p_req->PanTilt.x,
 		p_req->PanTilt.y);
 	}
 	if (p_req->ZoomFlag){
 		offset += snprintf(p_buf+offset, mlen-offset, 
-		"<tt:Zoom x=\"%0.1f\" />",
+		"<tt:Zoom x=\"%0.2f\" />",
 		p_req->Zoom.x);
 	}
 
@@ -7652,6 +7675,20 @@ int build_TourSpot_xml(char * p_buf, int mlen, onvif_PTZPresetTourSpot * p_req)
 
 	return offset;
 }
+
+int build_TourSpot_xml_Ext(char * p_buf, int mlen,  Presets_t * p_req)
+{
+	int offset = 0;
+	
+	offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetDetail>");
+		// offset += build_PresetDetail_xml(p_buf+offset, mlen-offset, p_req);
+   	    offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetToken>%s</tt:PresetToken>", p_req->PresetToken);	
+	offset += snprintf(p_buf+offset, mlen-offset, "</tt:PresetDetail>");		
+
+    offset += snprintf(p_buf+offset, mlen-offset, "<tt:StayTime>PT%dS</tt:StayTime>", p_req->StayTime);	
+	return offset;
+}
+
 int build_GetPresetTours_rly_xml(char * p_buf, int mlen, const char * argv)
 {
 	int offset = 0;
@@ -7704,6 +7741,59 @@ int build_GetPresetTours_rly_xml(char * p_buf, int mlen, const char * argv)
 	}
 
 	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:GetPresetToursResponse>");
+
+	/*
+	int index = 0;
+	if (readPtzPresetTour(PTZPresetsTour, MAX_PRESETS_TOUR) != 0)
+	{
+		printf("build_GetPresetTours_rly_xml | read PtzPresetTour faile...\n");
+	}
+
+	p_PresetTour = p_profile->PresetTours;
+
+	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:GetPresetToursResponse>");
+
+	// 该for()里只有双光融合项目的需要的数据, 下面注释的while()是onvif协议全部的数据 
+	 for (index = 0; index < MAX_PRESETS_TOUR; index++)
+	{
+		if ( PTZPresetsTour[index].UsedFlag != 1 )    //如果没有该巡更，跳过该巡更，继续
+		{
+			index++;
+			continue;
+		}
+
+		int i = 0;
+
+		offset += snprintf(p_buf+offset, mlen-offset, 
+			"<tptz:PresetTour token=\"%s\">",
+			PTZPresetsTour[index].PresetTourToken); 
+		offset += snprintf(p_buf+offset, mlen-offset, 
+			"<tt:Name>%s</tt:Name>", 
+			PTZPresetsTour[index].Name);  
+		
+		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:Status>");
+		offset += build_Status_xml(p_buf+offset, mlen-offset, &p_PresetTour->PresetTour.Status);
+		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:Status>");
+		
+		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:StartingCondition>");
+		offset += build_StartingCondition_xml_Ext(p_buf+offset, mlen-offset, PTZPresetsTour);	
+		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:StartingCondition>");
+		
+		for ( i = 0; i < PTZPresetsTour[index].PresetsTour.presetCount; i++ )
+		{
+			offset += snprintf(p_buf+offset, mlen-offset, "<tptz:TourSpot>");
+			offset += build_TourSpot_xml_Ext(p_buf+offset, mlen-offset, &(PTZPresetsTour[index].PresetsTour.presets[i]));
+			offset += snprintf(p_buf+offset, mlen-offset, "</tptz:TourSpot>");
+		}
+
+        offset += snprintf(p_buf+offset, mlen-offset, "</tptz:PresetTour>");
+
+    	p_PresetTour = p_PresetTour->next;
+	}
+
+	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:GetPresetToursResponse>"); 
+	*/
+	/*  */
 
 	return offset;
 }

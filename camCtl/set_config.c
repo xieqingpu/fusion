@@ -28,6 +28,7 @@
 #include "ir.h"
 #include "gptmessage.h"
 #include "gptmessagedef.h"
+#include "onvif_ptz.h"
 
 
 extern ONVIF_CFG g_onvif_cfg;
@@ -227,6 +228,51 @@ int img_Stop()
 	return 0;
 }
 
+/* 保存巡更到文件和从文件读取出来（目的为了防止掉电消失）*/
+#define  PRESETTOURFILE  ("/user/cfg_files/PresetTour.dat")
+/*
+int readPresetTourNumber(void)
+{
+	char* device = "/user/cfg_files/";
+	int count = 0;
+
+	DIR *dir;
+	struct dirent *ptr;
+
+	if ((dir=opendir(device)) == NULL)
+	{
+		UTIL_ERR("Open dir error...");
+		return -1;
+	}
+
+	while ((ptr=readdir(dir)) != NULL)
+	{
+		if(strstr((char*)ptr->d_name, "PRESET_TOUR_")!=NULL)
+		{
+			count ++;
+		}
+	}
+	closedir(dir);
+
+	return count;
+}
+*/
+int readPtzPresetTour(PTZ_PresetsTours_t  *presetTours, int cnt)
+{
+	if (read_cfg_from_file(PRESETTOURFILE, (char*)presetTours, sizeof(PTZ_PresetsTours_t)*cnt) != 0) {
+		return -1;
+	}
+
+	return 0;	
+}
+int writePtzPresetTour(PTZ_PresetsTours_t  *presetTours,  int cnt)
+{
+	if (save_cfg_to_file(PRESETTOURFILE, (char*)presetTours, sizeof(PTZ_PresetsTours_t)*cnt) != 0) {
+		return -1;
+	}
+
+	return 0;	
+}
 
 /* 从文件读取图像参数 */
 #define  IMGPARFILE  ("/user/cfg_files/Img.dat")
@@ -1123,6 +1169,30 @@ int SetNetworkProtocols(onvif_NetworkProtocol	*pNetworkProtocol, BOOL isSave)
 {
 	if (isSave && save_cfg_to_file(NETPROFILE, (char*)pNetworkProtocol, 
 			sizeof(onvif_NetworkProtocol)) != 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+/*3 读取事件上传数据参数 */
+#define  EVENTSNAPFILE  ("/user/cfg_files/EventSnap.dat")
+int GetEventSnapInformation(onvif_EventSnapUploadInfo	       *pEventSnap)
+{
+	if (read_cfg_from_file(EVENTSNAPFILE, (char *)pEventSnap, 
+			sizeof(onvif_EventSnapUploadInfo)) != 0) {
+		UTIL_ERR("EVENTSNAPFILE:%s  not exsit!!!", EVENTSNAPFILE);
+		return -1;
+	}
+			
+	return 0;
+}
+	
+/* 设置事件上传数据参数*/
+int SetEventSnapInformation(onvif_EventSnapUploadInfo	       *pEventSnap, BOOL isSave)
+{
+	if (isSave && save_cfg_to_file(EVENTSNAPFILE, (char*)pEventSnap, 
+		    sizeof(onvif_EventSnapUploadInfo)) != 0) {
 		return -1;
 	}
 

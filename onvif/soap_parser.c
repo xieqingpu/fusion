@@ -3716,7 +3716,7 @@ ONVIF_RET prase_Vector(XMLN * p_node, onvif_ex_VectorList * p_req)
 	}
 	else
 	{
-		return -124;
+		return ONVIF_ERR_OTHER;
 	}
 	
 
@@ -3727,7 +3727,7 @@ ONVIF_RET prase_Vector(XMLN * p_node, onvif_ex_VectorList * p_req)
 	}
 	else
 	{
-		return -124;
+		return ONVIF_ERR_OTHER;
 	}
 
 	p_W = xml_node_soap_get(p_node, "W");
@@ -3737,7 +3737,7 @@ ONVIF_RET prase_Vector(XMLN * p_node, onvif_ex_VectorList * p_req)
 	}
 	else
 	{
-		return -124;
+		return ONVIF_ERR_OTHER;
 	}
 
 	p_H = xml_node_soap_get(p_node, "H");
@@ -3747,7 +3747,7 @@ ONVIF_RET prase_Vector(XMLN * p_node, onvif_ex_VectorList * p_req)
 	}
 	else
 	{
-		return -124;
+		return ONVIF_ERR_OTHER;
 	}
 
 	return ONVIF_OK;
@@ -3805,9 +3805,6 @@ ONVIF_RET parse_SetPreset(XMLN * p_node, SetPreset_REQ * p_req)
 
 				++i;
 			}
-			// else {
-			// 	return -123;
-			// }
 			
 			p_Vector = p_Vector->next;
 		}
@@ -4046,8 +4043,6 @@ ONVIF_RET parse_PresetTour(XMLN * p_node, onvif_PresetTour * p_req)
 	p_TourSpot = xml_node_soap_get(p_node, "TourSpot");
 	while (p_TourSpot && soap_strcmp(p_TourSpot->name, "TourSpot") == 0)  // while (p_TourSpot)
 	{
-		// printf("xxxpt ModifyPresetTour|parse_PresetTour| while (p_TourSpot && soap_strcmp(p_TourSpot->name, \"TourSpot\") == 0)\n");
-
 		ONVIF_PTZPresetTourSpot * p_tour_spot = onvif_add_TourSpot(&p_req->TourSpot);
 		if (p_tour_spot)
 		{
@@ -4068,7 +4063,6 @@ ONVIF_RET parse_PresetTour(XMLN * p_node, onvif_PresetTour * p_req)
 ONVIF_RET parse_CreatePresetTour(XMLN * p_node, PresetTour_REQ * p_req)
 {
 	XMLN * p_ProfileToken;
-	// XMLN * p_PresetTourToken;
 	
 	assert(p_node);
 
@@ -4076,14 +4070,7 @@ ONVIF_RET parse_CreatePresetTour(XMLN * p_node, PresetTour_REQ * p_req)
 	if (p_ProfileToken && p_ProfileToken->data)
 	{
 		strncpy(p_req->ProfileToken, p_ProfileToken->data, sizeof(p_req->ProfileToken)-1);
-	}
-
-	// p_PresetTourToken = xml_node_soap_get(p_node, "PresetTourToken");
-	// if (p_PresetTourToken && p_PresetTourToken->data)
-	// {
-	// 	p_req->PresetTokenFlag = 1;
-	// 	strncpy(p_req->PresetToken, p_PresetTourToken->data, sizeof(p_req->PresetToken)-1);
-	// }	
+	}	
 
 	return ONVIF_OK;
 }
@@ -4173,6 +4160,7 @@ ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
 			if (ONVIF_OK != ret)
 			{
 				// onvif_free_Configs(&p_req->AnalyticsModule);
+				// free(PresetTour_req);
 				onvif_free_PresetTours(&p_req->PresetTour_req);
 
 				return ret;

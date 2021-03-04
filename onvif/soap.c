@@ -1999,6 +1999,46 @@ int soap_SetHostname(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p
     return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:InvalidHostname", "Invalid ArgVal"); 
 }
 
+int soap_GetGPTSettings(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
+{
+    onvif_print("%s\r\n", __FUNCTION__);
+
+    return soap_build_send_rly(p_user, rx_msg, build_GetGPTSettings_rly_xml, NULL, NULL, p_header); 
+}
+
+int soap_SetGPTSettings(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
+{
+	XMLN * p_SetHostname;
+	XMLN * p_Name;
+	
+    onvif_print("%s\r\n", __FUNCTION__);
+
+    p_SetHostname = xml_node_soap_get(p_body, "SetGPTSettings");
+    assert(p_SetHostname);
+
+    p_Name = xml_node_soap_get(p_SetHostname, "EventServerUrl");
+	if (p_Name)
+	{
+	    ONVIF_RET ret;
+	    
+	    if (p_Name->data)
+	    {
+		    ret = onvif_SetGPTSettings(p_Name->data);
+	    }
+
+	    if (ONVIF_OK == ret)
+	    {
+	        return soap_build_send_rly(p_user, rx_msg, build_SetGPTSettings_rly_xml, NULL, NULL, p_header);
+	    }
+	    else if (ONVIF_ERR_InValidEventHttpUrl == ret)
+	    {
+	    	return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:InvalidEventHttpUrl", "Invalid EventHttpUrl");
+	    }
+	}
+	
+    return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:InvalidEventHttpUrl", "Invalid ArgVal"); 
+}
+
 int soap_SetHostnameFromDHCP(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
 {
 	XMLN * p_SetHostname;
@@ -9848,6 +9888,16 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	{
 		soap_GetServices(p_user, rx_msg, p_body, p_header);
 	}
+	/* add */
+	/* else if (soap_strcmp(p_name, "GetGPTSettings") == 0)
+	{
+		soap_GetGPTSettings(p_user, rx_msg, p_body, p_header);
+	}
+	else if (soap_strcmp(p_name, "SetGPTSettings") == 0)
+	{
+		soap_SetGPTSettings(p_user, rx_msg, p_body, p_header);
+	} */
+	/*  */
 	else if (soap_strcmp(p_name, "GetScopes") == 0)
 	{
 		soap_GetScopes(p_user, rx_msg, p_body, p_header);
@@ -9871,6 +9921,14 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	else if (soap_strcmp(p_name, "SetHostname") == 0)
 	{
 		soap_SetHostname(p_user, rx_msg, p_body, p_header);
+	}
+	else if (soap_strcmp(p_name, "GetGPTSettings") == 0)
+	{
+		soap_GetGPTSettings(p_user, rx_msg, p_body, p_header);
+	}
+	else if (soap_strcmp(p_name, "SetGPTSettings") == 0)
+	{
+		soap_SetGPTSettings(p_user, rx_msg, p_body, p_header);
 	}
 	else if (soap_strcmp(p_name, "SetHostnameFromDHCP") == 0)
 	{

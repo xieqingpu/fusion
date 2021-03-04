@@ -190,6 +190,27 @@ ONVIF_RET onvif_SetHostname(const char * name, BOOL fromdhcp)
     return ONVIF_OK;
 }
 
+ONVIF_RET onvif_SetGPTSettings(const char * name)
+{
+    ONVIF_RET ret = 0;
+    if (name && NULL == strstr(name, "http"))
+    {
+        g_onvif_cfg.network.EventUploadInfo.EventHttpFlag = 0;
+    	ret = ONVIF_ERR_InValidEventHttpUrl;
+    }
+    else
+	{
+		g_onvif_cfg.network.EventUploadInfo.EventHttpFlag = 1;
+		memset(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl, 0x0, sizeof(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl));
+    	strncpy(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl, name, strlen(name));
+		ret = ONVIF_OK;
+    }
+	
+	SetEventSnapInformation(&g_onvif_cfg.network.EventUploadInfo, TRUE);
+
+    return ret;
+}
+
 ONVIF_RET onvif_SetDNS(SetDNS_REQ * p_req)
 {
 	// todo : add set DNS code ...
