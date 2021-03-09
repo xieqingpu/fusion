@@ -313,8 +313,6 @@ typedef struct
 #ifdef PTZ_SUPPORT
 	ONVIF_PTZNode      		                * ptz_node;
 	ONVIF_PTZConfiguration	                * ptz_cfg;
-	//add by xieqingpu
-	//ONVIF_PresetTour						* ptz_preset_tour;
 #endif
 
 #ifdef VIDEO_ANALYTICS
@@ -370,6 +368,8 @@ typedef struct
 
 #ifdef PTZ_SUPPORT
 	onvif_PTZConfigurationOptions           PTZConfigurationOptions;
+	//add by xie
+	onvif_PTZPresetTourOptions				PTZPresetTourOptions;	
 #endif
 
 	onvif_MetadataConfigurationOptions		MetadataConfigurationOptions;

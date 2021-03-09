@@ -46,6 +46,8 @@ const char * onvif_CapabilityCategoryToString(onvif_CapabilityCategory category)
 
 	case CapabilityCategory_PTZ:
 		return "PTZ";	
+	default:
+		break;
 	}
 
 	return "All";
@@ -122,6 +124,9 @@ const char * onvif_SystemLogTypeToString(onvif_SystemLogType type)
 		
 	case SystemLogType_Access:
 		return "Access";
+	
+	default:
+		break;
 	}
 
 	return "System";
@@ -156,6 +161,9 @@ const char * onvif_VideoEncodingToString(onvif_VideoEncoding encoding)
 
 	case VideoEncoding_H265:
 	    return "H265";
+	
+	default:
+		break;
 	}
 
 	return "H264";
@@ -195,6 +203,9 @@ const char * onvif_AudioEncodingToString(onvif_AudioEncoding encoding)
 
 	case AudioEncoding_AAC:
 		return "AAC";
+	
+	default:
+		break;
 	}
 
 	return "G711";
@@ -233,6 +244,9 @@ const char * onvif_H264ProfileToString(onvif_H264Profile profile)
 
 	case H264Profile_High:
 		return "High";
+	
+	default:
+		break;
 	}
 
 	return "Baseline";
@@ -283,6 +297,9 @@ const char * onvif_Mpeg4ProfileToString(onvif_Mpeg4Profile profile)
 		
 	case Mpeg4Profile_ASP:
 		return "ASP";
+	
+	default:
+		break;
 	}
 
 	return "SP";
@@ -320,6 +337,9 @@ const char * onvif_UserLevelToString(onvif_UserLevel level)
 
 	case UserLevel_Extended:
 		return "Extended";	
+	
+	default:
+		break;
 	}
 
 	return "User";
@@ -363,6 +383,9 @@ const char * onvif_MoveStatusToString(onvif_MoveStatus status)
 
 	case MoveStatus_UNKNOWN:
 		return "UNKNOWN";
+	
+	default:
+		break;
 	}
 
 	return "IDLE";
@@ -398,6 +421,9 @@ const char * onvif_OSDTypeToString(onvif_OSDType type)
 
 	case OSDType_Extended:
 		return "Extended";
+	
+	default:
+		break;
 	}
 
 	return "Text";
@@ -439,6 +465,9 @@ const char * onvif_OSDPosTypeToString(onvif_OSDPosType type)
 		
 	case OSDPosType_Custom:	
 		return "Custom";
+	
+	default:
+		break;
 	}
 
 	return "UpperLeft";
@@ -485,6 +514,9 @@ const char * onvif_OSDTextTypeToString(onvif_OSDTextType type)
 		
 	case OSDTextType_DateAndTime:
 		return "DateAndTime";
+	
+	default:
+		break;
 	}
 
 	return "Plain";
@@ -521,6 +553,9 @@ const char * onvif_BacklightCompensationModeToString(onvif_BacklightCompensation
 		
 	case BacklightCompensationMode_ON:
 		return "ON";
+	
+	default:
+		break;
 	}
 
 	return "OFF";
@@ -550,6 +585,9 @@ const char * onvif_ExposureModeToString(onvif_ExposureMode mode)
 
 	case ExposureMode_MANUAL:
 		return "MANUAL";	
+	
+	default:
+		break;
 	}
 
 	return "AUTO";
@@ -579,6 +617,9 @@ const char * onvif_ExposurePriorityToString(onvif_ExposurePriority mode)
 
 	case ExposurePriority_FrameRate:
 		return "FrameRate";	
+	
+	default:
+		break;
 	}
 
 	return "LowNoise";
@@ -608,6 +649,9 @@ const char * onvif_AutoFocusModeToString(onvif_AutoFocusMode mode)
 
 	case AutoFocusMode_MANUAL:
 		return "MANUAL";	
+	
+	default:
+		break;
 	}
 
 	return "AUTO";
@@ -637,6 +681,9 @@ const char * onvif_WideDynamicModeToString(onvif_WideDynamicMode mode)
 
 	case WideDynamicMode_ON:
 		return "ON";	
+	
+	default:
+		break;
 	}
 
 	return "OFF";
@@ -669,6 +716,9 @@ const char * onvif_IrCutFilterModeToString(onvif_IrCutFilterMode mode)
 
 	case IrCutFilterMode_AUTO:
 		return "AUTO";
+	
+	default:
+		break;
 	}
 
 	return "ON";
@@ -701,6 +751,9 @@ const char * onvif_WhiteBalanceModeToString(onvif_WhiteBalanceMode mode)
 
 	case WhiteBalanceMode_MANUAL:
 		return "MANUAL";	
+	
+	default:
+		break;
 	}
 
 	return "AUTO";
@@ -732,6 +785,9 @@ const char * onvif_EFlipModeToString(onvif_EFlipMode mode)
 
 	case EFlipMode_Extended:
 		return "Extended";	
+	
+	default:
+		break;
 	}
 
 	return "OFF";
@@ -769,7 +825,10 @@ const char * onvif_ReverseModeToString(onvif_ReverseMode mode)
         return "AUTO";
         
 	case ReverseMode_Extended:
-		return "Extended";	
+		return "Extended";
+	
+	default:
+		break;
 	}
 
 	return "OFF";
@@ -806,6 +865,9 @@ const char * onvif_DiscoveryModeToString(onvif_DiscoveryMode mode)
 
 	case DiscoveryMode_NonDiscoverable:
 		return "NonDiscoverable";
+	
+	default:
+		break;
 	}
 
 	return "Discoverable";
@@ -834,6 +896,9 @@ const char * onvif_SetDateTimeTypeToString(onvif_SetDateTimeType type)
 
 	case SetDateTimeType_NTP:
 		return "NTP";
+	
+	default:
+		break;
 	}
 
 	return "Manual";
@@ -862,6 +927,9 @@ const char * onvif_StreamTypeToString(onvif_StreamType type)
 
 	case StreamType_RTP_Multicast:
 		return "RTP-Multicast";
+	
+	default:
+		break;
 	}
 
 	return "RTP_Unicast";
@@ -896,6 +964,9 @@ const char * onvif_TransportProtocolToString(onvif_TransportProtocol type)
 
 	case TransportProtocol_HTTP:
 		return "HTTP";	
+	
+	default:
+		break;
 	}
 
 	return "UDP";
@@ -935,6 +1006,9 @@ const char * onvif_DynamicDNSTypeToString(onvif_DynamicDNSType type)
 
 	case DynamicDNSType_ServerUpdates:
 		return "ServerUpdates";
+		
+	default:
+		break;
 	}
 
 	return "NoUpdate";
@@ -973,6 +1047,9 @@ const char * onvif_TrackTypeToString(onvif_TrackType type)
 
 	case TrackType_Extended:
 		return "Extended";	
+	
+	default:
+		break;
 	}
 
 	return "Video";

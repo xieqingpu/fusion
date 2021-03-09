@@ -242,10 +242,10 @@ int http_event_tcp_rx(HTTPREQ * p_req, char * p_data, int len)
 	}
 	else
 	{
-		slen = tcp_readall(p_req->cfd, p_data, len, 2000);
+		slen = tcp_readall(p_req->cfd, p_data, len, 20*1000);
 	}
 #else	
-	slen = tcp_readall(p_req->cfd, p_data, len, 2000);
+	slen = tcp_readall(p_req->cfd, p_data, len, 20*1000);
 #endif
     
 	return slen;
@@ -685,7 +685,17 @@ int http_send_event_jpeg(Gpt_EventUploadInfo *pUploadInfo)
 	
 	host = p1 + 3;
 	path = strchr(host, '/');
-	hlen = path - host;
+	if (!path)
+	{
+		hlen = strlen(url) - 7;
+		strcpy(req.url, "/");
+	}
+	else 
+	{
+		hlen = path - host;
+		strcpy(req.url, url+hlen+7);
+	}
+	
 	strncpy(hbuf, host, hlen);
 	hbuf[hlen] = '\0';
 	host = hbuf;
@@ -701,7 +711,6 @@ int http_send_event_jpeg(Gpt_EventUploadInfo *pUploadInfo)
 	}
 
 	strcpy(req.host, host);
-	strcpy(req.url, url+hlen+7);
 
 	req.https = 0;
 	//UTIL_INFO("pUploadInfo->hostname=%s req.host==%s,req.url=%s", pUploadInfo->hostname, req.host, req.url);	

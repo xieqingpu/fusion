@@ -4039,7 +4039,6 @@ ONVIF_RET parse_PresetTour(XMLN * p_node, onvif_PresetTour * p_req)
 		}
 	}
 	//四.
-	// p_SimpleItem = xml_node_soap_get(p_Parameters, "SimpleItem");
 	p_TourSpot = xml_node_soap_get(p_node, "TourSpot");
 	while (p_TourSpot && soap_strcmp(p_TourSpot->name, "TourSpot") == 0)  // while (p_TourSpot)
 	{
@@ -4160,7 +4159,6 @@ ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
 			if (ONVIF_OK != ret)
 			{
 				// onvif_free_Configs(&p_req->AnalyticsModule);
-				// free(PresetTour_req);
 				onvif_free_PresetTours(&p_req->PresetTour_req);
 
 				return ret;

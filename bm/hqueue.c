@@ -77,7 +77,7 @@ void hqDelete(HQUEUE * phq)
 }
 
 /***************************************************************************************/
-__inline void hqPutMutexEnter(HQUEUE * phq)
+static __inline void hqPutMutexEnter(HQUEUE * phq)
 {
 	if ((phq->queue_mode & HQ_NO_EVENT) == 0)
 	{
@@ -85,7 +85,7 @@ __inline void hqPutMutexEnter(HQUEUE * phq)
 	}
 }
 
-__inline void hqPutMutexLeave(HQUEUE * phq)
+static __inline void hqPutMutexLeave(HQUEUE * phq)
 {
 	if ((phq->queue_mode & HQ_NO_EVENT) == 0)
 	{

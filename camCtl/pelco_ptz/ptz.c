@@ -54,7 +54,6 @@ error_code  pelco_close()
 
 error_code pelco_Init( char* device, u_int32 baud_rate)
 {
-	u_int32 ticks = 0;
     int ret = RET_ERR;
 	struct termios newtio;
 	
@@ -168,7 +167,6 @@ error_code pelcoGet( unsigned char *c,int fd )
 */
 error_code pelcoRead( unsigned char *buf, u_int32 size,int fd )
 {
-	u_int32 i;
 	int count = 0;
 	error_code ec = 0;
 
@@ -192,7 +190,6 @@ error_code pelcoRead( unsigned char *buf, u_int32 size,int fd )
 */
 error_code pelcoRead_test( unsigned char *buf, u_int32 size,int fd)
 {
-	u_int32 i;
 	int count = 0;
     int read_times=25;
 	error_code ec = 0;
@@ -204,8 +201,6 @@ error_code pelcoRead_test( unsigned char *buf, u_int32 size,int fd)
     {
         sleep(1);
         UTIL_ERR("read unknow data start:%02x",buf[0]);
-
-
     }
 	if( buf[0] != 0xff) 
 	{
@@ -214,11 +209,11 @@ error_code pelcoRead_test( unsigned char *buf, u_int32 size,int fd)
     }
     else
     {
-        	if( (count = read(fd,&buf[1],size-1)) != size-1)
-        	{
-        		UTIL_ERR("WARNING:%s: %u vs. %u bytes", __FUNCTION__, count, size);
-        		ec = 1;
-        	}
+    	if( (count = read(fd,&buf[1],size-1)) != size-1)
+    	{
+    		UTIL_ERR("WARNING:%s: %u vs. %u bytes", __FUNCTION__, count, size);
+    		ec = 1;
+    	}
     }
 	return ec;
 }
@@ -282,7 +277,6 @@ error_code pelco_Up(unsigned short force)
 {
     int ret=RET_ERR;
     if(fdOut<0)return ret;
-    int num=0;
 	memset(pelco,0,sizeof(pelco));
 	pelco[p_sync] = 0xff;
 	pelco[p_addr] = addr;

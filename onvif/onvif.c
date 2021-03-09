@@ -2198,6 +2198,7 @@ void onvif_init_net()
     ret = GetEventSnapInformation(&g_onvif_cfg.network.EventUploadInfo);
 	if (ret < 0) {
 		g_onvif_cfg.network.EventUploadInfo.EventHttpFlag = 0;
+		g_onvif_cfg.network.EventUploadInfo.AlgorithmServerFlag = 0;
 	}
 	
 	// init dns setting
@@ -2803,7 +2804,6 @@ int onvif_get_idle_PresetTour_idx()
 {
     int i;
 
-    // for (i = 0; i < ARRAY_SIZE(p_profile->presets); i++)
     for (i = 0; i < ARRAY_SIZE(PTZPresetsTour); i++)
     {
         if (PTZPresetsTour[i].UsedFlag == 0)
@@ -2819,7 +2819,6 @@ PTZ_PresetsTours_t * onvif_get_idle_PresetTour()
 {
     int i;
 
-    // for (i = 0; i < ARRAY_SIZE(p_profile->presets); i++)
     for (i = 0; i < ARRAY_SIZE(PTZPresetsTour); i++)
     {
         if (PTZPresetsTour[i].UsedFlag == 0)
@@ -3102,7 +3101,7 @@ void onvif_init_PTZNode()
     
     g_onvif_cfg.ptz_node->PTZNode.ExtensionFlag = 1;
     g_onvif_cfg.ptz_node->PTZNode.Extension.SupportedPresetTourFlag = 1;
-    g_onvif_cfg.ptz_node->PTZNode.Extension.SupportedPresetTour.MaximumNumberOfPresetTours = 1;
+    g_onvif_cfg.ptz_node->PTZNode.Extension.SupportedPresetTour.MaximumNumberOfPresetTours = 10;
     g_onvif_cfg.ptz_node->PTZNode.Extension.SupportedPresetTour.PTZPresetTourOperation_Start = 1;
     g_onvif_cfg.ptz_node->PTZNode.Extension.SupportedPresetTour.PTZPresetTourOperation_Stop = 1;
     g_onvif_cfg.ptz_node->PTZNode.Extension.SupportedPresetTour.PTZPresetTourOperation_Pause = 1;
@@ -3158,10 +3157,6 @@ void onvif_init_PTZConfiguration()
     g_onvif_cfg.ptz_cfg->Configuration.Extension.PTControlDirection.ReverseFlag = 1;
     g_onvif_cfg.ptz_cfg->Configuration.Extension.PTControlDirection.Reverse= ReverseMode_OFF;
 
-	//add by xieqingpu
-    // g_onvif_cfg.ptz_cfg->Configuration.MoveRampFlag = 1;
-    // g_onvif_cfg.ptz_cfg->Configuration.PresetRampFlag = 1;
-    // g_onvif_cfg.ptz_cfg->Configuration.PresetTourRampFlag = 1;
 }
 
 void onvif_init_PTZConfigurationOptions()
@@ -3186,6 +3181,35 @@ void onvif_init_ptz()
     onvif_init_PTZConfigurationOptions();
 }
 
+void onvif_init_PresetTourOptions()
+{
+	g_onvif_cfg.PTZPresetTourOptions.AutoStart = 0;
+
+	g_onvif_cfg.PTZPresetTourOptions.StartingCondition.RecurringTimeFlag = 1;  		//现在暂时设为0
+	g_onvif_cfg.PTZPresetTourOptions.StartingCondition.RecurringDurationFlag = 1;	//现在暂时设为0
+	g_onvif_cfg.PTZPresetTourOptions.StartingCondition.PTZPresetTourDirection_Forward = 1;
+	g_onvif_cfg.PTZPresetTourOptions.StartingCondition.PTZPresetTourDirection_Backward = 1;
+	g_onvif_cfg.PTZPresetTourOptions.StartingCondition.PTZPresetTourDirection_Extended = 0;
+	g_onvif_cfg.PTZPresetTourOptions.StartingCondition.RecurringTime.Min = 0;
+	g_onvif_cfg.PTZPresetTourOptions.StartingCondition.RecurringTime.Max = 1000;
+	g_onvif_cfg.PTZPresetTourOptions.StartingCondition.RecurringDuration.Min = 0;
+	g_onvif_cfg.PTZPresetTourOptions.StartingCondition.RecurringDuration.Max = 5000;
+
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.HomeFlag = 0;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.PanTiltPositionSpaceFlag = 0;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.ZoomPositionSpaceFlag = 0;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.sizePresetToken = MAX_PRESETS_T;
+	// g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.PresetToken[0][ONVIF_TOKEN_LEN] = 0;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.Home = 0;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.PanTiltPositionSpace.XRange.Min = 0;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.PanTiltPositionSpace.XRange.Max = 1;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.PanTiltPositionSpace.YRange.Min = 0;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.PanTiltPositionSpace.YRange.Max = 1;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.ZoomPositionSpace.XRange.Min = 0;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.PresetDetail.ZoomPositionSpace.XRange.Max = 1;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.StayTime.Min = 0;
+	g_onvif_cfg.PTZPresetTourOptions.TourSpot.StayTime.Max = 120;
+}
 
 int PresetTours_Status_init(char * p_buf, int mlen, onvif_PTZPresetTourStatus * p_req)
 {
@@ -3196,22 +3220,6 @@ int PresetTours_Status_init(char * p_buf, int mlen, onvif_PTZPresetTourStatus * 
 
 	return offset;
 }
-
-/* int PresetTours_startingCondition_init(PresetsTours_t * PresetsTour, PTZ_PresetsTours_t * p_req)
-{
-	p_req->StartingCondition.RandomPresetOrderFlag = 1;
-	p_req->StartingCondition.RandomPresetOrder = parse_Bool(p_RandomPresetOrder->data);
-
-	p_req->StartingCondition.RecurringTimeFlag = 1;
-	p_req->StartingCondition.RecurringTime = (int)atoi(p_RecurringTime->data);
-
-	// p_req->StartingCondition.RecurringDurationFlag = 1;
-	//p_req->StartingCondition.RecurringDuration = (int)atoi(p_RecurringDuration->data); 
-	p_req->StartingCondition.RecurringDurationFlag = parse_XSDDuration(p_RecurringDuration->data, &p_req->StartingCondition.RecurringDuration);
-
-	p_req->StartingCondition.DirectionFlag = 1;
-	p_req->StartingCondition.Direction = onvif_StringToPTZPresetTourDirection(p_Direction->data);
-} */
 	
 int PresetTours_TourSpot_init(Presets_t * preset, onvif_PTZPresetTourSpot * p_req)
 {
@@ -3304,8 +3312,7 @@ int GetPresetTours_init()
 		{
 			continue;
 		}
-	 printf("xxxxxxxxxxxxx PTZPresetsTour[%d].UsedFlag = %d (==0,没有该巡更) xxxxxxxxxxx\n", index, PTZPresetsTour[index].UsedFlag);
-
+		
 		ONVIF_PresetTour * PresetTour_req = onvif_add_PresetTour(&p_profile->PresetTours);
 		if (PresetTour_req)
 		{
@@ -3313,8 +3320,6 @@ int GetPresetTours_init()
 			if (ONVIF_OK != ret)
 			{
 				free(PresetTour_req);
-				// onvif_free_PresetTours(&p_req->PresetTour_req);
-
 				return ret;
 			}
 		}
@@ -6370,7 +6375,9 @@ void onvif_init()
 #ifdef PTZ_SUPPORT
 	onvif_init_ptz();
 
-	GetPresetTours_init();     // add xie
+	/* add xie */
+	onvif_init_PresetTourOptions();
+	GetPresetTours_init();     
 
 	// add PTZ node to profile
 	p_profile = g_onvif_cfg.profiles;  //初次初始化在 onvif_init_cfg()/ onvif_load_cfg()/ onvif_parse_profile()/ onvif_add_profile()

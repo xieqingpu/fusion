@@ -140,7 +140,7 @@ int sync_time_with_server(NTP_SERVER_T *ntp_server, struct timeval tv) {
 	do {
 	    if (result->ai_family == AF_INET){
 			bzero(&addr,sizeof(addr));
-			addr.sin_port = htons(port);
+			addr.sin_port = htons(atoi(port));
 			memcpy(&addr,(struct sockaddr_in*)result->ai_addr, result->ai_addrlen);
 			break;
 	    }
@@ -250,9 +250,6 @@ void * ntpdate_Thread (void * arg)
 	prctl(PR_SET_NAME, (unsigned long)"NtpThread");
     unsigned long long ulllasttimeMs = 0;
     unsigned long long ullcurtimeMs = 0;
-	
-    unsigned long long ullheartlasttimeMs = 0;
-    unsigned long long ullheartcurtimeMs = 0;
 	int firstflag = 0;
 
 	if (g_onvif_cfg.SystemDateTime.DateTimeType == SetDateTimeType_NTP) {
@@ -309,8 +306,8 @@ int Init_TimeZone()
 	char cscurTZ[32] = {0};
 	char linuxTz[32] = {0};
     int ret = 0;
-	char tmp[4] = {0};
-	int tmp1 = 0;
+	//char tmp[4] = {0};
+	//int tmp1 = 0;
 		
 	sprintf(cscurTZ, "%s", g_onvif_cfg.SystemDateTime.TimeZone.TZ);
 	UTIL_INFO("cscurTZ===%s", g_onvif_cfg.SystemDateTime.TimeZone.TZ);

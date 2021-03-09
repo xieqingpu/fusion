@@ -212,11 +212,11 @@ ONVIF_VideoEncoder2Configuration * onvif_parse_video_encoder_cfg()
 		printf("get Video Encoder para faile.\n");
 
 	//判断读出的分辨率是否符合
-	if ( encoder.width != 1920 && encoder.height != 1080 ||
-		 encoder.width != 1280 && encoder.height != 720 ||
-		 encoder.width != 720 && encoder.height != 576 ||
-		 encoder.width != 640 && encoder.height != 360 ||
-		 encoder.width != 352 && encoder.height != 288 )	
+	if ((encoder.width != 1920 && encoder.height != 1080) ||
+		 (encoder.width != 1280 && encoder.height != 720) ||
+		 (encoder.width != 720 && encoder.height != 576) ||
+		 (encoder.width != 640 && encoder.height != 360) ||
+		 (encoder.width != 352 && encoder.height != 288) )	
 	{
 		encoder.width = 1920;
 		encoder.height = 1080;

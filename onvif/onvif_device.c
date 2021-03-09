@@ -190,10 +190,10 @@ ONVIF_RET onvif_SetHostname(const char * name, BOOL fromdhcp)
     return ONVIF_OK;
 }
 
-ONVIF_RET onvif_SetGPTSettings(const char * name)
+ONVIF_RET onvif_SetGPTSettings(const char * eventName, const char * AlgorithmName)
 {
     ONVIF_RET ret = 0;
-    if (name && NULL == strstr(name, "http"))
+    if (eventName && NULL == strstr(eventName, "http"))
     {
         g_onvif_cfg.network.EventUploadInfo.EventHttpFlag = 0;
     	ret = ONVIF_ERR_InValidEventHttpUrl;
@@ -202,7 +202,20 @@ ONVIF_RET onvif_SetGPTSettings(const char * name)
 	{
 		g_onvif_cfg.network.EventUploadInfo.EventHttpFlag = 1;
 		memset(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl, 0x0, sizeof(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl));
-    	strncpy(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl, name, strlen(name));
+    	strncpy(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl, eventName, strlen(eventName));
+		ret = ONVIF_OK;
+    }
+
+	if (AlgorithmName && NULL == strstr(AlgorithmName, "http"))
+    {
+        g_onvif_cfg.network.EventUploadInfo.AlgorithmServerFlag = 0;
+    	ret = ONVIF_ERR_InValidAlgorithmServerUrl;
+    }
+    else
+	{
+		g_onvif_cfg.network.EventUploadInfo.AlgorithmServerFlag = 1;
+		memset(g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl, 0x0, sizeof(g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl));
+    	strncpy(g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl, AlgorithmName, strlen(AlgorithmName));
 		ret = ONVIF_OK;
     }
 	

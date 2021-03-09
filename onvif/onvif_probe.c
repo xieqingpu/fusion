@@ -464,7 +464,7 @@ int onvif_probe_net_rx(SOCKET fd)
 	src_ip = addr.sin_addr.s_addr;
 	src_port = addr.sin_port;
 
-    log_print(LOG_DBG, "%s, rbuf = %s\r\n", __FUNCTION__, rbuf);
+    //log_print(LOG_DBG, "%s, rbuf = %s\r\n", __FUNCTION__, rbuf);
 
 	p_node = xxx_hxml_parse(rbuf, rlen);
 	if (p_node == NULL)
@@ -520,14 +520,12 @@ int onvif_probe_net_rx(SOCKET fd)
 					if (soap_strcmp(p_Types->data, "NetworkVideoTransmitter") == 0)
 					{
 						log_print(LOG_INFO, "%s, discovery NetworkVideoTransmitter\r\n", __FUNCTION__);
-						
 						onvif_probe_rly(message_id, fd, src_ip, src_port, matchby, scopes);
 					}
 				}
 				else
 				{
 					log_print(LOG_INFO, "%s, discovery NetworkVideoTransmitter\r\n", __FUNCTION__);
-					
 					onvif_probe_rly(message_id, fd, src_ip, src_port, matchby, scopes);
 				}
 			}
@@ -588,7 +586,7 @@ void onvif_hello()
         "<d:MetadataVersion>1</d:MetadataVersion></d:Hello></s:Body></s:Envelope>",
         g_onvif_cfg.Capabilities.device.XAddr);
 
-	log_print(LOG_DBG, "%s, p_buf = %s\r\n", __FUNCTION__, p_buf);
+	//log_print(LOG_DBG, "%s, p_buf = %s\r\n", __FUNCTION__, p_buf);
 	
 	// send to multicast addr
 	addr.sin_family = AF_INET;

@@ -2009,31 +2009,34 @@ int soap_GetGPTSettings(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN 
 int soap_SetGPTSettings(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
 {
 	XMLN * p_SetHostname;
-	XMLN * p_Name;
-	
+	XMLN * p_EventServer;
+	XMLN * p_AlgorithmServer;
+	ONVIF_RET ret;
+
     onvif_print("%s\r\n", __FUNCTION__);
 
     p_SetHostname = xml_node_soap_get(p_body, "SetGPTSettings");
     assert(p_SetHostname);
 
-    p_Name = xml_node_soap_get(p_SetHostname, "EventServerUrl");
-	if (p_Name)
-	{
-	    ONVIF_RET ret;
-	    
-	    if (p_Name->data)
-	    {
-		    ret = onvif_SetGPTSettings(p_Name->data);
-	    }
+    p_EventServer = xml_node_soap_get(p_SetHostname, "EventServerUrl");
+    p_AlgorithmServer = xml_node_soap_get(p_SetHostname, "AlgorithmServerUrl");
 
-	    if (ONVIF_OK == ret)
+	if (p_EventServer && p_AlgorithmServer)
+	{
+	printf("xxxxxxxxxxx p_EventServer->data = %s ; p_AlgorithmServer->data= %s xxxxxxxxxx\n", p_EventServer->data, p_AlgorithmServer->data);
+	    if (p_EventServer->data && p_AlgorithmServer->data)
 	    {
-	        return soap_build_send_rly(p_user, rx_msg, build_SetGPTSettings_rly_xml, NULL, NULL, p_header);
+		    ret = onvif_SetGPTSettings(p_EventServer->data, p_AlgorithmServer->data);
 	    }
-	    else if (ONVIF_ERR_InValidEventHttpUrl == ret)
-	    {
-	    	return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:InvalidEventHttpUrl", "Invalid EventHttpUrl");
-	    }
+	}
+
+	if (ONVIF_OK == ret)
+	{
+		return soap_build_send_rly(p_user, rx_msg, build_SetGPTSettings_rly_xml, NULL, NULL, p_header);
+	}
+	else if (ONVIF_ERR_InValidEventHttpUrl == ret || ONVIF_ERR_InValidAlgorithmServerUrl == ret)
+	{
+		return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:InvalidEventHttpUrl", "Invalid EventHttpUrl");
 	}
 	
     return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:InvalidEventHttpUrl", "Invalid ArgVal"); 
@@ -4547,6 +4550,27 @@ int soap_GetPresetTours(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN 
 	}
 }
 
+int soap_GetPresetTourOptions(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
+{
+	XMLN * p_GetPresetTourOptions;
+	XMLN * p_ProfileToken;
+		
+	onvif_print("%s\r\n", __FUNCTION__);
+
+	p_GetPresetTourOptions = xml_node_soap_get(p_body, "GetPresetTourOptions");
+	assert(p_GetPresetTourOptions);
+
+	p_ProfileToken = xml_node_soap_get(p_GetPresetTourOptions, "ProfileToken");
+	if (p_ProfileToken && p_ProfileToken->data)
+	{
+		return soap_build_send_rly(p_user, rx_msg, build_GetPresetTourOptions_rly_xml, p_ProfileToken->data, NULL, p_header);
+	}
+	else 
+	{
+		return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_MISSINGATTR, NULL, "Missing Attribute");
+	}
+}
+
 int soap_OperatePresetTour(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
 {
 	ONVIF_RET ret;
@@ -4617,7 +4641,6 @@ int soap_ModifyPresetTour(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XML
 	ret = parse_ModifyPresetTour(p_ModifyPresetTour, &req);
 	if (ONVIF_OK == ret)
 	{
-		// onvif_ModifyAnalyticsModules(&req);
 		ret = onvif_ModifyPresetTour(&req);
 		if (ONVIF_OK == ret)
 		{
@@ -9765,7 +9788,7 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	}
 
 
-	// printf("\r\nsoap_process::rx xml:\r\n%s\r\n", p_xml);		// Print the XML file sent by the client
+	printf("\r\nsoap_process::rx xml:\r\n%s\r\n", p_xml);		// Print the XML file sent by the client
 
 	p_node = xxx_hxml_parse(p_xml, strlen(p_xml));
 	if (NULL == p_node || NULL == p_node->name)
@@ -9888,16 +9911,6 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	{
 		soap_GetServices(p_user, rx_msg, p_body, p_header);
 	}
-	/* add */
-	/* else if (soap_strcmp(p_name, "GetGPTSettings") == 0)
-	{
-		soap_GetGPTSettings(p_user, rx_msg, p_body, p_header);
-	}
-	else if (soap_strcmp(p_name, "SetGPTSettings") == 0)
-	{
-		soap_SetGPTSettings(p_user, rx_msg, p_body, p_header);
-	} */
-	/*  */
 	else if (soap_strcmp(p_name, "GetScopes") == 0)
 	{
 		soap_GetScopes(p_user, rx_msg, p_body, p_header);
@@ -10719,6 +10732,10 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	else if (soap_strcmp(p_name, "GetPresetTours") == 0)
 	{
 		soap_GetPresetTours(p_user, rx_msg, p_body, p_header);
+	}
+	else if (soap_strcmp(p_name, "GetPresetTourOptions") == 0)
+	{
+		soap_GetPresetTourOptions(p_user, rx_msg, p_body, p_header);
 	}
 	else if (soap_strcmp(p_name, "OperatePresetTour") == 0)
 	{

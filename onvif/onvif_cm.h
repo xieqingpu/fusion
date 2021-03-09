@@ -197,6 +197,7 @@ typedef enum
     ONVIF_ERR_NoIPv6Address = -122,                         // The IPv6 address to be removed does not exist
 
 	ONVIF_ERR_InValidEventHttpUrl = -123, //事件图片上传的http地址无效
+	ONVIF_ERR_InValidAlgorithmServerUrl = -124, //算法服务上传的http地址无效
 
     // add by xieqingpu
 	ONVIF_ERR_OTHER = -250,
@@ -2624,9 +2625,11 @@ typedef struct
 typedef struct 
 {
 	uint32  EventHttpFlag	: 1;		    			    // Indicates whether the field Name is valid
-	uint32	Reserved	: 31;
+	uint32  AlgorithmServerFlag	: 1;		    			    // Indicates whether the field Name is valid
+	uint32	Reserved	: 30;
 
 	char	HttpServerUrl[256];			    // required
+	char	AlgorithmServerUrl[256];
 } onvif_EventSnapUploadInfo;
 
 typedef struct 

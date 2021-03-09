@@ -46,7 +46,7 @@ typedef struct
     u32_t    session_timeout;            // The rtsp session timeout for the related audio stream
     u32_t    sample_rate;                // The output sample rate in kHz
     u32_t    bitrate;                    // The output bitrate in kbps
-    u8_t     a_encoding[32];             //  G711 G762 AAC / Audio codec used for encoding the audio input (either G711, G726 or AAC)
+    char     a_encoding[32];             //  G711 G762 AAC / Audio codec used for encoding the audio input (either G711, G726 or AAC)
 } Audio_Encoder;
 
 #define  PROFILE_MAIN      "Main"  
@@ -91,11 +91,11 @@ typedef struct
 //设备信息
 typedef struct 
 {
-    u8_t    manufacturer[64];                 // The manufactor of the device
-    u8_t    model[64];                                // The device model
-    u8_t    firmware_version[64];         // The firmware version in the device
-    u8_t    serial_number[64];               // The serial number of the device
-    u8_t    hardware_id[64];                   // The hardware ID of the device
+    char    manufacturer[64];                 // The manufactor of the device
+    char    model[64];                                // The device model
+    char    firmware_version[64];         // The firmware version in the device
+    char    serial_number[64];               // The serial number of the device
+    char    hardware_id[64];                   // The hardware ID of the device
 } CONFIG_Information;
 
 /* **************************************** */

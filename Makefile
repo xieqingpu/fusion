@@ -47,9 +47,8 @@ INCLUDEDIR += -I./camCtl
 INCLUDEDIR += -I./camCtl/pelco_ptz 
 INCLUDEDIR += -I./camCtl/visca
 INCLUDEDIR += -I./json
-
-LINKOPTION = -g -o onvifserver
 #LIBDIRS = -L./openssl/lib/linux -L./libical/lib/linux
+
 OBJS = bm/word_analyse.o bm/util.o bm/sys_os.o bm/sys_log.o bm/sys_buf.o bm/ppstack.o bm/base64.o \
        bm/sha1.o bm/linked_list.o bm/hqueue.o bm/rfc_md5.o bm/xml_node.o bm/hxml.o http/http_srv.o \
        http/http_auth.o http/http_parse.o http/http_cln.o http/httpd.o onvif/soap.o onvif/onvif_probe.o \
@@ -67,19 +66,12 @@ OBJS = bm/word_analyse.o bm/util.o bm/sys_os.o bm/sys_log.o bm/sys_buf.o bm/ppst
 	#    main.o
 
 STATIC_LIB =  libonvifserver.a
-# OUTPUT = onvifserver
 
 SHAREDLIB = -lpthread -ldl
 #if define HTTPS
 #SHAREDLIB += -lssl -lcrypto 
 #if define LIBICAL
 #SHAREDLIB += -lical -licalvcal
-
-PROC_OPTION = DEFINE=_PROC_ MODE=ORACLE LINES=true CODE=CPP
-ESQL_OPTION = -g
-################OPTION END################
-ESQL = esql
-PROC = proc
 
 # 编成静态库
 $(STATIC_LIB):$(OBJS)
@@ -91,7 +83,7 @@ $(STATIC_LIB):$(OBJS)
 all: clean $(STATIC_LIB)
 .PRECIOUS:%.cpp %.c %.C
 .SUFFIXES:
-.SUFFIXES:  .c .o .cpp .ecpp .pc .ec .C .cc .cxx
+.SUFFIXES:  .c .o .cpp  .C .cc .cxx
 
 .cpp.o:
 	$(CPP) -c -o $*.o $(COMPILEOPTION) $(INCLUDEDIR)  $*.cpp
@@ -108,14 +100,6 @@ all: clean $(STATIC_LIB)
 .C.o:
 	$(CC) -c -o $*.o $(COMPILEOPTION) $(INCLUDEDIR) $*.C	
 
-.ecpp.C:
-	$(ESQL) -e $(ESQL_OPTION) $(INCLUDEDIR) $*.ecpp 
-	
-.ec.c:
-	$(ESQL) -e $(ESQL_OPTION) $(INCLUDEDIR) $*.ec
-	
-.pc.cpp:
-	$(PROC)  CPP_SUFFIX=cpp $(PROC_OPTION)  $*.pc
 
 clean: 
 	rm -f $(OBJS)

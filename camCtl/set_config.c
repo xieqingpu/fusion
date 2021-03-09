@@ -52,6 +52,7 @@ int onvif_get_devinfo(CONFIG_Information * p_devInfo)
 		return 0;
 	}
 	UTIL_INFO("p_devInfo->firmware_version==%s", p_devInfo->firmware_version);
+	return 0;
 }
 
 #define USERSFILE ("/user/cfg_files/User.dat")
@@ -228,35 +229,9 @@ int img_Stop()
 	return 0;
 }
 
+
 /* 保存巡更到文件和从文件读取出来（目的为了防止掉电消失）*/
 #define  PRESETTOURFILE  ("/user/cfg_files/PresetTour.dat")
-/*
-int readPresetTourNumber(void)
-{
-	char* device = "/user/cfg_files/";
-	int count = 0;
-
-	DIR *dir;
-	struct dirent *ptr;
-
-	if ((dir=opendir(device)) == NULL)
-	{
-		UTIL_ERR("Open dir error...");
-		return -1;
-	}
-
-	while ((ptr=readdir(dir)) != NULL)
-	{
-		if(strstr((char*)ptr->d_name, "PRESET_TOUR_")!=NULL)
-		{
-			count ++;
-		}
-	}
-	closedir(dir);
-
-	return count;
-}
-*/
 int readPtzPresetTour(PTZ_PresetsTours_t  *presetTours, int cnt)
 {
 	if (read_cfg_from_file(PRESETTOURFILE, (char*)presetTours, sizeof(PTZ_PresetsTours_t)*cnt) != 0) {
@@ -597,11 +572,11 @@ int setVideoEncoder(Video_Encoder *p_video_encoder)
 	}
 
 	//判断读出的分辨率是否符合
-	if ( readCameraEncoder.width != 1920 && readCameraEncoder.height != 1080 ||
-		 readCameraEncoder.width != 1280 && readCameraEncoder.height != 720 ||
-		 readCameraEncoder.width != 720 && readCameraEncoder.height != 576 ||
-		 readCameraEncoder.width != 640 && readCameraEncoder.height != 360 ||
-		 readCameraEncoder.width != 352 && readCameraEncoder.height != 288 )	
+	if ( (readCameraEncoder.width != 1920 && readCameraEncoder.height != 1080) ||
+		 (readCameraEncoder.width != 1280 && readCameraEncoder.height != 720) ||
+		 (readCameraEncoder.width != 720 && readCameraEncoder.height != 576) ||
+		 (readCameraEncoder.width != 640 && readCameraEncoder.height != 360) ||
+		 (readCameraEncoder.width != 352 && readCameraEncoder.height != 288) )	
 	{
 		readCameraEncoder.width = 1920;
 		readCameraEncoder.height = 1080;
@@ -744,7 +719,7 @@ time_t SystemTimeToTM(onvif_DateTime stStartTime)
 
 int opt_UTCTimeToSystemTime(onvif_DateTime *pUTCDateTime)
 {
-	char zone1 = 0, zone2 = 0, zone3 = 0;
+	int zone1 = 0, zone2 = 0, zone3 = 0;
 
 	//CST-4:30:00
 	sscanf(&g_onvif_cfg.SystemDateTime.TimeZone.TZ[4], 
@@ -801,6 +776,7 @@ int opt_UTCTimeToSystemTime(onvif_DateTime *pUTCDateTime)
 		pUTCDateTime->Date.Day, pUTCDateTime->Time.Hour,
 		pUTCDateTime->Time.Minute, pUTCDateTime->Time.Second);
 	system_ex("hwclock -w;hwclock -s");
+	return 0;
 }
 
 struct tm * GetSystemUTCTime()
@@ -818,7 +794,6 @@ struct tm * GetSystemUTCTime()
 }
 void set_system_clock_timezone(onvif_DateTime *pUTCDateTime, int utc)
 {	
-	struct tm now;
 
 	if (!pUTCDateTime) return ;
 	
@@ -1246,7 +1221,6 @@ FILE *vpopen(const char* cmdstring, const char *type)
 	int pfd[2];  
 	FILE *fp;  
 	pid_t  pid;  
-	int i = 0;
 
 	if((type[0]!='r' && type[0]!='w')||type[1]!=0)	
 	{  
@@ -1303,8 +1277,8 @@ FILE *vpopen(const char* cmdstring, const char *type)
 
 int vpclose(FILE *fp)  
 {  
-	int 	stat;	 
-	pid_t	pid;	
+	int 	stat = 0;	 
+	pid_t	pid = 0;	
 	   
 	if (fclose(fp) == EOF)	  
 		return(-1);    
@@ -1336,7 +1310,6 @@ time_t read_rtc(int utc)
 {  
     int rtc;  
     struct tm tm;  
-    char *oldtz = 0;  
     time_t t = 0;  
   
     if (( rtc = open ( "/dev/rtc0", O_RDONLY )) < 0 ) {  
@@ -1364,8 +1337,6 @@ int sync_hwclock_tosys()
 {  
     int rtc;  
     struct tm tm;  
-    char *oldtz = 0;  
-    time_t t = 0;  
   
     if (( rtc = open ( "/dev/rtc0", O_RDONLY )) < 0 ) {  
         if (( rtc = open ( "/dev/misc/rtc", O_RDONLY )) < 0 ) {  
