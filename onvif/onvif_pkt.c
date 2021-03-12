@@ -7427,7 +7427,16 @@ int build_Vector_xml(char * p_buf, int mlen, onvif_VectorList * p_req)
 		p_req->y,
 		p_req->w,
 		p_req->h);
-		
+
+	offset += snprintf(p_buf+offset, mlen-offset, "<tt:Type>%d</tt:Type>", p_req->dulaType);  //1:温度检测，2：数据识别
+
+	offset += snprintf(p_buf+offset, mlen-offset, 
+		"<tt:Min>%0.2f</tt:Min>"
+		"<tt:Max>%0.2f</tt:Max>",
+	p_req->temperature.Min, p_req->temperature.Max);
+
+	offset += snprintf(p_buf+offset, mlen-offset, "<tt:DulaModel>%d</tt:DulaModel>", p_req->dulaModel);  //4:rgb,即可见光模式 5:ir,红外模式。1~3的可查看Dula方面的
+
 	return offset;		
 }
 ////

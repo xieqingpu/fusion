@@ -337,27 +337,31 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
 	/* 预置位对应的截取的图像区域 */
     if (p_req->VectorList_Flag )
 	{
-		p_profile->presets[index].VectorListFlag = 1;
-
+		p_preset->VectorListFlag = 1;
 		for (i = 0; i < p_req->VectorNumber; i++)
 		{
 			// printf("xxx \033[0;34m===onvif__SetPreset| VectorList: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f ===\033[0m\n", p_req->VectorList[i].x, p_req->VectorList[i].y, p_req->VectorList[i].w, p_req->VectorList[i].h);  
-			p_profile->presets[index].Vector_Number = p_req->VectorNumber;
-			p_profile->presets[index].Vector_list[i].x = p_req->VectorList[i].x;
-			p_profile->presets[index].Vector_list[i].y = p_req->VectorList[i].y;
-			p_profile->presets[index].Vector_list[i].w = p_req->VectorList[i].w;
-			p_profile->presets[index].Vector_list[i].h = p_req->VectorList[i].h;
+			p_preset->Vector_Number = p_req->VectorNumber;
+			p_preset->Vector_list[i].x = p_req->VectorList[i].x;
+			p_preset->Vector_list[i].y = p_req->VectorList[i].y;
+			p_preset->Vector_list[i].w = p_req->VectorList[i].w;
+			p_preset->Vector_list[i].h = p_req->VectorList[i].h;
+
+			p_preset->Vector_list[i].dulaType = p_req->VectorList[i].dula_type;
+			p_preset->Vector_list[i].dulaModel = p_req->VectorList[i].dula_model;
+			p_preset->Vector_list[i].temperature.Min = p_req->VectorList[i].temperature.Min;
+			p_preset->Vector_list[i].temperature.Max = p_req->VectorList[i].temperature.Max;
 		}
 	}
 	else {
-		p_profile->presets[index].VectorListFlag = 0;
+		p_preset->VectorListFlag = 0;
 	}
 	
 
 	/* 预置位对应的相机焦距 */
 	uint16_t z = get_zoom_val();
-	p_profile->presets[index].zoomVal = z;
-	printf("xxx ===== onvif__SetPreset |p_profile->presets[%d].zoomVal: %d == z=%d\n", index, p_profile->presets[index].zoomVal, z);
+	p_preset->zoomVal = z;
+	printf("xxx ===== onvif__SetPreset |p_profile->presets[%d].zoomVal: %d == z=%d\n", index, p_preset->zoomVal, z);
  
 	if (writePtzPreset(p_profile->presets, MAX_PTZ_PRESETS) != 0) //ARRAY_SIZE(p_profile->presets) //MAX_PTZ_PRESETS:其实该ptz设备最多支持256个预置位，但我只设置最多100个
 		printf("write Ptz Preset faile.\n");
@@ -715,7 +719,6 @@ void *PresetTour_state_touring_Forward(void *args)
 	{
 		if (presetTourStatus == PTZPresetTourOperation_Stop)
 		{
-			// UTIL_INFO("!!!PTZPresetTourOperation_Stop!!!!");
 			return NULL;
 		}
 		else if (presetTourStatus == PTZPresetTourOperation_Pause)
@@ -738,8 +741,6 @@ void *PresetTour_state_touring_Forward(void *args)
 		gotoPtzPreset(location);  
 		set_zoom(presetTours.presets[j].zoomValue);
 
-		// UTIL_INFO("\033[0;33mxxxx touringp_PresetTour_Forward presets.index = %d zoomValue = %d presetTourStatus=%d xxxx\033[0m\n", 
-		// 		presetTours.presets[j].index, presetTours.presets[j].zoomValue, presetTourStatus);    //33黄
 		int staytime = (BASETIME + presetTours.presets[j].StayTime)*1000*1000;
 		onvif_preset_usleep(staytime);
 
@@ -805,7 +806,6 @@ void *PresetTour_state_touring_Backward(void *args)
 	{
 		if (presetTourStatus == PTZPresetTourOperation_Stop)
 		{
-			// UTIL_INFO("!!!PTZPresetTourOperation_Stop!!!!");
 			return NULL;
 		}
 		else if(presetTourStatus == PTZPresetTourOperation_Pause)
@@ -828,20 +828,9 @@ void *PresetTour_state_touring_Backward(void *args)
 		gotoPtzPreset(location);
 		set_zoom(presetTours.presets[j].zoomValue);
 
-		// UTIL_INFO("\033[0;33mxxxx touring_Backward presets.index = %d zoomValue = %d xxxx\033[0m\n", 
-		// 		presetTours.presets[j].index, presetTours.presets[j].zoomValue);    //33黄
 		int staytime = (BASETIME + presetTours.presets[j].StayTime)*1000*1000;
 		onvif_preset_usleep(staytime);
 
-		// for(int ms = 0; ms < staytime; ms+=100)
-		// {
-		// 	if (presetTourStatus == PTZPresetTourOperation_Stop)
-		// 	{
-		// 		UTIL_INFO("!!!PTZPresetTourOperation_Stop!!!!");
-		// 		return NULL;
-		// 	}
-		// 	usleep(100*1000);
-		// }
 
 #ifdef PTOURS_TIME_NUMBER
 		if (presetTours.runTimeFlag)
@@ -866,6 +855,23 @@ void *PresetTour_state_touring_Backward(void *args)
 	}
 
 	return NULL;
+}
+
+// 有可能swap同一变量，不能用异或版本 
+void swap(int *a, int *b)
+{
+	int t = *a;
+	*a = *b;
+	*b = t;
+}
+/* 取随机预置位序号。不重复随机完所有预置位（即随机一个预置位序号后，再随机一个除去随机过的预置位序号，直到随机完所有预置位序号） */
+void RandomSort(int a[], int n)
+{
+    for(int i=0; i<n; ++i)
+    {
+        int j = rand() % (n-i) + i;   //产生i到n-1间的随机数
+		swap(&a[i], &a[j]);           //将随机选择到的预置位序号(a[j])交换到前面，后面会再从i到n-1间随机抽取预置位序号
+    }
 }
 
 void *PresetTour_state_touring_Random(void *args)
@@ -893,19 +899,26 @@ void *PresetTour_state_touring_Random(void *args)
     }
 #endif
 
-	uint32_t i = presetTours.presetCount;
-	uint32_t j, tmp = 0;
+	int i = 0, presetIndex;
 	uint32_t preset_index[64];
-	uint32_t x = 0;
+	uint32_t n = presetTours.presetCount;
 
 	static uint32_t runningTime = 0;     //巡航了多久
 	static uint32_t runningNumber = 0;	 //巡航了多少次
+
+	/* 将巡更的预置位序号保存到数组中，后面进行随机排序 */
+	int a[n];
+	for (int j = 0; j < n; j++)
+	{
+		a[j] = j;    	 //巡更的预置位序号从0~n的
+	}
+	//将巡更的预置位序号进行随机排序
+    RandomSort(a, n);   
 
 	while (1)
 	{
 		if (presetTourStatus == PTZPresetTourOperation_Stop)
 		{
-			// UTIL_INFO("!!!PTZPresetTourOperation_Stop!!!!");
 			return NULL;
 		}
 		else if (presetTourStatus == PTZPresetTourOperation_Pause)
@@ -925,56 +938,41 @@ void *PresetTour_state_touring_Random(void *args)
 		}
 #endif
 
-		//
-		srand((uint32_t)time(NULL));  //随机选择预置位
-		j = rand()%i;
+		presetIndex = a[i];
+		// printf("\033[0;33m==== PresetTour_state_touring_Random | presetTours.presets[%d], a[i]=%d ===\033[0m\n", presetIndex, a[i]); 
 
-		while (tmp == j)	//若巡更预置位与上一次的一样，则再次随机选择预置位，选择与上次不一样的预置位
-		{
-   			static uint16_t seed;
-			seed = seed%100;
-
-			srand((uint32_t)time(NULL) + ++seed);
-			j = rand()%i;
-		}
-		//
-		short location = presetTours.presets[j].index + 1;   //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始 (在SetPreset中+1，对应的，这里也要+1)
+		short location = presetTours.presets[presetIndex].index + 1;   //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始 (在SetPreset中+1，对应的，这里也要+1)
 		gotoPtzPreset(location);
-		set_zoom(presetTours.presets[j].zoomValue);
+		set_zoom(presetTours.presets[presetIndex].zoomValue);
 
-		// UTIL_INFO("\033[0;33mxxxx touring_Random presets.index = %d zoomValue = %d xxxx\033[0m\n", 
-		// 		presetTours.presets[j].index, presetTours.presets[j].zoomValue);    //33黄
-		int staytime = (BASETIME + presetTours.presets[j].StayTime)*1000*1000;
+		int staytime = (BASETIME + presetTours.presets[presetIndex].StayTime)*1000*1000;
 		onvif_preset_usleep(staytime);
 
-		// for(int ms = 0; ms < staytime; ms+=100)
-		// {
-		// 	if (presetTourStatus == PTZPresetTourOperation_Stop)
-		// 	{
-		// 		UTIL_INFO("!!!PTZPresetTourOperation_Stop!!!!");
-		// 		return NULL;
-		// 	}
-		// 	usleep(100*1000);
-		// }
 
 #ifdef PTOURS_TIME_NUMBER
 		if (presetTours.runTimeFlag)
 		{
-			runningTime += (BASETIME + presetTours.presets[j].StayTime);
+			runningTime += (BASETIME + presetTours.presets[presetIndex].StayTime);
 		}
 
 		if (presetTours.runNumberFlag)
 		{
-			x += 1;
-			x = x%i;
-			if (x == 0)   //随机巡航i个预置位（i:巡航的预置位个数）说明巡航完一次
-			{
-				runningNumber++;
-			}
 		}
 #endif
+		i += 1;
+		if (i == n)	  	//循环完所有预置位序号一次
+		{
+			i = 0;	
+			// runningNumber++;	  暂时不用统计循环次数
 
-		tmp = j;
+			uint16_t seed = 0;
+			do
+			{
+				seed = seed%100;
+  		 		srand((unsigned)time(0) + ++seed);
+   				RandomSort(a, n);	  	 //再次打乱预置位序号
+			} while (presetIndex == a[0]);    /* 该循环是为了让循环完后的最后一个预置位与重新开始循环的第一个预置位不一样 */
+		}
 	}
 
 	return NULL;

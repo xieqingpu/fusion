@@ -511,7 +511,7 @@ ONVIF_RET onvif_GetSnapshot(char *buff, int * rlen, char * profile_token)
 	
     p_bufs = buff;
     // here is the test code, just read the image data from file ...
-	if (0 == GPTMessageSend(GPT_MSG_VIDEO_SNAPJPEGPROCESS, 0, (int)acFile, strlen(acFile)))
+	if (0 == GPTMessageSend(GPT_MSG_VIDEO_FUSIONSNAPJPEGPROCESS, 0, (int)acFile, strlen(acFile)))
 	{
 	    fp = fopen(acFile, "rb");
 		if (NULL == fp)

@@ -957,6 +957,11 @@ int Opt_SetDeviceIpAddr(const char *ifname, const char *ipaddr,
 	}
 	
 	UTIL_INFO("ifname=%s,ipaddr=%s,netmask==%s", ifname, ipaddr, mask);
+	if (!is_ip_address(ipaddr) || !is_ip_address(mask))
+	{
+		UTIL_ERR("ipaddr or netmask novalid!!!!!!!");
+		return -1;
+	}
 
     fd = socket(AF_INET, SOCK_DGRAM, 0);
     if (fd < 0) {
@@ -1041,7 +1046,13 @@ int opt_SetNetworkInterfaces(onvif_NetworkInterface	*pNetworkInterface)
 /* 保存TCPIP数据参数*/
 int SetNetworkInterfaces(onvif_NetworkInterface	*pNetworkInterface, BOOL isSave)
 {
-	opt_SetNetworkInterfaces(pNetworkInterface);
+    int ret = -1; 
+	ret = opt_SetNetworkInterfaces(pNetworkInterface);
+	if (ret < 0)
+	{
+		UTIL_ERR("opt_SetNetworkInterfaces error!!!!");
+		return -1;
+	}
 	
 	if (isSave && save_cfg_to_file(NETINTEREFILE, (char*)pNetworkInterface, 
 		sizeof(onvif_NetworkInterface)) != 0) {

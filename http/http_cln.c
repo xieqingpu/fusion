@@ -737,7 +737,7 @@ int http_snap_and_sendto_host(int eventtype)
 			gtime->tm_year+1900, gtime->tm_mon+1, gtime->tm_mday, 
 			gtime->tm_hour, gtime->tm_min, gtime->tm_sec);
 		 
-	if (0 == GPTMessageSend(GPT_MSG_VIDEO_SNAPJPEGPROCESS, 0, (int)pUploadInfo.pFileName, strlen(pUploadInfo.pFileName)))
+	if (0 == GPTMessageSend(GPT_MSG_VIDEO_FUSIONSNAPJPEGPROCESS, 0, (int)pUploadInfo.pFileName, strlen(pUploadInfo.pFileName)))
 	{
 	    if (0 == access(pUploadInfo.pFileName, F_OK))
 	    {

@@ -1486,16 +1486,24 @@ ONVIF_RET parse_SetNetworkInterfaces(XMLN * p_node, SetNetworkInterfaces_REQ * p
 					XMLN * p_PrefixLength;
 
 					p_Address = xml_node_soap_get(p_Manual, "Address");
-	                if (p_Address && p_Address->data)
+	                if (p_Address && p_Address->data && is_ip_address(p_Address->data))
 	                {
 	                    strncpy(p_req->NetworkInterface.IPv4.Config.Address, p_Address->data, sizeof(p_req->NetworkInterface.IPv4.Config.Address)-1);
 	                }
+					else 
+					{
+						return ONVIF_ERR_InvalidIPv4Address;
+					}
 
 	                p_PrefixLength = xml_node_soap_get(p_Manual, "PrefixLength");
-	                if (p_PrefixLength && p_PrefixLength->data)
+	                if (p_PrefixLength && p_PrefixLength->data && atoi(p_PrefixLength->data) < 32)
 	                {
 	                    p_req->NetworkInterface.IPv4.Config.PrefixLength = atoi(p_PrefixLength->data);
 	                }
+					else 
+					{
+						return ONVIF_ERR_SettingsInvalid;
+					}
 	            }
 	        }
 	    }
@@ -3709,25 +3717,21 @@ ONVIF_RET prase_Vector(XMLN * p_node, onvif_ex_VectorList * p_req)
 	XMLN * p_W;
 	XMLN * p_H;
 
+	XMLN * p_Type;
+	XMLN * p_Min;
+	XMLN * p_Max;
+	XMLN * p_DulaModel;
+
 	p_X = xml_node_soap_get(p_node, "X");
 	if (p_X && p_X->data)
 	{
 		p_req->x = (float)atof(p_X->data);
 	}
-	else
-	{
-		return ONVIF_ERR_OTHER;
-	}
-	
 
 	p_Y = xml_node_soap_get(p_node, "Y");
 	if (p_Y && p_Y->data)
 	{	
 		p_req->y = (float)atof(p_Y->data);
-	}
-	else
-	{
-		return ONVIF_ERR_OTHER;
 	}
 
 	p_W = xml_node_soap_get(p_node, "W");
@@ -3735,19 +3739,36 @@ ONVIF_RET prase_Vector(XMLN * p_node, onvif_ex_VectorList * p_req)
 	{
 		p_req->w = (float)atof(p_W->data);
 	}
-	else
-	{
-		return ONVIF_ERR_OTHER;
-	}
 
 	p_H = xml_node_soap_get(p_node, "H");
 	if (p_H && p_H->data)
 	{
 		p_req->h = (float)atof(p_H->data);
 	}
-	else
+
+	//
+	p_Type = xml_node_soap_get(p_node, "Type");
+	if (p_Type && p_Type->data)
 	{
-		return ONVIF_ERR_OTHER;
+		p_req->dula_type = (int)atoi(p_Type->data);
+	}
+
+	p_DulaModel = xml_node_soap_get(p_node, "DulaModel");
+	if (p_DulaModel && p_DulaModel->data)
+	{
+		p_req->dula_model = (int)atoi(p_DulaModel->data);
+	}
+
+	p_Min = xml_node_soap_get(p_node, "Min");
+	if (p_Min && p_Min->data)
+	{
+		p_req->temperature.Min = (float)atof(p_Min->data);
+	}
+
+	p_Max = xml_node_soap_get(p_node, "Max");
+	if (p_Max && p_Max->data)
+	{
+		p_req->temperature.Max = (float)atof(p_Max->data);
 	}
 
 	return ONVIF_OK;

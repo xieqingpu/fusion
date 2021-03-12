@@ -113,6 +113,10 @@ typedef struct
 	float y;		//顶点坐标y(左上角)
 	float w;		//宽
 	float h;		//高
+
+	int		dulaType;		//1:温度检测，2：数据识别
+	int		dulaModel;  		//4:rgb,即可见光模式 5:ir,红外模式。1~3的可查看Dula方面的 
+	onvif_FloatRange	temperature;	//温度范围
 } onvif_VectorList;
 ////
 typedef struct
