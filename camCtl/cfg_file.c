@@ -7,8 +7,8 @@
 #include <sys/ioctl.h>
 #include <time.h>
 #include <fcntl.h>
-
 #include <sys/stat.h> 
+#include "utils_log.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,19 +64,23 @@ int save_cfg_to_file(char* file,char* cfg, int len)
 
 
 	//创建文件
-	fd=open(file,O_WRONLY|O_CREAT,777);
-	if(fd<=0)
+	fd = open(file, O_RDWR|O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH |S_IWOTH);
+	if (fd <= 0)
+	{
+		UTIL_ERR("save file=%s failed %d %s!!!", file, errno, strerror(errno));
 		return -1;
+	}
 
 	//写入结构体信息
-	if(write(fd,cfg, len) != len)
+	if (write(fd,cfg, len) != len)
 	{
+		UTIL_ERR("write file=%s failed %d %s!!!", file, errno, strerror(errno));
 		close(fd);
 		return -1;
 	}
 
 	//写入魔数
-	if(write(fd,&MagicNum, sizeof(MagicNum)) != sizeof(MagicNum) )
+	if (write(fd, &MagicNum, sizeof(MagicNum)) != sizeof(MagicNum) )
 	{
 		close(fd);
 		return -1;
@@ -95,29 +99,34 @@ int read_cfg_from_file(char* file,char *cfg,int len)
 	unsigned int MagicNum;
 
     if (!file || (file && 0 != access(file, F_OK))) {
+		UTIL_ERR("file not exsit!!!");
 		return -1;
     }
 	
-	fd = open(file,O_RDONLY);
+	fd = open(file, O_RDONLY);
 	if (fd<=0)
+	{
+	    UTIL_ERR("open file=%s failed %d(%s)!!!", file, errno, strerror(errno));
 		return -1;
+	}
 
 	//读入配置
 	if (read(fd,cfg,len) != len)
 	{
+		UTIL_ERR("read file=%s failed %d,%s!!!", file, errno, strerror(errno));
 		close(fd);
 		return -1;
 	}
 
 	//读入魔数
-	if(read(fd,&MagicNum,sizeof(MagicNum)) != sizeof(MagicNum))
+	if (read(fd,&MagicNum,sizeof(MagicNum)) != sizeof(MagicNum))
 	{
 		close(fd);
 		return -1;
 	}
 
 	//对比魔数
-	if(MagicNum!=MAGIC_NUM)
+	if (MagicNum!=MAGIC_NUM)
 	{
 		close(fd);
 		return -1;

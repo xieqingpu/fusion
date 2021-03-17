@@ -717,7 +717,7 @@ int http_send_event_jpeg(Gpt_EventUploadInfo *pUploadInfo)
 	return http_onvif_event_trans(&req, 200, pUploadInfo);
 }
 
-int http_snap_and_sendto_host(int eventtype)
+int http_snap_and_sendto_host(int eventtype, int snaptype, char *HttpServerUrl)
 {
     int ret = -1;
 	Gpt_EventUploadInfo pUploadInfo;
@@ -725,35 +725,39 @@ int http_snap_and_sendto_host(int eventtype)
 	time_t nowtime;
 	struct tm *gtime;
 
-	if (0 == g_onvif_cfg.network.EventUploadInfo.EventHttpFlag)
+	if (!HttpServerUrl)
 	{
 	    UTIL_ERR("HttpServerUrl is not http addr!!!!");
 	  	return -1;
 	}
-
-	time(&nowtime);
-	gtime = gmtime(&nowtime);
-	snprintf(pUploadInfo.pFileName, sizeof(pUploadInfo.pFileName), "/tmp/DulaSnapshot_%04d%02d%02d%02d%02d%02d.jpg",
-			gtime->tm_year+1900, gtime->tm_mon+1, gtime->tm_mday, 
-			gtime->tm_hour, gtime->tm_min, gtime->tm_sec);
-		 
-	if (0 == GPTMessageSend(GPT_MSG_VIDEO_FUSIONSNAPJPEGPROCESS, 0, (int)pUploadInfo.pFileName, strlen(pUploadInfo.pFileName)))
+	
+	if ((snaptype == GPT_MSG_VIDEO_FUSIONSNAPJPEGPROCESS) ||  //双光融合图像抓拍
+		 (snaptype == GPT_MSG_VIDEO_IPCSNAPJPEGPROCESS ) ||  //可见光摄像图像抓拍
+		 (snaptype == GPT_MSG_VIDEO_IRMODESNAPJPEGPROCESS))  //IR模块图像抓拍
 	{
+		time(&nowtime);
+		gtime = gmtime(&nowtime);
+		snprintf(pUploadInfo.pFileName, sizeof(pUploadInfo.pFileName), "/tmp/Snap_%04d%02d%02d%02d%02d%02d_%d_%d.jpg",
+				gtime->tm_year+1900, gtime->tm_mon+1, gtime->tm_mday, 
+				gtime->tm_hour, gtime->tm_min, gtime->tm_sec, eventtype, snaptype);
+			 
+		if (0 == GPTMessageSend(snaptype, 0, (int)pUploadInfo.pFileName, strlen(pUploadInfo.pFileName)))
+		{
+		    if (0 == access(pUploadInfo.pFileName, F_OK))
+		    {
+				strncpy(pUploadInfo.hostname, HttpServerUrl, strlen(HttpServerUrl));
+				pUploadInfo.eventtype = eventtype;
+				ret = http_send_event_jpeg(&pUploadInfo);
+		    }
+			else
+				UTIL_INFO("pUploadInfo.pFileName=%s not exsit===", pUploadInfo.pFileName);
+		}
+
 	    if (0 == access(pUploadInfo.pFileName, F_OK))
 	    {
-			strncpy(pUploadInfo.hostname, g_onvif_cfg.network.EventUploadInfo.HttpServerUrl, 
-				     strlen(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl));
-			pUploadInfo.eventtype = eventtype;
-			ret = http_send_event_jpeg(&pUploadInfo);
+	    	unlink(pUploadInfo.pFileName);
 	    }
-		else
-			UTIL_INFO("pUploadInfo.pFileName=%s not exsit===", pUploadInfo.pFileName);
 	}
-
-    if (0 == access(pUploadInfo.pFileName, F_OK))
-    {
-    	unlink(pUploadInfo.pFileName);
-    }
 	
     return ret;
 }

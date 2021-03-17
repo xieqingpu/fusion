@@ -35,7 +35,11 @@
 
 #ifdef PTZ_SUPPORT
 
+#define MSG_VIDEO_FUSIONSNAPJPEGPROCESS	60	//双光融合图像抓拍
+#define MSG_VIDEO_IPCSNAPJPEGPROCESS	80	//可见光摄像图像抓拍
+#define MSG_VIDEO_IRMODESNAPJPEGPROCESS	81	//IR模块图像抓拍
 
+extern PTZ_PresetsTours_t * onvif_get_idle_PresetTour();
 extern PTZ_PresetsTours_t * onvif_find_PresetTour(const char  * preset_token);
 extern PTZ_PresetsTours_t  PTZPresetsTour[MAX_PRESETS_TOUR];
 
@@ -338,6 +342,12 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
     if (p_req->VectorList_Flag )
 	{
 		p_preset->VectorListFlag = 1;
+
+		if (p_req->VectorNumber > VECTOR_LIST_LEN)	//如果画框数量超过了VECTOR_LIST_LEN，则返回错误
+		{
+			return ONVIF_ERR_OTHER;
+		}
+
 		for (i = 0; i < p_req->VectorNumber; i++)
 		{
 			// printf("xxx \033[0;34m===onvif__SetPreset| VectorList: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f ===\033[0m\n", p_req->VectorList[i].x, p_req->VectorList[i].y, p_req->VectorList[i].w, p_req->VectorList[i].h);  
@@ -633,11 +643,17 @@ ONVIF_RET onvif_CreatePresetTour(PresetTour_REQ * p_req)
 	p_PresetTour = onvif_add_PresetTour(&p_profile->PresetTours); 
 	if (p_PresetTour)
 	{
-		/*  获取空闲的巡更的下标 */
+		// 获取空闲的巡更的下标
 		g_onvif_cls.preset_tour_idx = onvif_get_idle_PresetTour_idx(); 
 		if (g_onvif_cls.preset_tour_idx < 0)    g_onvif_cls.preset_tour_idx++;
 
-		/* p_presetTour = onvif_get_idle_PresetTour(p_req->ProfileToken); */
+		/* 只是判断巡航数量是否超过了设置的MAX_PRESETS_TOUR，超过了则返回NULL*/
+		PTZ_PresetsTours_t * PTZ_PresetsTour = onvif_get_idle_PresetTour(p_req->ProfileToken);	//&PTZPresetsTour[i]
+		if (NULL == PTZ_PresetsTour)
+        {
+        	return ONVIF_ERR_OTHER;
+        }
+		/*  */
 
         sprintf(p_PresetTour->PresetTour.token, "PRESET_TOUR_%d", g_onvif_cls.preset_tour_idx);
         strcpy(p_req->PresetTourToken, p_PresetTour->PresetTour.token);
@@ -745,7 +761,8 @@ void *PresetTour_state_touring_Forward(void *args)
 		onvif_preset_usleep(staytime);
 
 		// UTIL_INFO("\033[0;34mxxxxxxxxxxxx 1.http_snap_and _sendto_host xxxxxxxxxxxx\033[0m\n");
-		// int ret = http_snap_and_sendto_host(1);
+		if (http_snap_and_sendto_host(1, MSG_VIDEO_IPCSNAPJPEGPROCESS, g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl) == -1)
+			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");
 
 #ifdef PTOURS_TIME_NUMBER
 		if (presetTours.runTimeFlag)

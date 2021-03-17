@@ -1778,7 +1778,7 @@ void onvif_init_SystemDateTime()
     int ret = -1;
     ret = GetSystemDateTime(&g_onvif_cfg.SystemDateTime);
 	if (ret < 0 || g_onvif_cfg.SystemDateTime.TimeZone.TZ[0] == '\0') {
-		g_onvif_cfg.SystemDateTime.DateTimeType = SetDateTimeType_Manual;
+		g_onvif_cfg.SystemDateTime.DateTimeType = SetDateTimeType_NTP;
 	    g_onvif_cfg.SystemDateTime.DaylightSavings = FALSE;
 	    g_onvif_cfg.SystemDateTime.TimeZoneFlag = 1;
 		strcpy(g_onvif_cfg.SystemDateTime.TimeZone.TZ, "CST-8:00:00");

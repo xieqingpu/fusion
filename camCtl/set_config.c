@@ -148,15 +148,20 @@ void controlPtzPos(float X, float Y, float Z , unsigned short Speed)
 		else if(Z < 0)
 			set_zoom_wide_speed(Zspeed);
 	}
+	else{
+		printf("get_visca_status error !!!\r\n");
+	}
 }
 
 void ptzStop()
 {
 	if (pelco_Stop() != 0)
-			printf("set_config | send ptz  Stop error !!!\r\n");
+		printf("set_config | send ptz Stop error !!!\r\n");
 
 	if (get_visca_status()==1)
 		set_zoom_stop();
+	else
+		printf("get_visca_status error !!!\r\n");
 }
 
 
@@ -1047,6 +1052,12 @@ int opt_SetNetworkInterfaces(onvif_NetworkInterface	*pNetworkInterface)
 int SetNetworkInterfaces(onvif_NetworkInterface	*pNetworkInterface, BOOL isSave)
 {
     int ret = -1; 
+	if (!pNetworkInterface)
+	{
+		UTIL_ERR("pNetworkInterface == NULL");
+		return -1;
+	}
+	
 	ret = opt_SetNetworkInterfaces(pNetworkInterface);
 	if (ret < 0)
 	{
@@ -1064,7 +1075,7 @@ int SetNetworkInterfaces(onvif_NetworkInterface	*pNetworkInterface, BOOL isSave)
 
 /*2 读取网关数据参数 */
 #define  GATEWAYFILE  ("/user/cfg_files/gateway.dat")
-int GetNetworkGateway(onvif_NetworkGateway		      *pNetworkGateway)
+int GetNetworkGateway(onvif_NetworkGateway *pNetworkGateway)
 {
 	if (read_cfg_from_file(GATEWAYFILE, (char *)pNetworkGateway, 
 		sizeof(onvif_NetworkGateway)) != 0) {
@@ -1075,12 +1086,12 @@ int GetNetworkGateway(onvif_NetworkGateway		      *pNetworkGateway)
 }
 	
 /*设置网关数据参数*/
-int SetNetworkGateway(onvif_NetworkGateway		     *pNetworkGateway, BOOL isSave)
+int SetNetworkGateway(onvif_NetworkGateway *pNetworkGateway, BOOL isSave)
 {
 	ONVIF_NetworkInterface * p_net_inf = g_onvif_cfg.network.interfaces;
 	int ret = -1;
 	//网关设置只在手动IP地址的时候起作用
-    if (FALSE == p_net_inf->NetworkInterface.IPv4.Config.DHCP) {
+    if (p_net_inf && FALSE == p_net_inf->NetworkInterface.IPv4.Config.DHCP) {
 		ret = Opt_SetDeviceGateway(pNetworkGateway->IPv4Address[0]);
 		if (ret < 0) {
 			UTIL_ERR("Opt_SetDeviceGateway failed!!!");
@@ -1090,7 +1101,7 @@ int SetNetworkGateway(onvif_NetworkGateway		     *pNetworkGateway, BOOL isSave)
 		UTIL_INFO("Opt_SetDeviceGateway=%s success!!!", pNetworkGateway->IPv4Address[0]);
     }
 		
-	if (isSave && save_cfg_to_file(GATEWAYFILE, (char*)pNetworkGateway, 
+	if (isSave && pNetworkGateway && save_cfg_to_file(GATEWAYFILE, (char*)pNetworkGateway, 
 		sizeof(onvif_NetworkGateway)) != 0) {
 		return -1;
 	}
@@ -1100,7 +1111,7 @@ int SetNetworkGateway(onvif_NetworkGateway		     *pNetworkGateway, BOOL isSave)
 
 /*3 读取DNS数据参数 */
 #define  DNSFILE  ("/user/cfg_files/DNS.dat")
-int GetDNSInformation(onvif_DNSInformation		     *pDNSInformation)
+int GetDNSInformation(onvif_DNSInformation *pDNSInformation)
 {
 	if (read_cfg_from_file(DNSFILE, (char *)pDNSInformation, 
 			sizeof(onvif_DNSInformation)) != 0) {
@@ -1116,7 +1127,7 @@ int SetDNSInformation(onvif_DNSInformation		     *pDNSInformation, BOOL isSave)
 {
 	ONVIF_NetworkInterface * p_net_inf = g_onvif_cfg.network.interfaces;
 	//DNS设置只在手动IP地址的时候起作用
-    if (FALSE == p_net_inf->NetworkInterface.IPv4.Config.DHCP) {
+    if (p_net_inf && FALSE == p_net_inf->NetworkInterface.IPv4.Config.DHCP) {
 	    if (FALSE == pDNSInformation->FromDHCP) {
 			if (strlen(pDNSInformation->DNSServer[0]) > 0) {
 				system_ex("echo \"nameserver %s\" > /etc/resolv.conf", 
@@ -1129,7 +1140,7 @@ int SetDNSInformation(onvif_DNSInformation		     *pDNSInformation, BOOL isSave)
     	}
     }
 
-	if (isSave && save_cfg_to_file(DNSFILE, (char*)pDNSInformation, 
+	if (isSave && pDNSInformation && save_cfg_to_file(DNSFILE, (char*)pDNSInformation, 
 		    sizeof(onvif_DNSInformation)) != 0) {
 		return -1;
 	}
@@ -1153,8 +1164,8 @@ int GetNetworkProtocols(onvif_NetworkProtocol	*pNetworkProtocol)
 /* 设置网络协议数据参数*/
 int SetNetworkProtocols(onvif_NetworkProtocol	*pNetworkProtocol, BOOL isSave)
 {
-	if (isSave && save_cfg_to_file(NETPROFILE, (char*)pNetworkProtocol, 
-			sizeof(onvif_NetworkProtocol)) != 0) {
+	if (isSave && pNetworkProtocol && 
+		save_cfg_to_file(NETPROFILE, (char*)pNetworkProtocol, sizeof(onvif_NetworkProtocol)) != 0) {
 		return -1;
 	}
 
@@ -1177,7 +1188,7 @@ int GetEventSnapInformation(onvif_EventSnapUploadInfo	       *pEventSnap)
 /* 设置事件上传数据参数*/
 int SetEventSnapInformation(onvif_EventSnapUploadInfo	       *pEventSnap, BOOL isSave)
 {
-	if (isSave && save_cfg_to_file(EVENTSNAPFILE, (char*)pEventSnap, 
+	if (isSave && pEventSnap && save_cfg_to_file(EVENTSNAPFILE, (char*)pEventSnap, 
 		    sizeof(onvif_EventSnapUploadInfo)) != 0) {
 		return -1;
 	}

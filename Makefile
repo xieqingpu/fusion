@@ -1,7 +1,11 @@
 ################OPTION###################
 include ../../../product_list_conf
 
-COMPILEOPTION = -g -c -O3
+ifeq ($(GDBDEBUG), open)
+COMPILEOPTION  += -g
+else
+COMPILEOPTION = -c -O3
+endif
 ifeq ($(PLATFORM),HISI)
 	LIB_DIR=hi_lib
 else ifeq ($(PLATFORM), RK)

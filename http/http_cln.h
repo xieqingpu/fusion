@@ -53,9 +53,14 @@ int http_send_event_jpeg(Gpt_EventUploadInfo *pUploadInfo);
 抓拍图片并将图片发送到服务器
 @param 
 	   eventtype: 事件类型
+	   snaptype: 抓拍类型，类型如下：
+	             1）GPT_MSG_VIDEO_FUSIONSNAPJPEGPROCESS      60  //双光融合图像抓拍
+				 2）GPT_MSG_VIDEO_IPCSNAPJPEGPROCESS         80  //可见光摄像图像抓拍
+				 3）GPT_MSG_VIDEO_IRMODESNAPJPEGPROCESS      81  //IR模块图像抓拍
+	   HttpServerUrl: 上传服务器的地址,事件服务器地址或者算法服务器地址根据实际自选
 返回与http_send_event_jpeg相同
 */
-int http_snap_and_sendto_host(int eventtype);
+int http_snap_and_sendto_host(int eventtype, int snaptype, char *HttpServerUrl);
 
 #ifdef __cplusplus
 }
