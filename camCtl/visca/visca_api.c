@@ -189,6 +189,12 @@ int set_contract_value(int param){//00-100
 	return	VISCA_contract_value(&iface, &camera, param);
 }
 
+//自动对焦
+int set_focus_auto()
+{
+	VISCA_set_focus_Auto(&iface, &camera);
+}
+
 //0 -19
 int set_zoom_value(int param){
 	int command = 0;
@@ -346,14 +352,14 @@ int set_focus_near_limit(int param)
 //焦聚  远近
 int set_focus_far()
 {
-	VISCA_set_focus_Manual(&iface, &camera);
+	// VISCA_set_focus_Manual(&iface, &camera);
 	return VISCA_set_focus_far(&iface, &camera);
 }
 
 int set_focus_near()
 {
 
-	VISCA_set_focus_Manual(&iface, &camera);
+	// VISCA_set_focus_Manual(&iface, &camera);
 	return  VISCA_set_focus_near(&iface, &camera);
 }
 
@@ -457,6 +463,9 @@ void* visca_init_thread(void* param)
 					camera.vendor, camera.model, camera.rom_version, camera.socket_num);
 
 			set_visca_status(1);    //1:success
+
+			set_focus_auto();	//设置相机为自动对焦
+
 			return VISCA_SUCCESS;
 		}
 		else

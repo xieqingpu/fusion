@@ -459,6 +459,21 @@ VISCA_set_focus_stop(VISCAInterface_t *iface, VISCACamera_t *camera)
   return _VISCA_send_packet_with_reply(iface, camera, &packet);
 }
 
+
+VISCA_API uint32_t
+VISCA_set_focus_Auto(VISCAInterface_t *iface, VISCACamera_t *camera)
+{
+  VISCAPacket_t packet;
+
+  _VISCA_init_packet(&packet);
+  _VISCA_append_byte(&packet, VISCA_COMMAND);
+  _VISCA_append_byte(&packet, VISCA_CATEGORY_CAMERA1);
+  _VISCA_append_byte(&packet, VISCA_FOCUS_AUTO);
+  _VISCA_append_byte(&packet, VISCA_FOCUS_AUTO_ON);
+
+  return _VISCA_send_packet_with_reply(iface, camera, &packet);
+}
+
 VISCA_API uint32_t
 VISCA_set_focus_Manual(VISCAInterface_t *iface, VISCACamera_t *camera)
 {

@@ -608,6 +608,9 @@ VISCA_API uint32_t
 VISCA_set_focus_Manual(VISCAInterface_t *iface, VISCACamera_t *camera);
 
 VISCA_API uint32_t
+VISCA_set_focus_Auto(VISCAInterface_t *iface, VISCACamera_t *camera);
+
+VISCA_API uint32_t
 VISCA_set_focus_far_speed(VISCAInterface_t *iface, VISCACamera_t *camera, uint32_t speed);
 
 VISCA_API uint32_t
