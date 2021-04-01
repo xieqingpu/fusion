@@ -29,8 +29,10 @@ extern "C" {
 
 typedef struct eventinfo {
 	char pFileName[128]; //需要上传的文件(请用绝对路径)
-	char hostname[128]; //上传的主机IP
+	char hostname[256]; //上传的主机IP
+	char eventdetail[256];
 	int eventtype;//事件类型
+	int towhere;// 推送图片去哪个服务器，0表示事件服务器地址，1表示算法服务器地址
 }Gpt_EventUploadInfo;
 
 BOOL http_onvif_trans(HTTPREQ * p_req, int timeout, const char * bufs, int len);
@@ -57,10 +59,11 @@ int http_send_event_jpeg(Gpt_EventUploadInfo *pUploadInfo);
 	             1）GPT_MSG_VIDEO_FUSIONSNAPJPEGPROCESS      60  //双光融合图像抓拍
 				 2）GPT_MSG_VIDEO_IPCSNAPJPEGPROCESS         80  //可见光摄像图像抓拍
 				 3）GPT_MSG_VIDEO_IRMODESNAPJPEGPROCESS      81  //IR模块图像抓拍
-	   HttpServerUrl: 上传服务器的地址,事件服务器地址或者算法服务器地址根据实际自选
+	   towhere: 推送图片去哪个服务器，0表示事件服务器地址，1表示算法服务器地址
+	   eventdetail:事件描述信息
 返回与http_send_event_jpeg相同
 */
-int http_snap_and_sendto_host(int eventtype, int snaptype, char *HttpServerUrl);
+int http_snap_and_sendto_host(int eventtype, int snaptype, int towhere, const char *eventdetail);
 
 #ifdef __cplusplus
 }

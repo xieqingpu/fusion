@@ -6,6 +6,9 @@ extern "C"
 {
 #endif
 
+//ntp是否完成时间同步
+int Get_Ntp_Sync_Time_Done();
+void Set_Ntp_Sync_Time(int value);
 
 int ntp_update_run();
 

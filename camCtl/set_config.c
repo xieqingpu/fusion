@@ -29,11 +29,24 @@
 #include "gptmessage.h"
 #include "gptmessagedef.h"
 #include "onvif_ptz.h"
-
+#include "gpt_utils.h"
 
 extern ONVIF_CFG g_onvif_cfg;
 static pthread_mutex_t m_get_ir_param_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_mutex_t m_fusion_param_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t m_record_param_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_mutex_t m_gb28181_param_lock = PTHREAD_MUTEX_INITIALIZER;
+
+typedef enum 
+{
+	GB28181_PTZ_STOP					= 0,
+	GB28181_PTZ_DOWN					= 1,
+	GB28181_PTZ_UP						= 2,
+	GB28181_PTZ_RIGHT					= 3, 
+	GB28181_PTZ_LEFT					= 4,
+	GB28181_PTZ_ZOOM_IN					= 5,
+	GB28181_PTZ_ZOOM_OUT				= 6,
+}ENUM_GB28181_PTZCMD;
 
 int onvif_get_devinfo(CONFIG_Information * p_devInfo)
 {
@@ -1196,6 +1209,113 @@ int SetEventSnapInformation(onvif_EventSnapUploadInfo	       *pEventSnap, BOOL i
 	return 0;
 }
 
+/*3 读取录像参数 */
+#define  RECORDSCHFILE  ("/user/cfg_files/RecordSch.dat")
+/* 设置事件上传数据参数*/
+int SetRecordScheduleInfo(sdk_record_cfg_t *stRecodSchedTime, BOOL isSave)
+{
+	if (isSave && stRecodSchedTime && save_cfg_to_file(RECORDSCHFILE, (char*)stRecodSchedTime, 
+		    sizeof(sdk_record_cfg_t)) != 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+int GetRecordScheduleInfo(sdk_record_cfg_t *stRecodSchedTime)
+{
+	if (read_cfg_from_file(RECORDSCHFILE, (char *)stRecodSchedTime, sizeof(sdk_record_cfg_t)) != 0) {
+		UTIL_ERR("RECORDSCHFILE:%s  not exsit!!!", RECORDSCHFILE);
+		
+		//录像默认打开
+		stRecodSchedTime->ipc_ucRecordSchedule = 1;
+		//视频录像模式 默认高清录像 0:高清 1 标清
+		stRecodSchedTime->ipc_ucRecordMode = 0;
+		
+		//录像类型 部分机型事件录像
+		stRecodSchedTime->ipc_ucRecordType = RECORD_FULLTIME;
+		//RECORD_WEEKMASK
+		stRecodSchedTime->ipc_iRecordWeekMask = 0x7F;	
+		//录像计划设置
+		int iDay;
+		for (iDay = 0; iDay < MAX_WEEK_NUM; iDay++) {
+			stRecodSchedTime->RecodSchedTime[iDay].is_allday = 1;//全天录像
+			stRecodSchedTime->RecodSchedTime[iDay].enable   = 1;
+			stRecodSchedTime->RecodSchedTime[iDay].day_sched_info[0].start_hour = 0;
+			stRecodSchedTime->RecodSchedTime[iDay].day_sched_info[0].start_min = 0;
+			stRecodSchedTime->RecodSchedTime[iDay].day_sched_info[0].start_sec = 0;
+			stRecodSchedTime->RecodSchedTime[iDay].day_sched_info[0].stop_hour = 23;
+			stRecodSchedTime->RecodSchedTime[iDay].day_sched_info[0].stop_min = 59;
+			stRecodSchedTime->RecodSchedTime[iDay].day_sched_info[0].stop_sec = 59;
+		} 
+		SetRecordScheduleInfo(stRecodSchedTime, TRUE);
+		return 0;
+	}
+			
+	return 0;
+}
+
+/*3 读取gb28181参数 */
+#define  GB28181CONFFILE  ("/user/cfg_files/gb28181conf.dat")
+/* 设置gb28181参数*/
+int SetGB28181ConfInfo(GB28181Conf_t *pGb28181Info, BOOL isSave)
+{
+	if (isSave && pGb28181Info && save_cfg_to_file(GB28181CONFFILE, (char*)pGb28181Info, 
+		    sizeof(GB28181Conf_t)) != 0) {
+		return -1;
+	}
+
+	return 0;
+}
+
+int Gpt_InitGB28181ConfParm(GB28181Conf_t *p_gb28181_conf)
+{
+	memset(p_gb28181_conf, 0x0, sizeof(GB28181Conf_t));
+    strcpy(p_gb28181_conf->server_id, "34020000002000000001");
+    strcpy(p_gb28181_conf->server_ip, "192.168.3.137");
+    strcpy(p_gb28181_conf->server_port, "5060");
+	
+    strcpy(p_gb28181_conf->ipc_id, "34020000001110000001");
+	
+    strcpy(p_gb28181_conf->ipc_username, "admin");
+    strcpy(p_gb28181_conf->ipc_pwd, "12345678");
+	ONVIF_NetworkInterface * p_net_inf = g_onvif_cfg.network.interfaces;
+    strcpy(p_gb28181_conf->ipc_ip, p_net_inf->NetworkInterface.IPv4.Config.Address);
+	UTIL_INFO("p_gb28181_conf->ipc_ip==%s", p_gb28181_conf->ipc_ip);
+	strcpy(p_gb28181_conf->ipc_sess_port, "5080");
+	p_gb28181_conf->AliveTime = 3600;
+	p_gb28181_conf->HeartBeatTime = 30;
+
+    strcpy(p_gb28181_conf->device_name, PRODUCT_NAME);
+    strcpy(p_gb28181_conf->device_manufacturer, "Huaxiaxin");
+    strcpy(p_gb28181_conf->device_model, PRODUCT_NAME);
+    strcpy(p_gb28181_conf->device_firmware, FIRMWARE_VERSION);
+    strcpy(p_gb28181_conf->device_encode, "ON");
+    strcpy(p_gb28181_conf->device_record, "ON");
+
+	p_gb28181_conf->VideoNum = 1;
+	p_gb28181_conf->AlarmNum = 1;
+	strcpy(p_gb28181_conf->AlarmId[0], "34020000001340000010");
+	strcpy(p_gb28181_conf->VideoId[0], "34020000001320000001");
+	p_gb28181_conf->gb28181_enable = 0;
+	p_gb28181_conf->proto_nettype = 0;//默认UDP
+	p_gb28181_conf->stream_nettype = 0;//默认UDP
+	return 0;
+}
+
+int GetGB28181ConfInfo(GB28181Conf_t *pGb28181Info)
+{
+	if (read_cfg_from_file(GB28181CONFFILE, (char *)pGb28181Info, sizeof(GB28181Conf_t)) != 0) {
+		UTIL_ERR("GB28181CONFFILE:%s  not exsit!!!", GB28181CONFFILE);
+		Gpt_InitGB28181ConfParm(pGb28181Info);
+		SetGB28181ConfInfo(pGb28181Info, TRUE);
+		return 0;
+	}
+			
+	return 0;
+}
+	
+	
 void SystemReboot()
 {
 	system_ex("reboot");
@@ -1204,113 +1324,10 @@ void SystemReboot()
 void SetSystemFactoryDefault(int type /* 0:soft, 1:hard */)
 {
 	if (0 == access("/user/cfg_files", F_OK)) {
-		//system_ex("rm /userdata/cfg_files/* -rf");
+		system_ex("rm /userdata/cfg_files/* -rf");
 		UTIL_INFO("SetSystemFactoryDefault!!");
 	}
 }
-
-static void CloseAllFd(void)
-{
-	DIR *dir;
-	char szPath[32];
-	struct dirent *entry;
-	int fd, fd_max=0;
-	int i;
-
-	sprintf(szPath, "/proc/%d/fd", getpid());
-
-	dir = opendir(szPath);
-	if(NULL == dir)
-		return;
-
-	while((entry = readdir(dir))) {
-		if(entry->d_name[0] == '.')
-			continue;
-		fd = atoi(entry->d_name);
-
-		if(fd > fd_max)
-			fd_max = fd;
-	}
-
-	closedir(dir);
-
-	for( i=3; i<fd_max+1; i++)
-		close(i);
-}
-
-FILE *vpopen(const char* cmdstring, const char *type)  
-{  
-	int pfd[2];  
-	FILE *fp;  
-	pid_t  pid;  
-
-	if((type[0]!='r' && type[0]!='w')||type[1]!=0)	
-	{  
-		errno = EINVAL;  
-		return(NULL);  
-	}  
-  
-
-	if(pipe(pfd)!=0)  
-	{  
-		return NULL;  
-	}  
-
-	if((pid = vfork())<0)  
-	{  
-		return(NULL);	/* errno set by fork() */	 
-	}  
-	else if (pid == 0) {	/* child */  
-		if (*type == 'r')  
-		{  
-			close(pfd[0]);	  
-			if (pfd[1] != STDOUT_FILENO) {	  
-				dup2(pfd[1], STDOUT_FILENO);	
-				close(pfd[1]);	  
-			}			  
-		}  
-		else  
-		{  
-			close(pfd[1]);	  
-			if (pfd[0] != STDIN_FILENO) {	 
-				dup2(pfd[0], STDIN_FILENO);    
-				close(pfd[0]);	  
-			}			  
-		}  
-
-		CloseAllFd();	 
-
-		execl("/bin/sh", "sh", "-c", cmdstring, (char *) 0);	
-		_exit(127); 	  
-	}  
-
-	if (*type == 'r') {    
-		close(pfd[1]);	  
-		if ( (fp = fdopen(pfd[0], type)) == NULL)	 
-			return(NULL);	 
-	} else {	
-		close(pfd[0]);	  
-		if ( (fp = fdopen(pfd[1], type)) == NULL)	 
-			return(NULL);	 
-	}  
- 
-	return(fp); 	  
-}  
-
-int vpclose(FILE *fp)  
-{  
-	int 	stat = 0;	 
-	pid_t	pid = 0;	
-	   
-	if (fclose(fp) == EOF)	  
-		return(-1);    
-
-	while (waitpid(pid, &stat, 0) < 0)	  
-		if (errno != EINTR)    
-			return(-1); /* error other than EINTR from waitpid() */    
-
-	return(stat);	/* return child's termination status */    
-}  
 
 /* Copied from linux/rtc.h to eliminate the kernel dependency */  
 struct linux_rtc_time {  
@@ -1444,6 +1461,131 @@ int FusionParamGetHanldeMsg(int msgtype, int chan, int u32DataParam, int u32Data
 
 }
 
+int RecordParamGetHanldeMsg(int msgtype, int chan, int u32DataParam, int u32DataLen, void * parg)
+{
+   int ret = 0;
+   pthread_mutex_lock(&m_record_param_lock);
+
+   switch(msgtype) {
+	   case GPT_MSG_VIDEO_GETRECORDSCHEDULE:
+	   {
+		   if(sizeof(sdk_record_cfg_t) != u32DataLen){
+			   pthread_mutex_unlock(&m_record_param_lock);
+			   return -1;
+		   }
+		   ret = GetRecordScheduleInfo((sdk_record_cfg_t *)u32DataParam);
+	   }
+	   break;
+	   case GPT_MSG_VIDEO_SETRECORDSCHEDULE:
+	   {
+		   if(sizeof(sdk_record_cfg_t) != u32DataLen){
+			   pthread_mutex_unlock(&m_record_param_lock);
+			   return -1;
+		   }
+		   ret = SetRecordScheduleInfo((sdk_record_cfg_t *)u32DataParam, TRUE);
+	   }
+	   break;
+	   
+	   default:
+		   break;
+   }
+   pthread_mutex_unlock(&m_record_param_lock);
+   return ret;
+
+}
+
+int SetGb28181ConfPTZ(unsigned int u32DataParam, unsigned int u32DataLen, unsigned int u32ParaMask)
+{
+    int ret;
+	float x = 0.000;
+	float y = 0.000;
+	float z = 0.000;
+    uint16_t ptzSpeed = 25;
+	
+	if (GB28181_PTZ_STOP == u32ParaMask)
+	{
+	}
+	else if (GB28181_PTZ_DOWN == u32ParaMask)
+	{
+		x = 0.000;
+		y = -0.400;
+		z = 0.000;
+	}
+	else if (GB28181_PTZ_UP == u32ParaMask)
+	{
+		x = 0.000;
+		y = 0.400;
+		z = 0.000;
+	}
+	else if (GB28181_PTZ_RIGHT == u32ParaMask)//x=0.400 , y = 0.000 , z = 0.000, Speed:25
+	{
+		x = 0.400;
+		y = 0.000;
+		z = 0.000;
+	}
+	else if (GB28181_PTZ_LEFT == u32ParaMask)//x=-0.400 , y = 0.000 , z = 0.000, Speed:25
+	{
+		x = -0.400;
+		y = 0.000;
+		z = 0.000;	
+	}
+	else if (GB28181_PTZ_ZOOM_IN == u32ParaMask)
+	{
+		x = 0.000;
+		y = 0.000;
+		z = 0.400;
+
+	}
+	else if (GB28181_PTZ_ZOOM_OUT == u32ParaMask)
+	{
+		x = 0.000;
+		y = 0.000;
+		z = -0.400;
+	}
+	
+	controlPtzPos(x, y, z , ptzSpeed);   
+	
+	return 0;
+}
+
+int GB28181ConfigHanldeMsg(int msgtype, int chan, int u32DataParam, int u32DataLen, void * parg)
+{
+   int ret = 0;
+   pthread_mutex_lock(&m_gb28181_param_lock);
+
+   switch(msgtype) {
+	   case GPT_MSG_VIDEO_GETGB28181CONFINFO:
+	   {
+		   if(sizeof(GB28181Conf_t) != u32DataLen){
+			   pthread_mutex_unlock(&m_gb28181_param_lock);
+			   return -1;
+		   }
+		   ret = GetGB28181ConfInfo((GB28181Conf_t *)u32DataParam);
+	   }
+	   break;
+	   case GPT_MSG_VIDEO_SETGB28181CONFINFO:
+	   {
+		   if(sizeof(GB28181Conf_t) != u32DataLen){
+			   pthread_mutex_unlock(&m_gb28181_param_lock);
+			   return -1;
+		   }
+		   ret = SetGB28181ConfInfo((GB28181Conf_t *)u32DataParam, TRUE);
+	   }
+	   break;
+	   case GPT_MSG_VIDEO_SETGB28181PTZ:
+	   {
+	   		ret = SetGb28181ConfPTZ(u32DataParam, u32DataLen, chan);
+	   }
+	   break;
+	   
+	   default:
+		   break;
+   }
+   pthread_mutex_unlock(&m_gb28181_param_lock);
+   return ret;
+
+}
+
 int onvif_ir_message_register()
 {
    GPTMessageRegister(GPT_MSG_IR_GETBASEPARAM, IRParamGetHanldeMsg, 0, NULL);
@@ -1459,10 +1601,32 @@ int onvif_fusion_message_register()
 
 }
 
+int onvif_record_message_register()
+{
+   GPTMessageRegister(GPT_MSG_VIDEO_GETRECORDSCHEDULE, RecordParamGetHanldeMsg, 0, NULL);
+   GPTMessageRegister(GPT_MSG_VIDEO_SETRECORDSCHEDULE, RecordParamGetHanldeMsg, 0, NULL);
+   return 0;
+
+}
+
+int onvif_gb28181_message_register()
+{
+   GPTMessageRegister(GPT_MSG_VIDEO_GETGB28181CONFINFO, GB28181ConfigHanldeMsg, 0, NULL);
+   GPTMessageRegister(GPT_MSG_VIDEO_SETGB28181CONFINFO, GB28181ConfigHanldeMsg, 0, NULL);
+   GPTMessageRegister(GPT_MSG_VIDEO_SETGB28181PTZ, GB28181ConfigHanldeMsg, 0, NULL);
+   return 0;
+
+}
+
 int onvif_message_init()
 {
+    //IR模块消息注册
 	onvif_ir_message_register();
+	//fusion模块消息注册
 	onvif_fusion_message_register();
-
+	//录像模块消息注册
+	onvif_record_message_register();
+	//gb28181模块
+	onvif_gb28181_message_register();
 	return 0;
 }

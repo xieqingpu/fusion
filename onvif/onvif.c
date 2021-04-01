@@ -26,6 +26,7 @@
 #include "onvif_cfg.h"
 #include "util.h"
 #include <math.h>
+#include "gpt_utils.h"
 
 #include "set_config.h"		
 #include "onvif_ptz.h"

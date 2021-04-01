@@ -515,9 +515,22 @@ int http_onvif_event_req(HTTPREQ * p_req, Gpt_EventUploadInfo *pUploadInfo)
 	
 	offset += sprintf(tempdatabuff+offset, KEY_FORMAT, boundary, "deviceDateTime");
 	offset += sprintf(tempdatabuff+offset, "%s\r\n", tempbuf);
-	
+
+    //上传给算法服务器必须同时上传事件服务器地址
+	if (1 == pUploadInfo->towhere && strlen(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl) > 0)
+	{
+		offset += sprintf(tempdatabuff+offset, KEY_FORMAT, boundary, "eventServerUrl");
+		offset += sprintf(tempdatabuff+offset, "%s\r\n", g_onvif_cfg.network.EventUploadInfo.HttpServerUrl);
+	}
+		
 	offset += sprintf(tempdatabuff+offset, KEY_FORMAT, boundary, "eventType");
 	offset += sprintf(tempdatabuff+offset, "%d\r\n", pUploadInfo->eventtype);
+    //上传事件信息
+	if (strlen(pUploadInfo->eventdetail) > 0)
+	{
+		offset += sprintf(tempdatabuff+offset, KEY_FORMAT, boundary, "eventDetail");
+		offset += sprintf(tempdatabuff+offset, "%s\r\n", pUploadInfo->eventdetail);
+	}	
 
     memset(tempbuf, 0x0, sizeof(tempbuf));
 	snprintf(tempbuf, sizeof(tempbuf), JPEG_KEY_FORMAT, boundary, "snapshot", pUploadInfo->pFileName);
@@ -717,18 +730,24 @@ int http_send_event_jpeg(Gpt_EventUploadInfo *pUploadInfo)
 	return http_onvif_event_trans(&req, 200, pUploadInfo);
 }
 
-int http_snap_and_sendto_host(int eventtype, int snaptype, char *HttpServerUrl)
+int http_snap_and_sendto_host(int eventtype, int snaptype, int towhere, const char *eventdetail)
 {
     int ret = -1;
 	Gpt_EventUploadInfo pUploadInfo;
-
+	int len = 0;
+	
 	time_t nowtime;
 	struct tm *gtime;
 
-	if (!HttpServerUrl)
+	if ((0 == towhere && strlen(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl) > 0) ||
+		(1 == towhere && strlen(g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl) > 0))
 	{
-	    UTIL_ERR("HttpServerUrl is not http addr!!!!");
-	  	return -1;
+	    UTIL_INFO("towhere====%d", towhere);
+	}
+	else 
+	{
+		 UTIL_ERR("HttpServerUrl is not http addr!!!!");
+		 return -1;
 	}
 	
 	if ((snaptype == GPT_MSG_VIDEO_FUSIONSNAPJPEGPROCESS) ||  //双光融合图像抓拍
@@ -745,8 +764,33 @@ int http_snap_and_sendto_host(int eventtype, int snaptype, char *HttpServerUrl)
 		{
 		    if (0 == access(pUploadInfo.pFileName, F_OK))
 		    {
-				strncpy(pUploadInfo.hostname, HttpServerUrl, strlen(HttpServerUrl));
+		        if (0 == towhere)
+		        {
+			        len = strlen(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl);
+					if (len >= sizeof(pUploadInfo.hostname))
+						return -1;
+					strncpy(pUploadInfo.hostname, g_onvif_cfg.network.EventUploadInfo.HttpServerUrl, len);
+		        }
+				else
+				{
+					len = strlen(g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl);
+					if (len >= sizeof(pUploadInfo.hostname))
+						return -1;
+					strncpy(pUploadInfo.hostname, g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl, len);
+				}
+				
+				pUploadInfo.hostname[len] = '\0';
+				
+				if (eventdetail)
+				{
+				    len = strlen(eventdetail);
+				    if (len >= sizeof(pUploadInfo.eventdetail))
+						len = sizeof(pUploadInfo.eventdetail) - 1;
+					strncpy(pUploadInfo.eventdetail, eventdetail, len);
+				}
+				
 				pUploadInfo.eventtype = eventtype;
+				pUploadInfo.towhere = towhere;
 				ret = http_send_event_jpeg(&pUploadInfo);
 		    }
 			else

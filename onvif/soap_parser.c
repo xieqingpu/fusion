@@ -4058,6 +4058,13 @@ ONVIF_RET parse_PresetTour(XMLN * p_node, onvif_PresetTour * p_req)
 			p_req->StartingCondition.DirectionFlag = 1;
 			p_req->StartingCondition.Direction = onvif_StringToPTZPresetTourDirection(p_Direction->data);
 		}
+
+		// 如果没有随机方向也没有其他方向字段，则默认为设置顺序方向
+		if (p_req->StartingCondition.RandomPresetOrderFlag == 0 && p_req->StartingCondition.DirectionFlag == 0)
+		{
+			p_req->StartingCondition.DirectionFlag = 1;
+			p_req->StartingCondition.Direction = PTZPresetTourDirection_Forward;
+		}
 	}
 	//四.
 	p_TourSpot = xml_node_soap_get(p_node, "TourSpot");

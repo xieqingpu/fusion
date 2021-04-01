@@ -272,7 +272,11 @@ int set_zoom_value(int param){
 int set_zoom(unsigned short val)
 {
 
-	return VISCA_set_zoom_value(&iface, &camera, val);
+	set_focus_auto();	//设置相机为自动对焦
+	
+	VISCA_set_zoom_value(&iface, &camera, val);
+
+	return 0;
 }
 
 /* 获取相机焦距的值 */
@@ -352,14 +356,14 @@ int set_focus_near_limit(int param)
 //焦聚  远近
 int set_focus_far()
 {
-	// VISCA_set_focus_Manual(&iface, &camera);
+	VISCA_set_focus_Manual(&iface, &camera);
 	return VISCA_set_focus_far(&iface, &camera);
 }
 
 int set_focus_near()
 {
 
-	// VISCA_set_focus_Manual(&iface, &camera);
+	VISCA_set_focus_Manual(&iface, &camera);
 	return  VISCA_set_focus_near(&iface, &camera);
 }
 
@@ -411,6 +415,7 @@ int get_visca_status()
 void* visca_init_thread(void* param)
 {
 	int ret;
+	int count = 0;
 	prctl(PR_SET_NAME, (unsigned long)"ViscaThread");
 	char com_dev[128] = {0};
 	if (param)
@@ -426,7 +431,11 @@ void* visca_init_thread(void* param)
 		//打开串口
 		if (VISCA_open_serial(&iface, com_dev)!=VISCA_SUCCESS)
 		{
-			UTIL_ERR("unable to open serial device %s", com_dev);
+		    if (0 == count++%3000)
+		    {
+				UTIL_ERR("unable to open serial device %s", com_dev);
+				count = 1;
+		    }
 			sleep(2);
 			continue;
 		}
@@ -434,7 +443,7 @@ void* visca_init_thread(void* param)
 			break;
 	}
 	
-
+    count = 0;
 	while(1)
 	{
 		int camera_num;
@@ -442,7 +451,11 @@ void* visca_init_thread(void* param)
 	
 		if(VISCA_set_address(&iface, &camera_num)!=VISCA_SUCCESS)
 		{
-			UTIL_ERR("visca VISCA_set_address fail");
+		    if (0 == count++%3000)
+		    {
+				UTIL_ERR("visca VISCA_set_address fail");
+				count = 1;
+		    }
 			sleep(2);
 			continue;
 		}
@@ -450,7 +463,7 @@ void* visca_init_thread(void* param)
 			break;
 	}
 
-
+    count = 0;
 	while(1)
 	{
 		camera.address=1;
@@ -469,7 +482,13 @@ void* visca_init_thread(void* param)
 			return VISCA_SUCCESS;
 		}
 		else
-			UTIL_ERR("VISCA_get_camera_info fail");
+		{
+			if (0 == count++%3000)
+		    {
+				UTIL_ERR("VISCA_get_camera_info fail");
+				count = 1;
+			}
+		}
 
 		usleep(300*1000);
 	}

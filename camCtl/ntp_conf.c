@@ -26,6 +26,7 @@
 #include "onvif.h"
 #include "set_config.h"
 #include "utils_log.h"
+#include "gpt_utils.h"
 
 #define NTP_VERSION 		0xe3
 #define NTP_DEFAULT_PORT	"123"
@@ -75,6 +76,18 @@ NTP_SERVER_T sync_server_info[]={
 	{"cn.pool.ntp.org",NTP_DEFAULT_PORT},
     {"pool.ntp.org",NTP_DEFAULT_PORT},
 };
+
+static int ntp_sync_time_done = 0;
+
+int Get_Ntp_Sync_Time_Done()
+{
+	return ntp_sync_time_done;
+}
+
+void Set_Ntp_Sync_Time(int value)
+{
+	ntp_sync_time_done = value;
+}
 
 int check_tm_duration(struct tm *rtctime, struct tm *datetime)
 {
@@ -218,6 +231,7 @@ int sync_time(onvif_NTPInformation		*pNTPInformation)
 	tv.tv_sec = 0;
 	tv.tv_usec = 10000;
 	
+	Set_Ntp_Sync_Time(0);
     //从自定义的ntp服务器获取
 	if (pNTPInformation->FromDHCP == FALSE) {
 		NTP_SERVER_T ntp_server_info;
@@ -229,6 +243,7 @@ int sync_time(onvif_NTPInformation		*pNTPInformation)
 			result = sync_time_with_server(&ntp_server_info, tv);
 			if (result > 0) {
 				UTIL_INFO("NTP Success!");
+				Set_Ntp_Sync_Time(1);
 			}
 		}
 	}
@@ -238,6 +253,7 @@ int sync_time(onvif_NTPInformation		*pNTPInformation)
 			result = sync_time_with_server(&(sync_server_info[i]), tv);
 			if (result > 0) {
 				UTIL_INFO("NTP Success!");
+				Set_Ntp_Sync_Time(1);
 				break;
 			}
 		}

@@ -28,6 +28,7 @@
 #include "onvif_event.h"
 #include "set_config.h"
 #include "utils_log.h"
+#include "gpt_utils.h"
 /***************************************************************************************/
 extern ONVIF_CFG g_onvif_cfg;
 extern ONVIF_CLS g_onvif_cls;
