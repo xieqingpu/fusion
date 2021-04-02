@@ -271,10 +271,10 @@ int set_zoom_value(int param){
 /* 设置相机焦距 (调焦) */
 int set_zoom(unsigned short val)
 {
-
-	set_focus_auto();	//设置相机为自动对焦
-	
 	VISCA_set_zoom_value(&iface, &camera, val);
+
+	VISCA_set_focus_Auto(&iface, &camera);
+	// set_focus_auto();	//设置相机为自动对焦
 
 	return 0;
 }

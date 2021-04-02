@@ -712,6 +712,59 @@ void getVectorData(onvif_VectorList * p_VectorData,unsigned int preset_idx, int 
 	p_VectorData->h = (g_onvif_cfg.profiles->presets[preset_idx].Vector_list[vector_idx].h)/2*IR_HEIGHT;
 }
 
+int VectorListHandle(ONVIF_PTZPreset preset)
+{
+	int k;
+	onvif_VectorList vectorData;
+	float * IrTemperatureData = NULL;
+	float ir_max_temp;
+
+	memset(&vectorData, 0x0, sizeof(onvif_VectorList));
+
+	if (preset.VectorListFlag != 0)   //对应的预置位是否有画检测区域Vector，!=0代表有
+	{
+		for (k = 0; k < preset.Vector_Number; k++)
+		{
+			if (preset.Vector_list[k].dulaType == 1)  //1:温度检测，2：数据识别
+			{
+				// getVectorData(&vectorData, preset_idx, k);
+
+				vectorData.temperature.Min = preset.Vector_list[k].temperature.Min;
+				vectorData.temperature.Max = preset.Vector_list[k].temperature.Max;
+
+				vectorData.x = ((preset.Vector_list[k].x)+1)/2*IR_WIDTH;
+				vectorData.y = (1-(preset.Vector_list[k].y))/2*IR_HEIGHT;
+				vectorData.w = (preset.Vector_list[k].w)/2*IR_WIDTH;
+				vectorData.h = (preset.Vector_list[k].h)/2*IR_HEIGHT;
+
+				// UTIL_INFO("\033[0;33mx=%.2f, y=%.2f, w=%.2f, h=%.2f\033[0m\n",		
+				// 		preset.Vector_list[k].x, preset.Vector_list[k].y,
+				// 		preset.Vector_list[k].w, preset.Vector_list[k].h);
+				// UTIL_INFO("\033[0;33mvectorData.x=%.2f, vectorData.y=%.2f, vectorData.w=%.2f, vectorData.h=%.2f\033[0m\n",
+				// 		vectorData.x, vectorData.y, vectorData.w, vectorData.h);
+			
+				//获取热成像数据
+				IrTemperatureData = getIrTemperatureData();
+				//返回最大的温度值
+				ir_max_temp =  get_max_ir_temp(IrTemperatureData, vectorData.x, vectorData.y, vectorData.w, vectorData.h);
+
+			// UTIL_INFO("get_max_ir_temp = %.2f  vectorData.temperature.Max =%.2f, vectorData.temperature.Min = %.2f\n", ir_max_temp ,vectorData.temperature.Max, vectorData.temperature.Min);
+				if (ir_max_temp > vectorData.temperature.Max || ir_max_temp < vectorData.temperature.Min)
+				{
+					char msg[256] = {0};
+					memset(msg,0,256);
+					sprintf(msg, "%s %0.2f", preset.PTZPreset.Name, ir_max_temp);
+					if (http_snap_and_sendto_host(1, MSG_VIDEO_IRMODESNAPJPEGPROCESS/*IR模块图像抓拍*/, 0 ,msg) == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
+						UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");										   //第一参数：1:事件类型；2：算法类型						  
+				}
+			}
+		}
+	}
+
+	return 0;
+}
+
+
 void *PresetTour_state_touring_Forward(void *args)
 {
     ONVIF_PresetTour * p_PresetTour;
@@ -744,16 +797,9 @@ void *PresetTour_state_touring_Forward(void *args)
 	static uint32_t runningTime = 0;    //巡航了多久
 	static uint32_t runningNumber = 0;	//巡航了多少次
 
-	// 检测预置位画框相关的 
-	int k = 0;
-	onvif_VectorList vectorData;
-	float * IrTemperatureData = NULL;
-	float ir_max_temp;
-
-	memset(&vectorData, 0x0, sizeof(onvif_VectorList));
-
-	int tour_first_time_flag = 0;   //是否第一次巡航 0：第一次巡航
-	uint16 zoomValue_prev;  	 //上一个预置位的焦距
+	static uint32_t preset_idx;		//实际的预置位
+	static uint16 zoomValue;
+	static uint16 zoomValue_prev;  	//上一个预置位的焦距
 
 	while (1)
 	{
@@ -777,74 +823,34 @@ void *PresetTour_state_touring_Forward(void *args)
 			return NULL;
 		}
 #endif
-		uint32_t preset_idx = presetTours.presets[j].index;
+		preset_idx = presetTours.presets[j].index;
+		/* 实际预置位 */
+  		ONVIF_PTZPreset preset = g_onvif_cfg.profiles->presets[preset_idx];  
 		
 		short location = preset_idx + 1;   //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始 (在SetPreset中+1，对应的，这里也要+1)
 		gotoPtzPreset(location);  
 
-		uint16 zoomValue = g_onvif_cfg.profiles->presets[preset_idx].zoomVal;
+		zoomValue = preset.zoomVal;
 
 		/* 此处是为了能够可以处理焦距聚焦问题 */
-		if (tour_first_time_flag != 0)  //0：第一次巡航,此次不是第一次巡航了
+		zoomValue_prev = get_zoom_val();   	 //获取相机焦距，也即上一个预置位的焦距
+		if (zoomValue_prev > 50 && fabs(zoomValue - zoomValue_prev) < 10)  //如果该预置位的焦距与上一个预置位的焦距相差小于10
 		{
-			if (fabs(zoomValue - zoomValue_prev) > 10)  //如果该预置位的焦距与上一个预置位的焦距相差大于10
-			{
-				set_zoom(zoomValue - 100);
-			}
+			set_zoom(zoomValue - 50);
 			usleep(100*1000);
 		}
-		tour_first_time_flag = 1;
-		zoomValue_prev = zoomValue;  //上一个预置位的焦距
 		/*  */
-		
-		// set_zoom(presetTours.presets[j].zoomValue);
 		set_zoom(zoomValue);  
 
 		int staytime = (BASETIME + presetTours.presets[j].StayTime)*1000*1000;
 		onvif_preset_usleep(staytime);
 
-		
-		/* 检测预置位画框标记物的温度 */
-		if (g_onvif_cfg.profiles->presets[preset_idx].VectorListFlag != 0)   //对应的预置位是否有画检测区域Vector，!=0代表有
-		{
-			for (k = 0; k < g_onvif_cfg.profiles->presets[preset_idx].Vector_Number; k++)
-			{
-				if (g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].dulaType == 1)  //1:温度检测，2：数据识别
-				{
-					// getVectorData(&vectorData, preset_idx, k);
+		/* 检测预置位画框标记物的温度,是否抓拍 */
+		VectorListHandle(preset);
 
-					vectorData.temperature.Min = g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].temperature.Min;
-					vectorData.temperature.Max = g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].temperature.Max;
 
-					vectorData.x = ((g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].x)+1)/2*IR_WIDTH;
-					vectorData.y = (1-(g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].y))/2*IR_HEIGHT;
-					vectorData.w = (g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].w)/2*IR_WIDTH;
-					vectorData.h = (g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].h)/2*IR_HEIGHT;
-
-					UTIL_INFO("\033[0;33mx=%.2f, y=%.2f, w=%.2f, h=%.2f\033[0m\n",		
-							g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].x, g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].y,
-							g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].w, g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].h);
-					UTIL_INFO("\033[0;33mvectorData.x=%.2f, vectorData.y=%.2f, vectorData.w=%.2f, vectorData.h=%.2f\033[0m\n",
-							vectorData.x, vectorData.y, vectorData.w, vectorData.h);
-				
-					//获取热成像数据
-					IrTemperatureData = getIrTemperatureData();
-					//返回最大的温度值
-					ir_max_temp =  get_max_ir_temp(IrTemperatureData, vectorData.x, vectorData.y, vectorData.w, vectorData.h);
-
-				UTIL_INFO("get_max_ir_temp = %.2f  vectorData.temperature.Max =%.2f, vectorData.temperature.Min = %.2f\n", ir_max_temp ,vectorData.temperature.Max, vectorData.temperature.Min);
-					if (ir_max_temp > vectorData.temperature.Max || ir_max_temp < vectorData.temperature.Min)
-					{
-						if (http_snap_and_sendto_host(1, MSG_VIDEO_IRMODESNAPJPEGPROCESS/*IR模块图像抓拍*/, 0 ,"aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
-							UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");
-					}
-				}
-			}
-		}
-		/* end */
-
-		if (http_snap_and_sendto_host(1, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
-			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");
+		if (http_snap_and_sendto_host(2, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
+			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");											  //第一参数：2，发个算法的一定是2
 
 
 #ifdef PTOURS_TIME_NUMBER
@@ -902,13 +908,9 @@ void *PresetTour_state_touring_Backward(void *args)
 	static uint32_t runningTime = 0;     //巡航了多久
 	static uint32_t runningNumber = 0;	//巡航了多少次
 
-	// 检测预置位画框相关的 
-	int k = 0;
-	onvif_VectorList vectorData;
-	float * IrTemperatureData = NULL;
-	float ir_max_temp;
-
-	memset(&vectorData, 0x0, sizeof(onvif_VectorList));
+	static uint32_t preset_idx;		//实际的预置位
+	static uint16 zoomValue;
+	static uint16 zoomValue_prev;  	//上一个预置位的焦距
 
 	while (1)
 	{
@@ -932,43 +934,34 @@ void *PresetTour_state_touring_Backward(void *args)
 			return NULL;
 		}
 #endif
-		uint32_t preset_idx = presetTours.presets[j].index;
+		preset_idx = presetTours.presets[j].index;
+		/* 实际预置位 */
+  		ONVIF_PTZPreset preset = g_onvif_cfg.profiles->presets[preset_idx];  
 		
 		short location = preset_idx + 1;   //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始 (在SetPreset中+1，对应的，这里也要+1)
 		gotoPtzPreset(location);
-		// set_zoom(presetTours.presets[j].zoomValue);
-		set_zoom(g_onvif_cfg.profiles->presets[preset_idx].zoomVal);  
+
+		zoomValue = preset.zoomVal;
+
+		/* 此处是为了能够可以处理焦距聚焦问题 */
+		zoomValue_prev = get_zoom_val();   	 //获取相机焦距，也即上一个预置位的焦距
+		if (zoomValue_prev > 50 && fabs(zoomValue - zoomValue_prev) < 10)  //如果该预置位的焦距与上一个预置位的焦距相差小于10
+		{
+			set_zoom(zoomValue - 50);
+			usleep(100*1000);
+		}
+		/*  */
+		set_zoom(zoomValue);  
 
 		int staytime = (BASETIME + presetTours.presets[j].StayTime)*1000*1000;
 		onvif_preset_usleep(staytime);
 
+		/* 检测预置位画框标记物的温度,是否抓拍 */
+		VectorListHandle(preset);
 
-		/* 检测预置位画框标记物的温度 */
-		if (g_onvif_cfg.profiles->presets[preset_idx].VectorListFlag != 0)   //对应的预置位是否有画检测区域Vector，!=0代表有
-		{
-			for (k = 0; k < g_onvif_cfg.profiles->presets[preset_idx].Vector_Number; k++)
-			{
-				if (g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].dulaType == 1)  //1:温度检测，2：数据识别
-				{
-					getVectorData(&vectorData, preset_idx, k);
-					
-					//获取热成像数据
-					IrTemperatureData = getIrTemperatureData();
-					//返回最大的温度值
-					ir_max_temp =  get_max_ir_temp(IrTemperatureData, vectorData.x, vectorData.y, vectorData.w, vectorData.h);
 
-					if (ir_max_temp > vectorData.temperature.Max || ir_max_temp < vectorData.temperature.Min)
-					{
-						if (http_snap_and_sendto_host(1, MSG_VIDEO_IRMODESNAPJPEGPROCESS/*IR模块图像抓拍*/, 0, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0表示事件服务器地址，1表示算法服务器地址
-							UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");
-					}
-				}
-			}
-		}
-		/* end */
-
-		if (http_snap_and_sendto_host(1, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
-			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");
+		if (http_snap_and_sendto_host(2, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
+			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");											  //第一参数：2，发个算法的一定是2
 
 #ifdef PTOURS_TIME_NUMBER
 		if (presetTours.runTimeFlag)
@@ -1053,14 +1046,9 @@ void *PresetTour_state_touring_Random(void *args)
 	//将巡更的预置位序号进行随机排序
     RandomSort(a, n);   
 
-
-	// 检测预置位画框相关的 
-	int k = 0;
-	onvif_VectorList vectorData;
-	float * IrTemperatureData = NULL;
-	float ir_max_temp;
-
-	memset(&vectorData, 0x0, sizeof(onvif_VectorList));
+	static uint32_t preset_idx;		//实际的预置位
+	static uint16 zoomValue;
+	static uint16 zoomValue_prev;  	//上一个预置位的焦距
 
 	while (1)
 	{
@@ -1089,44 +1077,34 @@ void *PresetTour_state_touring_Random(void *args)
 		// printf("\033[0;33m==== PresetTour_state_touring_Random | presetTours.presets[%d], a[i]=%d ===\033[0m\n", presetIndex, a[i]); 
 
 
-		uint32_t preset_idx = presetTours.presets[presetIndex].index;
+		preset_idx = presetTours.presets[presetIndex].index;
+		/* 实际预置位 */
+  		ONVIF_PTZPreset preset = g_onvif_cfg.profiles->presets[preset_idx]; 
 		
 		short location = preset_idx + 1;   //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始 (在SetPreset中+1，对应的，这里也要+1)
-		// short location = presetTours.presets[presetIndex].index + 1;   //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始 (在SetPreset中+1，对应的，这里也要+1)
 		gotoPtzPreset(location);
-		// set_zoom(presetTours.presets[presetIndex].zoomValue);
-		set_zoom(g_onvif_cfg.profiles->presets[preset_idx].zoomVal);  
+
+		zoomValue = preset.zoomVal;
+
+		/* 此处是为了能够可以处理焦距聚焦问题 */
+		zoomValue_prev = get_zoom_val();   	 //获取相机焦距，也即上一个预置位的焦距
+		if (zoomValue_prev > 50 && fabs(zoomValue - zoomValue_prev) < 10)  //如果该预置位的焦距与上一个预置位的焦距相差小于10
+		{
+			set_zoom(zoomValue - 50);
+			usleep(100*1000);
+		}
+		/*  */
+		set_zoom(zoomValue);  
 
 		int staytime = (BASETIME + presetTours.presets[presetIndex].StayTime)*1000*1000;
 		onvif_preset_usleep(staytime);
 
+		/* 检测预置位画框标记物的温度,是否抓拍 */
+		VectorListHandle(preset);
 
-		/* 检测预置位画框标记物的温度 */
-		if (g_onvif_cfg.profiles->presets[preset_idx].VectorListFlag != 0)   //对应的预置位是否有画检测区域Vector，!=0代表有
-		{
-			for (k = 0; k < g_onvif_cfg.profiles->presets[preset_idx].Vector_Number; k++)
-			{
-				if (g_onvif_cfg.profiles->presets[preset_idx].Vector_list[k].dulaType == 1)  //1:温度检测，2：数据识别
-				{
-					getVectorData(&vectorData, preset_idx, k);
 
-					//获取热成像数据
-					IrTemperatureData = getIrTemperatureData();
-					//返回最大的温度值
-					ir_max_temp =  get_max_ir_temp(IrTemperatureData, vectorData.x, vectorData.y, vectorData.w, vectorData.h);
-
-					if (ir_max_temp > vectorData.temperature.Max || ir_max_temp < vectorData.temperature.Min)
-					{
-						if (http_snap_and_sendto_host(1, MSG_VIDEO_IRMODESNAPJPEGPROCESS/*IR模块图像抓拍*/, 0, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0表示事件服务器地址，1表示算法服务器地址
-							UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");
-					}
-				}
-			}
-		}
-		/* end */
-
-		if (http_snap_and_sendto_host(1, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
-			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");
+		if (http_snap_and_sendto_host(2, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
+			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");											  //第一参数：2，发个算法的一定是2
 
 
 #ifdef PTOURS_TIME_NUMBER
