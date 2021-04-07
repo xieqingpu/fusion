@@ -672,7 +672,7 @@ ONVIF_RET onvif_CreatePresetTour(PresetTour_REQ * p_req)
 	return ONVIF_OK;
 }
 
-#define BASETIME  6
+#define BASETIME  7
 
 extern float get_max_ir_temp(float* ir, int x, int y, int width, int height);
  
@@ -721,42 +721,39 @@ int VectorListHandle(ONVIF_PTZPreset preset)
 
 	memset(&vectorData, 0x0, sizeof(onvif_VectorList));
 
-	if (preset.VectorListFlag != 0)   //对应的预置位是否有画检测区域Vector，!=0代表有
+	for (k = 0; k < preset.Vector_Number; k++)
 	{
-		for (k = 0; k < preset.Vector_Number; k++)
+		if (preset.Vector_list[k].dulaType == 1)  //1:温度检测，2：数据识别
 		{
-			if (preset.Vector_list[k].dulaType == 1)  //1:温度检测，2：数据识别
+			// getVectorData(&vectorData, preset_idx, k);
+
+			vectorData.temperature.Min = preset.Vector_list[k].temperature.Min;
+			vectorData.temperature.Max = preset.Vector_list[k].temperature.Max;
+
+			vectorData.x = ((preset.Vector_list[k].x)+1)/2*IR_WIDTH;
+			vectorData.y = (1-(preset.Vector_list[k].y))/2*IR_HEIGHT;
+			vectorData.w = (preset.Vector_list[k].w)/2*IR_WIDTH;
+			vectorData.h = (preset.Vector_list[k].h)/2*IR_HEIGHT;
+
+			// UTIL_INFO("\033[0;33mx=%.2f, y=%.2f, w=%.2f, h=%.2f\033[0m\n",		
+			// 		preset.Vector_list[k].x, preset.Vector_list[k].y,
+			// 		preset.Vector_list[k].w, preset.Vector_list[k].h);
+			// UTIL_INFO("\033[0;33mvectorData.x=%.2f, vectorData.y=%.2f, vectorData.w=%.2f, vectorData.h=%.2f\033[0m\n",
+			// 		vectorData.x, vectorData.y, vectorData.w, vectorData.h);
+		
+			//获取热成像数据
+			IrTemperatureData = getIrTemperatureData();
+			//返回最大的温度值
+			ir_max_temp =  get_max_ir_temp(IrTemperatureData, vectorData.x, vectorData.y, vectorData.w, vectorData.h);
+
+		// UTIL_INFO("get_max_ir_temp = %.2f  vectorData.temperature.Max =%.2f, vectorData.temperature.Min = %.2f\n", ir_max_temp ,vectorData.temperature.Max, vectorData.temperature.Min);
+			if (ir_max_temp > vectorData.temperature.Max || ir_max_temp < vectorData.temperature.Min)
 			{
-				// getVectorData(&vectorData, preset_idx, k);
-
-				vectorData.temperature.Min = preset.Vector_list[k].temperature.Min;
-				vectorData.temperature.Max = preset.Vector_list[k].temperature.Max;
-
-				vectorData.x = ((preset.Vector_list[k].x)+1)/2*IR_WIDTH;
-				vectorData.y = (1-(preset.Vector_list[k].y))/2*IR_HEIGHT;
-				vectorData.w = (preset.Vector_list[k].w)/2*IR_WIDTH;
-				vectorData.h = (preset.Vector_list[k].h)/2*IR_HEIGHT;
-
-				// UTIL_INFO("\033[0;33mx=%.2f, y=%.2f, w=%.2f, h=%.2f\033[0m\n",		
-				// 		preset.Vector_list[k].x, preset.Vector_list[k].y,
-				// 		preset.Vector_list[k].w, preset.Vector_list[k].h);
-				// UTIL_INFO("\033[0;33mvectorData.x=%.2f, vectorData.y=%.2f, vectorData.w=%.2f, vectorData.h=%.2f\033[0m\n",
-				// 		vectorData.x, vectorData.y, vectorData.w, vectorData.h);
-			
-				//获取热成像数据
-				IrTemperatureData = getIrTemperatureData();
-				//返回最大的温度值
-				ir_max_temp =  get_max_ir_temp(IrTemperatureData, vectorData.x, vectorData.y, vectorData.w, vectorData.h);
-
-			// UTIL_INFO("get_max_ir_temp = %.2f  vectorData.temperature.Max =%.2f, vectorData.temperature.Min = %.2f\n", ir_max_temp ,vectorData.temperature.Max, vectorData.temperature.Min);
-				if (ir_max_temp > vectorData.temperature.Max || ir_max_temp < vectorData.temperature.Min)
-				{
-					char msg[256] = {0};
-					memset(msg,0,256);
-					sprintf(msg, "%s %0.2f", preset.PTZPreset.Name, ir_max_temp);
-					if (http_snap_and_sendto_host(1, MSG_VIDEO_IRMODESNAPJPEGPROCESS/*IR模块图像抓拍*/, 0 ,msg) == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
-						UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");										   //第一参数：1:事件类型；2：算法类型						  
-				}
+				char msg[256] = {'\0'};
+				// memset(msg,0,256);
+				sprintf(msg, "%s %0.2f", preset.PTZPreset.Name, ir_max_temp);
+				if (http_snap_and_sendto_host(1, MSG_VIDEO_IRMODESNAPJPEGPROCESS/*IR模块图像抓拍*/, 0 ,msg) == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
+					UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");										   //第一参数：1:事件类型；2：算法类型						  
 			}
 		}
 	}
@@ -846,10 +843,16 @@ void *PresetTour_state_touring_Forward(void *args)
 		onvif_preset_usleep(staytime);
 
 		/* 检测预置位画框标记物的温度,是否抓拍 */
-		VectorListHandle(preset);
+		if (preset.VectorListFlag != 0)   //对应的预置位是否有画检测区域Vector，!=0代表有
+		{
+			VectorListHandle(preset);
+		}
 
-
-		if (http_snap_and_sendto_host(2, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
+		/* 可见光摄像图像抓拍 */
+		char msg[256] = {'\0'};
+		// memset(msg,0,256);
+		sprintf(msg, "%s", preset.PTZPreset.Name);
+		if (http_snap_and_sendto_host(2, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, msg) == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
 			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");											  //第一参数：2，发个算法的一定是2
 
 
@@ -957,10 +960,16 @@ void *PresetTour_state_touring_Backward(void *args)
 		onvif_preset_usleep(staytime);
 
 		/* 检测预置位画框标记物的温度,是否抓拍 */
-		VectorListHandle(preset);
+		if (preset.VectorListFlag != 0)   //对应的预置位是否有画检测区域Vector，!=0代表有
+		{
+			VectorListHandle(preset);
+		}
 
-
-		if (http_snap_and_sendto_host(2, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
+		/* 可见光摄像图像抓拍 */
+		char msg[256] = {'\0'};
+		// memset(msg,0,256);
+		sprintf(msg, "%s", preset.PTZPreset.Name);
+		if (http_snap_and_sendto_host(2, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, msg) == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
 			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");											  //第一参数：2，发个算法的一定是2
 
 #ifdef PTOURS_TIME_NUMBER
@@ -1100,10 +1109,16 @@ void *PresetTour_state_touring_Random(void *args)
 		onvif_preset_usleep(staytime);
 
 		/* 检测预置位画框标记物的温度,是否抓拍 */
-		VectorListHandle(preset);
+		if (preset.VectorListFlag != 0)   //对应的预置位是否有画检测区域Vector，!=0代表有
+		{
+			VectorListHandle(preset);
+		}
 
-
-		if (http_snap_and_sendto_host(2, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, "aabb") == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
+		/* 可见光摄像图像抓拍 */
+		char msg[256] = {'\0'};
+		// memset(msg,0,256);
+		sprintf(msg, "%s", preset.PTZPreset.Name);
+		if (http_snap_and_sendto_host(2, MSG_VIDEO_IPCSNAPJPEGPROCESS/*可见光摄像图像抓拍*/, 1, msg) == -1)   //第三参数：推送图片去哪个服务器，0:事件服务器地址，1:算法服务器地址
 			UTIL_INFO("http_ snap_ and_ sendto_ host failed...\n");											  //第一参数：2，发个算法的一定是2
 
 
