@@ -3136,15 +3136,64 @@ int build_RemoveScopes_rly_xml(char * p_buf, int mlen, const char * argv)
 int build_GetGPTSettings_rly_xml(char * p_buf, int mlen, const char * argv)
 {
 	int offset = 0;
-    /*<SetGPTSettings xmlns="http://www.onvif.org/ver10/device/wsdl">
-    <EventServerUrl>http://192.168.3.157/submitEvent</EventServerUrl></SetGPTSettings>*/
+
+	//从文件读取SIP GB28181设置
+	GB28181Conf_t GB28181Confing;
+	memset(&GB28181Confing, 0, sizeof(GB28181Conf_t));
+
+	int GetGB28181_ret = GetGB28181Confing(&GB28181Confing);
+	if ( GetGB28181_ret != 0 ) {
+		printf("get GB28181 Confing faile.\n");
+	}
+
+    offset += snprintf(p_buf+offset, mlen-offset, "<tds:GetGPTSettingsResponse>");
+
     offset += snprintf(p_buf+offset, mlen-offset, 
-        "<tds:GetGPTSettingsResponse>"
             "<tt:EventServerUrl>%s</tt:EventServerUrl>"
-            "<tt:AlgorithmServerUrl>%s</tt:AlgorithmServerUrl>"
-       	"</tds:GetGPTSettingsResponse>",
+            "<tt:AlgorithmServerUrl>%s</tt:AlgorithmServerUrl>",
       	g_onvif_cfg.network.EventUploadInfo.EventHttpFlag ? g_onvif_cfg.network.EventUploadInfo.HttpServerUrl : "",
       	g_onvif_cfg.network.EventUploadInfo.AlgorithmServerFlag ? g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl : "");
+
+	if (GetGB28181_ret == 0)
+	{
+		offset += snprintf(p_buf+offset, mlen-offset, 
+		"<tds:SIPSettings>"
+			"<tt:Enabled>%s</tt:Enabled>"
+			"<tt:Type>%s</tt:Type>"
+			"<tt:LocalPort>%s</tt:LocalPort>"
+			"<tt:ServerId>%s</tt:ServerId>"
+			"<tt:ServerIP>%s</tt:ServerIP>"
+			"<tt:ServerPort>%s</tt:ServerPort>"
+			"<tt:UserName>%s</tt:UserName>"
+			"<tt:UserId>%s</tt:UserId>"
+			"<tt:Password>%s</tt:Password>"
+			"<tt:RegisterPeriod>%d</tt:RegisterPeriod>"
+			"<tt:HeartbeatInterval>%d</tt:HeartbeatInterval>"
+			"<tt:HeartbeatTimeoutTimes>%d</tt:HeartbeatTimeoutTimes>"
+			"<tt:AlarmId>%s</tt:AlarmId>"
+			"<tt:VideoId>%s</tt:VideoId>"
+			"<tt:Encode>%s</tt:Encode>"
+			"<tt:Record>%s</tt:Record>"
+		"</tds:SIPSettings>",
+      	GB28181Confing.gb28181_enable ? "true" : "false",
+		onvif_NettypeToString(GB28181Confing.proto_nettype),
+		GB28181Confing.ipc_sess_port,
+		GB28181Confing.server_id,
+		GB28181Confing.server_ip,
+		GB28181Confing.server_port,
+		GB28181Confing.ipc_username,
+		GB28181Confing.ipc_id,
+		GB28181Confing.ipc_pwd,
+		GB28181Confing.AliveTime,
+		GB28181Confing.HeartBeatTime,
+		GB28181Confing.ReconnctCount,
+		GB28181Confing.AlarmId[0],
+		GB28181Confing.VideoId[0],
+		GB28181Confing.device_encode,
+		GB28181Confing.device_record );
+	}
+
+    offset += snprintf(p_buf+offset, mlen-offset, "</tds:GetGPTSettingsResponse>"); 
 
 	return offset;
 }

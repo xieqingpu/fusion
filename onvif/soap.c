@@ -2011,32 +2011,55 @@ int soap_SetGPTSettings(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN 
 	XMLN * p_SetHostname;
 	XMLN * p_EventServer;
 	XMLN * p_AlgorithmServer;
+	XMLN * p_SIPSettings;
 	ONVIF_RET ret;
+	int sip_ret;
+
+	GB28181Conf_t req;
+
+	memset(&req, 0, sizeof(GB28181Conf_t));
 
     onvif_print("%s\r\n", __FUNCTION__);
 
     p_SetHostname = xml_node_soap_get(p_body, "SetGPTSettings");
     assert(p_SetHostname);
 
+	/* 事件服务器url和算法服务器url */
     p_EventServer = xml_node_soap_get(p_SetHostname, "EventServerUrl");
     p_AlgorithmServer = xml_node_soap_get(p_SetHostname, "AlgorithmServerUrl");
 
 	if (p_EventServer && p_AlgorithmServer)
 	{
-	printf("xxxxxxxxxxx p_EventServer->data = %s ; p_AlgorithmServer->data= %s xxxxxxxxxx\n", p_EventServer->data, p_AlgorithmServer->data);
 	    if (p_EventServer->data && p_AlgorithmServer->data)
 	    {
 		    ret = onvif_SetGPTSettings(p_EventServer->data, p_AlgorithmServer->data);
 	    }
 	}
 
-	if (ONVIF_OK == ret)
+	/* ISP配置 */
+    p_SIPSettings = xml_node_soap_get(p_SetHostname, "SIPSettings");
+	if (p_SIPSettings)
+	{
+		sip_ret = parse_SIP_Settings(p_SIPSettings, &req);
+		if (sip_ret == 0)
+		{
+			sip_ret = onvif_SIP_Settings(&req);
+		}
+	}
+
+
+	if (ONVIF_OK == ret || ONVIF_OK == sip_ret)    //如果服务器URL设置成功 或者 SIP设置成功，则返回成功回复
 	{
 		return soap_build_send_rly(p_user, rx_msg, build_SetGPTSettings_rly_xml, NULL, NULL, p_header);
 	}
 	else if (ONVIF_ERR_InValidEventHttpUrl == ret || ONVIF_ERR_InValidAlgorithmServerUrl == ret)
 	{
 		return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:InvalidEventHttpUrl", "Invalid EventHttpUrl");
+	}
+	
+	if (ONVIF_OK != sip_ret)
+	{
+		return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:SIP set faile", "SIP set faile");
 	}
 	
     return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:InvalidEventHttpUrl", "Invalid ArgVal"); 
@@ -2859,16 +2882,17 @@ int soap_StartFirmwareUpgrade(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body,
 void soap_FirmwareUpgrade(HTTPCLN * p_user, HTTPMSG * rx_msg)
 {
 	char * p_buff = http_get_ctt(rx_msg);
+	char *decodefile = "/user/gpttemp";
 	
 	onvif_print("%s\r\n", __FUNCTION__);
 	onvif_print("rx_msg->ctt_len===%d\n", rx_msg->ctt_len);
 	if (onvif_FirmwareUpgradeCheck(p_buff, rx_msg->ctt_len))
 	{
-		if (onvif_FirmwareUpgrade(p_buff, rx_msg->ctt_len))
+		if (onvif_FirmwareUpgrade(p_buff, rx_msg->ctt_len, decodefile))
 		{
 			soap_http_rly(p_user, rx_msg, NULL, 0);
 
-			onvif_FirmwareUpgradePost();
+			onvif_FirmwareUpgradePost(decodefile);
 		}
 		else
 		{

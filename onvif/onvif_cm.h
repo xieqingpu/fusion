@@ -359,6 +359,13 @@ typedef enum
 	BacklightCompensationMode_ON = 1				    // Backlight compensation is enabled
 } onvif_BacklightCompensationMode;
 
+//add by xie
+typedef enum  
+{
+	SIP_FAULE = 0,
+	SIP_TRUE = 1
+} onvif_SIP_Mode;
+
 // Exposure mode
 typedef enum  
 {
@@ -4812,6 +4819,11 @@ typedef struct _ONVIF_Receiver
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// add xie
+BOOL onvif_StringToSIPMode(const char * str);
+BOOL onvif_StringToNettype(const char * str);
+const char * onvif_NettypeToString(BOOL net_type);
 
 
 const char * 				    onvif_CapabilityCategoryToString(onvif_CapabilityCategory category);

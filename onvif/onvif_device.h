@@ -242,8 +242,8 @@ ONVIF_RET onvif_RemoveScopes(RemoveScopes_REQ * p_req);
 
 BOOL	  onvif_StartFirmwareUpgrade(const char * lip, uint32 lport, StartFirmwareUpgrade_RES * p_res);	
 BOOL 	  onvif_FirmwareUpgradeCheck(const char * buff, int len);
-BOOL 	  onvif_FirmwareUpgrade(const char * buff, int len);
-void 	  onvif_FirmwareUpgradePost();
+BOOL 	  onvif_FirmwareUpgrade(const char * buff, int len, char * decodefile);
+void 	  onvif_FirmwareUpgradePost(char * decodefile);
 
 BOOL      onvif_StartSystemRestore(const char * lip, uint32 lport, StartSystemRestore_RES * p_res);
 BOOL      onvif_SystemRestoreCheck(const char * buff, int len);

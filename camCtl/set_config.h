@@ -130,7 +130,6 @@ typedef struct
 #define  PROFILE_MAIN      "Main"  
 #define  PROFILE_HIGH      "High"
 #define  PROFILE_EXTENDED  "Extended"  
-#define  PROFILE_MAIN      "Main"
 #define  PROFILE_MAIN10    "Main10"
 /* typedef enum H264Profile 
 {
@@ -423,6 +422,13 @@ int getVideoEncoder(Video_Encoder *p_video_encoder);
 int getAudioEncoder(Audio_Encoder *p_audio_encoder);
 /* 读取 设置音频编码器参数 */
 int setAudioEncoder(Audio_Encoder *p_audio_encoder);
+
+
+/* 设置GB28181配置 */
+int onvif_SIP_Settings(GB28181Conf_t * GB28181Confing);
+/* 获取GB28181配置 */
+int GetGB28181Confing(GB28181Conf_t *GB28181Confing);
+
 
 int GetNTPInformation(onvif_NTPInformation		    *pNTPInformation);
 	

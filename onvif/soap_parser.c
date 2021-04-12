@@ -23,6 +23,8 @@
 #include "onvif_utils.h"
 #include "util.h"
 
+#include "set_config.h"
+
 /***************************************************************************************/
 
 BOOL parse_Bool(const char * pdata)
@@ -8917,4 +8919,152 @@ ONVIF_RET parse_trv_GetReceiverState(XMLN * p_node, trv_GetReceiverState_REQ * p
 #endif // end of RECEIVER_SUPPORT
 
 
+/* add by xieqingpu */
+ONVIF_RET parse_SIP_Settings(XMLN * p_node, GB28181Conf_t * p_req)
+{
+	XMLN * p_Enabled;
+	XMLN * p_Type;
+	XMLN * p_LocalPort;
+	XMLN * p_ServerId;
+	XMLN * p_ServerIP;
+	XMLN * p_ServerPort;
+	XMLN * p_UserName;
+	XMLN * p_UserId;
+	XMLN * p_Password;
+	XMLN * p_RegisterPeriod;
+	XMLN * p_HeartbeatInterva;
+	XMLN * p_HeartbeatTimeoutTimes;
+	XMLN * p_VideoId;
+	XMLN * p_AlarmId;
+	XMLN * p_Encode;
+	XMLN * p_Record;
+
+	p_Enabled = xml_node_soap_get(p_node, "Enabled");   // 是否启用SIP协议
+	if (p_Enabled && p_Enabled->data)
+	{
+		p_req->gb28181_enable = onvif_StringToSIPMode(p_Enabled->data);  //GB28181使能 0:关闭 1:打开
+	} else {
+		p_req->gb28181_enable = 0;				//默认： 关闭
+	}
+
+	p_Type = xml_node_soap_get(p_node, "Type");
+	if (p_Type && p_Type->data)
+	{
+		p_req->proto_nettype = onvif_StringToNettype(p_Type->data);  //信令传输网络类型1:TCP 0:UDP
+	} else {
+		p_req->proto_nettype = 0;				//默认： UDP
+	}
+
+	p_LocalPort = xml_node_soap_get(p_node, "LocalPort");
+	if (p_LocalPort && p_LocalPort->data)
+	{
+        strncpy(p_req->ipc_sess_port, p_LocalPort->data, sizeof(p_req->ipc_sess_port)-1);  //会话端口，即SIP端口
+	} else {
+        strcpy(p_req->ipc_sess_port, "5080");  	//默认: 5080
+	}
+
+	p_ServerId = xml_node_soap_get(p_node, "ServerId");
+	if (p_ServerId && p_ServerId->data)
+	{
+        strncpy(p_req->server_id, p_ServerId->data, sizeof(p_req->server_id)-1);  //SIP服务器ID
+	} else {
+  	    strcpy(p_req->server_id, "34020000002000000001");	//默认
+	}
+
+	p_ServerIP = xml_node_soap_get(p_node, "ServerIP");
+	if (p_ServerIP && p_ServerIP->data)
+	{
+        strncpy(p_req->server_ip, p_ServerIP->data, sizeof(p_req->server_ip)-1);  //SIP服务器ID
+	}
+
+	p_ServerPort = xml_node_soap_get(p_node, "ServerPort");
+	if (p_ServerPort && p_ServerPort->data)
+	{
+        strncpy(p_req->server_port, p_ServerPort->data, sizeof(p_req->server_port)-1);  //SIP服务器IP端口
+	} else {
+	    strcpy(p_req->server_port, "5060");		//默认
+	}
+
+	p_UserName = xml_node_soap_get(p_node, "UserName");
+	if (p_UserName && p_UserName->data)
+	{
+        strncpy(p_req->ipc_username, p_UserName->data, sizeof(p_req->ipc_username)-1);  //SIP用户名
+	} else {
+  	    strcpy(p_req->ipc_username, "admin"); 	 //默认
+	}
+
+	p_UserId = xml_node_soap_get(p_node, "UserId");
+	if (p_UserId && p_UserId->data)
+	{
+        strncpy(p_req->ipc_id, p_UserId->data, sizeof(p_req->ipc_id)-1);  //SIP用户认证ID
+	} else {
+    	strcpy(p_req->ipc_id, "34020000001110000001");    //默认
+	}
+
+	p_Password = xml_node_soap_get(p_node, "Password");
+	if (p_Password && p_Password->data)
+	{
+        strncpy(p_req->ipc_pwd, p_Password->data, sizeof(p_req->ipc_pwd)-1);  //密码
+	}
+
+	p_RegisterPeriod = xml_node_soap_get(p_node, "RegisterPeriod");
+	if (p_RegisterPeriod && p_RegisterPeriod->data)
+	{
+		p_req->AliveTime = atoi(p_RegisterPeriod->data);  //注册有效期
+	} else {
+		p_req->AliveTime = 3600;		//默认
+	}
+
+	p_HeartbeatInterva = xml_node_soap_get(p_node, "HeartbeatInterval");
+	if (p_HeartbeatInterva && p_HeartbeatInterva->data)
+	{
+		p_req->HeartBeatTime = atoi(p_HeartbeatInterva->data);  //心跳周期
+	} else {
+		p_req->HeartBeatTime = 30;
+	}
+
+	p_HeartbeatTimeoutTimes = xml_node_soap_get(p_node, "HeartbeatTimeoutTimes");
+	if (p_HeartbeatTimeoutTimes && p_HeartbeatTimeoutTimes->data)
+	{
+		p_req->ReconnctCount = atoi(p_HeartbeatTimeoutTimes->data);  //重连次数 心跳超时次数
+	}
+
+	p_req->VideoNum = 1;	//现在数量为1个
+	p_req->AlarmNum = 1;	//现在数量为1个
+
+	p_VideoId = xml_node_soap_get(p_node, "AlarmId");
+	if (p_VideoId && p_VideoId->data)
+	{
+        strncpy(p_req->AlarmId[0], p_VideoId->data, 32);   //视频通道编码ID
+	} else{
+		strcpy(p_req->AlarmId[0], "34020000001340000010");  //默认的
+	}
+
+	p_AlarmId = xml_node_soap_get(p_node, "VideoId");
+	if (p_AlarmId && p_AlarmId->data)
+	{
+        strncpy(p_req->VideoId[0], p_AlarmId->data, 32);   //视频通道编码ID
+	} else{
+		strcpy(p_req->VideoId[0], "34020000001320000001");	//默认的
+	}
+
+	p_Encode = xml_node_soap_get(p_node, "Encode");
+	if (p_Encode && p_Encode->data)
+	{
+        strncpy(p_req->device_encode, p_Encode->data, 10);   //是否编码， ON/OFF, 默认值：ON
+	} else{
+   	    strcpy(p_req->device_encode, "ON");
+	}
+
+	p_Record = xml_node_soap_get(p_node, "Record");
+	if (p_Record && p_Record->data)
+	{
+        strncpy(p_req->device_record, p_Record->data, 10);   //是否录像， ON/OFF, 默认值：OFF 
+	} else{
+    	strcpy(p_req->device_record, "OFF");
+	}
+
+
+    return ONVIF_OK;
+}
 

@@ -743,9 +743,10 @@ int VectorListHandle(ONVIF_PTZPreset preset)
 		
 			//获取热成像数据
 			IrTemperatureData = getIrTemperatureData();
+#ifdef HI3519AV100
 			//返回最大的温度值
 			ir_max_temp =  get_max_ir_temp(IrTemperatureData, vectorData.x, vectorData.y, vectorData.w, vectorData.h);
-
+#endif
 		// UTIL_INFO("get_max_ir_temp = %.2f  vectorData.temperature.Max =%.2f, vectorData.temperature.Min = %.2f\n", ir_max_temp ,vectorData.temperature.Max, vectorData.temperature.Min);
 			if (ir_max_temp > vectorData.temperature.Max || ir_max_temp < vectorData.temperature.Min)
 			{

@@ -22,6 +22,41 @@
 #include "onvif_cm.h"
 
 
+// add xie
+BOOL onvif_StringToSIPMode(const char * str)
+{
+	if (strcasecmp(str, "true") == 0)
+	{
+		return 1;  //开启SIP
+	}
+
+	return 0;
+}
+
+BOOL onvif_StringToNettype(const char * str)
+{
+	if (strcasecmp(str, "tcp") == 0)
+	{
+		return 1;
+	}
+
+	return 0;
+}
+
+const char * onvif_NettypeToString(BOOL net_type)
+{
+	switch (net_type)
+	{
+	case 1:
+		return "tcp";
+		
+	case 0:
+		return "udp";
+	}
+
+	return "udp";
+}
+
 const char * onvif_CapabilityCategoryToString(onvif_CapabilityCategory category)
 {
 	switch (category)
@@ -1887,7 +1922,8 @@ onvif_DoorMode onvif_StringToDoorMode(const char * str)
 #ifdef DEVICEIO_SUPPORT
 
 const char * onvif_RelayModeToString(onvif_RelayMode mode)
-{
+{
+
     switch (mode)
 	{
 	case RelayMode_Monostable:
@@ -2055,7 +2091,8 @@ onvif_ParityBit onvif_StringToParityBit(const char * str)
 }
 
 const char * onvif_SerialPortTypeToString(onvif_SerialPortType type)
-{
+{
+
     switch (type)
 	{
 	case SerialPortType_RS232:

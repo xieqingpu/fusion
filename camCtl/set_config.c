@@ -1257,6 +1257,15 @@ int GetRecordScheduleInfo(sdk_record_cfg_t *stRecodSchedTime)
 
 /*3 读取gb28181参数 */
 #define  GB28181CONFFILE  ("/user/cfg_files/gb28181conf.dat")
+int GetGB28181Confing(GB28181Conf_t *GB28181Confing)
+{
+	if (read_cfg_from_file(GB28181CONFFILE, (char *)GB28181Confing, sizeof(GB28181Conf_t)) != 0) {
+		UTIL_ERR("GB28181CONFFILE:%s  not exsit!!!", GB28181CONFFILE);
+		return -1;
+	}	
+
+	return 0;
+}
 /* 设置gb28181参数*/
 int SetGB28181ConfInfo(GB28181Conf_t *pGb28181Info, BOOL isSave)
 {
@@ -1281,7 +1290,6 @@ int Gpt_InitGB28181ConfParm(GB28181Conf_t *p_gb28181_conf)
     strcpy(p_gb28181_conf->ipc_pwd, "12345678");
 	ONVIF_NetworkInterface * p_net_inf = g_onvif_cfg.network.interfaces;
     strcpy(p_gb28181_conf->ipc_ip, p_net_inf->NetworkInterface.IPv4.Config.Address);
-	UTIL_INFO("p_gb28181_conf->ipc_ip==%s", p_gb28181_conf->ipc_ip);
 	strcpy(p_gb28181_conf->ipc_sess_port, "5080");
 	p_gb28181_conf->AliveTime = 3600;
 	p_gb28181_conf->HeartBeatTime = 30;
@@ -1291,7 +1299,7 @@ int Gpt_InitGB28181ConfParm(GB28181Conf_t *p_gb28181_conf)
     strcpy(p_gb28181_conf->device_model, PRODUCT_NAME);
     strcpy(p_gb28181_conf->device_firmware, FIRMWARE_VERSION);
     strcpy(p_gb28181_conf->device_encode, "ON");
-    strcpy(p_gb28181_conf->device_record, "ON");
+    strcpy(p_gb28181_conf->device_record, "OFF");
 
 	p_gb28181_conf->VideoNum = 1;
 	p_gb28181_conf->AlarmNum = 1;
@@ -1314,7 +1322,34 @@ int GetGB28181ConfInfo(GB28181Conf_t *pGb28181Info)
 			
 	return 0;
 }
-	
+
+int onvif_SIP_Settings(GB28181Conf_t * p_GB28181Confing)
+{	
+	if (NULL == p_GB28181Confing)
+	{
+		return -1;
+	}
+
+	/* 以下为默认的数据 */
+	ONVIF_NetworkInterface * p_net_inf = g_onvif_cfg.network.interfaces;
+    strcpy(p_GB28181Confing->ipc_ip, p_net_inf->NetworkInterface.IPv4.Config.Address);
+	UTIL_INFO("p_GB28181Confing->ipc_ip==%s", p_GB28181Confing->ipc_ip);
+
+    strcpy(p_GB28181Confing->device_name, PRODUCT_NAME);
+    strcpy(p_GB28181Confing->device_manufacturer, "Huaxiaxin");
+    strcpy(p_GB28181Confing->device_model, PRODUCT_NAME);
+    strcpy(p_GB28181Confing->device_firmware, FIRMWARE_VERSION);
+
+	p_GB28181Confing->stream_nettype = 0;//默认UDP
+	/*  */
+
+	GPTMessageSend(GPT_MSG_VIDEO_SETGB28181CONFINFO, 0, (int)p_GB28181Confing, sizeof(GB28181Conf_t));
+	//保存于文件
+	int ret = SetGB28181ConfInfo(p_GB28181Confing, TRUE);
+
+	return ret;
+}
+
 	
 void SystemReboot()
 {

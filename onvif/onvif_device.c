@@ -29,6 +29,8 @@
 #include "set_config.h"
 #include "utils_log.h"
 #include "gpt_utils.h"
+#include "rfc_md5.h"
+
 /***************************************************************************************/
 extern ONVIF_CFG g_onvif_cfg;
 extern ONVIF_CLS g_onvif_cls;
@@ -619,6 +621,10 @@ ONVIF_RET onvif_SetUser(SetUser_REQ * p_req)
 		}
 	}
 
+	//删除后更新用户文件   add by xieqingpu
+	if (writeUsers(g_onvif_cfg.users, ARRAY_SIZE(g_onvif_cfg.users)) != 0)   //写用户到文件保存起来
+	printf(" write user faile.\n");	
+
 	return ONVIF_OK;
 }
 
@@ -834,12 +840,142 @@ BOOL onvif_FirmwareUpgradeCheck(const char * buff, int len)
 	// todo : add the check code ...
 
     // the firmware length is too short
-    if (len < 1024)
+    if (len < 1024*1024)
     {
         return FALSE;
     }
 	
 	return TRUE;
+}
+
+char *onvif_FileMd5Sum (char *path, int md5_len, char *md5_buf)
+{
+	MD5_CTX mdContext;
+	int bytes;
+	unsigned char data[1024];
+	uint8 digest[16];
+	int i;
+
+	if (NULL == path)
+	{
+		return NULL;
+	}
+	
+	FILE *fp = fopen (path, "rb");
+	if (fp == NULL) {
+		fprintf (stderr, "fopen %s failed\n", path);
+		return NULL;
+	}
+	
+	MD5Init (&mdContext);
+	while ((bytes = fread (data, 1, 1024, fp)) != 0)
+	{
+		MD5Update (&mdContext, data, bytes);
+	}
+	MD5Final (digest, &mdContext);
+
+	if(md5_len == 16)
+	{
+		for(i=4; i<12; i++)
+		{
+			sprintf(&md5_buf[(i-4)*2], "%02x", digest[i]);
+		}
+	}
+	else if(md5_len == 32)
+	{
+		for(i=0; i<16; i++)
+		{
+			sprintf(&md5_buf[i*2], "%02x", digest[i]);
+		}
+	}
+	else
+	{
+		fclose(fp);
+		return NULL;
+	}
+
+	fclose (fp);
+
+	return md5_buf;
+}
+
+int onvif_FileMd5Verify(char *path, char *decodepath)
+{
+	char filebuffer[128] = {0};
+	char *password = "gptohQBsL4TB2tPAaJ7LAMBK99VFMGuX";
+	char md5str[64] = {0};
+	FILE *fp = NULL;
+	FILE *decodefp = NULL;
+	int bytes;
+	unsigned char data[1024*1024];
+	struct stat buf;
+	int count = 0;
+
+	
+	if (NULL == path || NULL == decodepath)
+	{
+		return -1;
+	}
+	
+    stat(path, &buf);
+	if (buf.st_size <= 1024*1024)
+	{
+		UTIL_ERR("path(%s)st_size <= 1024*1024 error!!!!!", path);
+		return -1;
+	}
+	
+	fp = fopen (path, "rb");
+	if (fp == NULL) {
+		UTIL_ERR ("fopen %s failed", path);
+		return -1;
+	}
+	
+	decodefp = fopen (decodepath, "wb+");
+	if (decodefp == NULL) {
+		UTIL_ERR ("decode fopen %s failed\n", decodepath);
+		fclose(fp);
+		return -1;
+	}
+
+	while ((bytes = fread (data, 1, 1024*1024, fp)) != 0)
+	{
+		fwrite (data, 1, bytes, decodefp);
+		if (0 == count)
+		{
+			bytes = fread(filebuffer, 1, 64, fp);
+			count = 1;
+			if (strstr(filebuffer, password) == NULL)
+			{
+				UTIL_ERR ("failed!!!filebuffer %s,password=%s", filebuffer, password);
+				count = 0;
+				break;
+			}
+			else 
+			{
+			    //获取原始升级文件的MD5验证文件的完整性
+				memcpy(md5str, &filebuffer[32],  32);
+				md5str[strlen(md5str)] = '\0';
+			}
+		}
+	}
+
+	fclose(fp);
+	fclose(decodefp);
+	unlink(path);
+
+	if (0 == count)
+	{
+		return -1;
+	}
+
+	onvif_FileMd5Sum(decodepath, 32, filebuffer);
+	filebuffer[strlen(filebuffer)] = '\0';
+	if (strcasecmp(filebuffer, md5str) == 0)
+	{
+		UTIL_INFO ("Verify success!!!!!!!");
+		return 0;
+	}
+	return -1;
 }
 
 /***
@@ -848,17 +984,7 @@ BOOL onvif_FirmwareUpgradeCheck(const char * buff, int len)
   * buff : pointer the upload content
   * len  : the upload content length
   **/
-/*BOOL onvif_FirmwareUpgrade(const char * buff, int len)
-{
-	// todo : add the upgrade code ...
-    FILE *pfd = NULL;
-	pfd = fopen("/user/gpttemp", "wb");
-	fwrite(buff, 1, len, pfd);
-	fclose(pfd);
-	
-	return TRUE;
-}*/
-BOOL onvif_FirmwareUpgrade(const char * buff, int len)
+BOOL onvif_FirmwareUpgrade(const char * buff, int len, char *decodefile)
 { 
 	// todo : add the upgrade code ... 
 	FILE *pfd = NULL;
@@ -868,14 +994,17 @@ BOOL onvif_FirmwareUpgrade(const char * buff, int len)
 	char *endneedle = NULL; 
 	int   endlength = 0, firstlen = 0, length = 0;
 	int i =0;
+	char md5str[64] = {0};
+	char wholefilemd5str[64] = {0};
+	char *uploadfile = "/user/tempgpt";
 	
 	if (NULL == buff) {
 		return FALSE;
 	}
 	
-	pfd = fopen("/user/gpttemp", "wb+");
+	pfd = fopen(uploadfile, "wb+");
 	if (NULL == pfd) { 
-		UTIL_ERR("############open /user/gpttemp error", errno);  
+		UTIL_ERR("############open %s error", uploadfile);  
 		return FALSE; 
 	} 
 	
@@ -905,22 +1034,45 @@ BOOL onvif_FirmwareUpgrade(const char * buff, int len)
 	endlength = 200 - i;
 	length	= len - endlength - firstlen;
 	UTIL_INFO("firstlen=%d, endlength=%d, length=%d",firstlen, endlength, length);  
+	//获取MD5值
+	memcpy(wholefilemd5str, nchrBegin+4, 32);
+	wholefilemd5str[32] = '\0';
+	//减去md5 32位
+	length -= 32;
+	nchrBegin += 32;
 
 	if (fwrite(nchrBegin+4, 1, length,	pfd) != length) 
 	{  
 		isOK = FALSE;
 		goto _EXIT1;
 	} 
-	UTIL_INFO("FirmwareUpgrade OK!!!"); 
-	isOK = TRUE;
 
-_EXIT1:
-
+	//无论如何先关闭文件然后计算md5
 	if (pfd)
 	{
 		fclose(pfd); 
 		pfd = NULL;
 	}
+	
+	onvif_FileMd5Sum(uploadfile, 32, md5str);
+	if ((strcasecmp(wholefilemd5str, md5str) == 0) && 
+		(0 == onvif_FileMd5Verify(uploadfile, decodefile)))
+	{
+		UTIL_INFO("FirmwareUpgrade OK!!!"); 
+		isOK = TRUE;
+	}
+	else
+	{	
+		UTIL_ERR("FirmwareUpgrade failed!!!");
+	}
+	
+_EXIT1:	
+	if (pfd)
+	{
+		fclose(pfd); 
+		pfd = NULL;
+	}
+
 	return isOK;
 }
 
@@ -928,7 +1080,7 @@ _EXIT1:
   * After the upgrade is complete do some works, such as reboot device ...
   *  
   **/
-void onvif_FirmwareUpgradePost()
+void onvif_FirmwareUpgradePost(char *decodefile)
 {
 	if (0 != access("/user/upload.sh", F_OK)) {
 		FILE *pConf = NULL;
@@ -939,16 +1091,24 @@ void onvif_FirmwareUpgradePost()
 		}
 		else
 		{  
-			fprintf(pConf, "mv /user/gpttemp  /user/gpt.tar.gz\n");
-			fprintf(pConf, "if [ -d \"/user/gpt\" ] ; then\n");
+			fprintf(pConf, "#/bin/bash\n");
+			fprintf(pConf, "uploadfile=$1\n");
+			fprintf(pConf, "echo \"uploadfile:\"$uploadfile\n");
+			fprintf(pConf, "if [ -e $uploadfile ] ; then\n");
+			fprintf(pConf, "	if [ -e /user/gpt.tar.gz ] ; then\n");
+			fprintf(pConf, "		rm /user/gpt.tar.gz -rf\n");
+			fprintf(pConf, "	fi\n");
+			fprintf(pConf, "mv $uploadfile  /user/gpt.tar.gz\n");
+			fprintf(pConf, "if [ -d /user/gpt ] ; then\n");
 			fprintf(pConf, "	rm /user/gpt -rf\n");
 			fprintf(pConf, "fi\n");
-			fprintf(pConf, "cd /user\n");
+			fprintf(pConf, "cd /user/\n");
 			fprintf(pConf, "tar xf gpt.tar.gz\n");
-			fclose(pConf);
+			fprintf(pConf, "reboot;sleep 1;reboot -f\n");
+			fprintf(pConf, "fi\n");
 		}
 	}
-	system_ex("/user/upload.sh &");
+	system_ex("/user/upload.sh %s &", decodefile);
 }
 
 BOOL onvif_StartSystemRestore(const char * lip, uint32 lport, StartSystemRestore_RES * p_res)
