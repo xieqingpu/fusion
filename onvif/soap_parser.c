@@ -4180,8 +4180,10 @@ ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
 	}
 
 	p_PresetTour = xml_node_soap_get(p_node, "PresetTour"); 
-	while (p_PresetTour && soap_strcmp(p_PresetTour->name, "PresetTour") == 0)
+	if (p_PresetTour && soap_strcmp(p_PresetTour->name, "PresetTour") == 0)
 	{
+	// while (p_PresetTour && soap_strcmp(p_PresetTour->name, "PresetTour") == 0)
+	// {
 		ONVIF_PresetTour * PresetTour_req = onvif_add_PresetTour(&p_req->PresetTour_req);
 		if (PresetTour_req)
 		{
@@ -4194,9 +4196,9 @@ ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
 				return ret;
 			}
 		}
-
-		p_PresetTour = p_PresetTour->next;
 	}
+	// 	p_PresetTour = p_PresetTour->next;
+	// }
 
 	return ONVIF_OK;
 }

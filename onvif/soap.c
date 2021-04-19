@@ -874,7 +874,7 @@ int soap_build_header(char * p_xml, int mlen, const char * action, XMLN * p_head
 ONVIF_RET soap_build_send_rly(HTTPCLN * p_user, HTTPMSG * rx_msg, soap_build_xml build_xml, const char * argv, const char * action, XMLN * p_header)
 {
     int offset = 0;
-	int ret = -1, mlen = 1024*40, xlen;
+	int ret = -1, mlen = 1024*512/* 1024*40 */, xlen;
 	
 	char * p_xml = (char *)malloc(mlen);
 	if (NULL == p_xml)
