@@ -23,14 +23,14 @@
 
 
 // add xie
-BOOL onvif_StringToSIPMode(const char * str)
+BOOL onvif_StringToEnable(const char * str)
 {
 	if (strcasecmp(str, "true") == 0)
 	{
-		return 1;  //开启SIP
+		return 1;  //开启
 	}
 
-	return 0;
+	return 0;	//false
 }
 
 BOOL onvif_StringToNettype(const char * str)

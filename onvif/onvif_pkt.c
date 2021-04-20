@@ -3137,7 +3137,7 @@ int build_GetGPTSettings_rly_xml(char * p_buf, int mlen, const char * argv)
 {
 	int offset = 0;
 
-	//从文件读取SIP GB28181设置
+	/* 从文件读取SIP GB28181设置 */
 	GB28181Conf_t GB28181Confing;
 	memset(&GB28181Confing, 0, sizeof(GB28181Conf_t));
 
@@ -3145,6 +3145,16 @@ int build_GetGPTSettings_rly_xml(char * p_buf, int mlen, const char * argv)
 	if ( GetGB28181_ret != 0 ) {
 		printf("get GB28181 Confing faile.\n");
 	}
+
+	/* 从文件读取 叠加检测框 设置 */
+	AlgParam_t AlgParam;
+	memset(&AlgParam, 0, sizeof(AlgParam_t));
+
+	int AlgParam_ret = get_Alg_Param(&AlgParam);
+	if ( AlgParam_ret != 0 ) {
+		printf("get Alg Param faile.\n");
+	}
+
 
     offset += snprintf(p_buf+offset, mlen-offset, "<tds:GetGPTSettingsResponse>");
 
@@ -3191,6 +3201,23 @@ int build_GetGPTSettings_rly_xml(char * p_buf, int mlen, const char * argv)
 		GB28181Confing.VideoId[0],
 		GB28181Confing.device_encode,
 		GB28181Confing.device_record );
+	}
+
+	if (AlgParam_ret == 0)
+	{
+  	  offset += snprintf(p_buf+offset, mlen-offset, 
+		"<tds:AlgParam>"
+            "<tt:Enabled>%s</tt:Enabled>"
+            "<tt:ConfidenceLevel>%0.2f</tt:ConfidenceLevel>"
+            "<tt:NMS>%0.2f</tt:NMS>"
+            "<tt:Extended1>%d</tt:Extended1>"
+            "<tt:Extended2>%0.2f</tt:Extended2>"
+		"</tds:AlgParam>",
+      	AlgParam.Enabled ? "true" : "false",
+		AlgParam.ConfidenceLevel,
+		AlgParam.NMS,
+		AlgParam.Extended1,
+		AlgParam.Extended2 );
 	}
 
     offset += snprintf(p_buf+offset, mlen-offset, "</tds:GetGPTSettingsResponse>"); 

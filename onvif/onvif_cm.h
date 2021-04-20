@@ -4821,7 +4821,7 @@ extern "C" {
 #endif
 
 // add xie
-BOOL onvif_StringToSIPMode(const char * str);
+BOOL onvif_StringToEnable(const char * str);
 BOOL onvif_StringToNettype(const char * str);
 const char * onvif_NettypeToString(BOOL net_type);
 

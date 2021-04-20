@@ -69,6 +69,7 @@ extern "C" {
 BOOL parse_Bool(const char * pdata);
 
 ONVIF_RET parse_SIP_Settings(XMLN * p_node, GB28181Conf_t * p_req);   // add
+ONVIF_RET parse_Alg_Param(XMLN * p_node, AlgParam_t * p_req);   // add
 
 ONVIF_RET parse_GetServices(XMLN * p_node, GetServices_REQ * p_req);
 ONVIF_RET parse_AddScopes(XMLN * p_AddScopes, AddScopes_REQ * p_req);

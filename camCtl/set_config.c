@@ -1350,6 +1350,38 @@ int onvif_SIP_Settings(GB28181Conf_t * p_GB28181Confing)
 	return ret;
 }
 
+
+#define ALG_PARAM_FILE	"/user/cfg_files/AlgParam.dat"
+/* 获取叠加检测框 */
+int get_Alg_Param(AlgParam_t * p_AlgParam)
+{
+	int ret;
+
+	if (read_cfg_from_file((char*)ALG_PARAM_FILE, (char*)p_AlgParam, sizeof(AlgParam_t)) != 0)
+	{
+		UTIL_ERR("read_cfg_from_file:%s faile!!!", ALG_PARAM_FILE);
+		return -1;
+	}
+
+	// return ret;
+	return 0;  //just for test
+}
+
+/* 设置叠加检测框 */
+int set_Alg_Param(AlgParam_t * p_AlgParam)
+{
+	int ret;
+	//add your code of set Alg here
+
+
+	//设置完成后保存数据于文件中
+	if (save_cfg_to_file((char*)ALG_PARAM_FILE, (char*)p_AlgParam, sizeof(AlgParam_t)) < 0)
+		UTIL_ERR("save Alg Param fail\n");
+
+	// return ret;
+	return 0;  //just for test
+}
+
 	
 void SystemReboot()
 {

@@ -19,12 +19,12 @@
 extern "C" {
 #endif
 
-/////
+
 typedef  int    BOOL;
-typedef unsigned int               u32_t;
-typedef unsigned char           u8_t;
-typedef unsigned char*         u8ptr_t;
-typedef float                               float32_t;
+typedef unsigned int         u32_t;
+typedef unsigned char        u8_t;
+typedef unsigned char*       u8ptr_t;
+typedef float                float32_t;
 typedef unsigned short int   u16_t;
 
 
@@ -35,6 +35,17 @@ typedef unsigned short int   u16_t;
 #define  g711   "G711"
 #define  g726   "G762"
 #define  aac    "AAC"
+
+                   
+typedef struct Alg_param
+{ 
+	BOOL	Enabled;				// 是否启用叠加检测框
+	float	ConfidenceLevel;		// 置信度，浮点，取值范围：[0, 1]
+	float 	NMS;					// 浮点，取值范围：[0, 1]
+	int 	Extended1;				// 预留参数1，整形
+	float 	Extended2;				// 预留参数2，浮点
+} AlgParam_t;
+
 
 #define MAX_WEEK_NUM            7       //星期天数
 #define MAX_TIME_SEG_NUM        4       //时间段个数
@@ -422,6 +433,11 @@ int getVideoEncoder(Video_Encoder *p_video_encoder);
 int getAudioEncoder(Audio_Encoder *p_audio_encoder);
 /* 读取 设置音频编码器参数 */
 int setAudioEncoder(Audio_Encoder *p_audio_encoder);
+
+/* 设置叠加检测框 */
+int set_Alg_Param(AlgParam_t * p_AlgParam);
+/* 获取叠加检测框 */
+int get_Alg_Param(AlgParam_t * p_AlgParam);
 
 
 /* 设置GB28181配置 */

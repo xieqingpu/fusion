@@ -2012,12 +2012,16 @@ int soap_SetGPTSettings(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN 
 	XMLN * p_EventServer;
 	XMLN * p_AlgorithmServer;
 	XMLN * p_SIPSettings;
-	ONVIF_RET ret;
-	int sip_ret;
+	XMLN * p_AlgParam;
+	ONVIF_RET gpt_ret = ONVIF_ERR_OTHER;
+	ONVIF_RET sip_ret = ONVIF_ERR_OTHER;
+	ONVIF_RET Alg_ret = ONVIF_ERR_OTHER;
 
-	GB28181Conf_t req;
+	GB28181Conf_t GB28181_req;
+	memset(&GB28181_req, 0, sizeof(GB28181Conf_t));
 
-	memset(&req, 0, sizeof(GB28181Conf_t));
+	AlgParam_t AlgParam_req;
+	memset(&AlgParam_req, 0, sizeof(AlgParam_t));
 
     onvif_print("%s\r\n", __FUNCTION__);
 
@@ -2032,7 +2036,7 @@ int soap_SetGPTSettings(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN 
 	{
 	    if (p_EventServer->data && p_AlgorithmServer->data)
 	    {
-		    ret = onvif_SetGPTSettings(p_EventServer->data, p_AlgorithmServer->data);
+		    gpt_ret = onvif_SetGPTSettings(p_EventServer->data, p_AlgorithmServer->data);
 	    }
 	}
 
@@ -2040,19 +2044,30 @@ int soap_SetGPTSettings(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN 
     p_SIPSettings = xml_node_soap_get(p_SetHostname, "SIPSettings");
 	if (p_SIPSettings)
 	{
-		sip_ret = parse_SIP_Settings(p_SIPSettings, &req);
+		sip_ret = parse_SIP_Settings(p_SIPSettings, &GB28181_req);
 		if (sip_ret == 0)
 		{
-			sip_ret = onvif_SIP_Settings(&req);
+			sip_ret = onvif_SIP_Settings(&GB28181_req);
+		}
+	}
+
+	/* 叠加检测框 */
+    p_AlgParam = xml_node_soap_get(p_SetHostname, "AlgParam");
+	if (p_AlgParam)
+	{
+		Alg_ret = parse_Alg_Param(p_AlgParam, &AlgParam_req);
+		if (Alg_ret == 0)
+		{
+			Alg_ret = set_Alg_Param(&AlgParam_req);
 		}
 	}
 
 
-	if (ONVIF_OK == ret || ONVIF_OK == sip_ret)    //如果服务器URL设置成功 或者 SIP设置成功，则返回成功回复
+	if (ONVIF_OK == gpt_ret || ONVIF_OK == sip_ret || ONVIF_OK == Alg_ret)    //如果服务器URL设置成功 或者 SIP设置成功，则返回成功回复
 	{
 		return soap_build_send_rly(p_user, rx_msg, build_SetGPTSettings_rly_xml, NULL, NULL, p_header);
 	}
-	else if (ONVIF_ERR_InValidEventHttpUrl == ret || ONVIF_ERR_InValidAlgorithmServerUrl == ret)
+	else if (ONVIF_ERR_InValidEventHttpUrl == gpt_ret || ONVIF_ERR_InValidAlgorithmServerUrl == gpt_ret)
 	{
 		return soap_err_def2_rly(p_user, rx_msg, ERR_SENDER, ERR_INVALIDARGVAL, "ter:InvalidEventHttpUrl", "Invalid EventHttpUrl");
 	}

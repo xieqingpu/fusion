@@ -8944,7 +8944,7 @@ ONVIF_RET parse_SIP_Settings(XMLN * p_node, GB28181Conf_t * p_req)
 	p_Enabled = xml_node_soap_get(p_node, "Enabled");   // 是否启用SIP协议
 	if (p_Enabled && p_Enabled->data)
 	{
-		p_req->gb28181_enable = onvif_StringToSIPMode(p_Enabled->data);  //GB28181使能 0:关闭 1:打开
+		p_req->gb28181_enable = onvif_StringToEnable(p_Enabled->data);  //GB28181使能 0:关闭 1:打开
 	} else {
 		p_req->gb28181_enable = 0;				//默认： 关闭
 	}
@@ -9070,3 +9070,47 @@ ONVIF_RET parse_SIP_Settings(XMLN * p_node, GB28181Conf_t * p_req)
     return ONVIF_OK;
 }
 
+ONVIF_RET parse_Alg_Param(XMLN * p_node, AlgParam_t * p_req)
+{
+	XMLN * p_Enabled;
+	XMLN * p_ConfidenceInterval;
+	XMLN * p_NMS;
+	XMLN * p_Extended1;
+	XMLN * p_Extended2;
+	
+
+	p_Enabled = xml_node_soap_get(p_node, "Enabled");
+	if (p_Enabled && p_Enabled->data)
+	{
+		p_req->Enabled = onvif_StringToEnable(p_Enabled->data);  //使能,是否启用叠加检测框 0:关闭 1:打开
+	}	
+
+	p_ConfidenceInterval = xml_node_soap_get(p_node, "ConfidenceLevel");
+	if (p_ConfidenceInterval && p_ConfidenceInterval->data)
+	{
+    	p_req->ConfidenceLevel = atof(p_ConfidenceInterval->data); 	// 置信度，浮点，取值范围：[0, 1]
+	}
+
+	p_NMS = xml_node_soap_get(p_node, "NMS");
+	if (p_NMS && p_NMS->data)
+	{
+    	p_req->NMS = atof(p_NMS->data); 	// 浮点，取值范围：[0, 1]
+	}
+
+	p_Extended1 = xml_node_soap_get(p_node, "Extended1");
+	if (p_Extended1 && p_Extended1->data)
+	{
+    	p_req->Extended1 = atoi(p_Extended1->data); 	// 预留参数1，整形
+	}
+
+	p_Extended2 = xml_node_soap_get(p_node, "Extended2");
+	if (p_Extended2 && p_Extended2->data)
+	{
+    	p_req->Extended2 = atof(p_Extended2->data); 	// 预留参数2，浮点
+	}
+
+    return ONVIF_OK;
+}
+
+
+/* add by xieqingpu END! */

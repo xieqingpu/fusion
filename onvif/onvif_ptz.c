@@ -645,7 +645,10 @@ ONVIF_RET onvif_CreatePresetTour(PresetTour_REQ * p_req)
 	{
 		// 获取空闲的巡更的下标
 		g_onvif_cls.preset_tour_idx = onvif_get_idle_PresetTour_idx(); 
-		if (g_onvif_cls.preset_tour_idx < 0)    g_onvif_cls.preset_tour_idx++;
+		if (g_onvif_cls.preset_tour_idx < 0)
+		{
+        	return ONVIF_ERR_OTHER;
+		}
 
 		/* 只是判断巡航数量是否超过了设置的MAX_PRESETS_TOUR，超过了则返回NULL*/
 		PTZ_PresetsTours_t * PTZ_PresetsTour = onvif_get_idle_PresetTour(p_req->ProfileToken);	//&PTZPresetsTour[i]
