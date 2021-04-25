@@ -257,9 +257,9 @@ int devInit(char *ptzDevID, const char *cameraDEVID);
 *    Xspeed : 水平转动速度  -为左转，+为右转
 *    Yspeed : 垂直转动速度  -为下转，+为上转
 *    Zspeed : 水平转动速度  -为缩小焦距，+为放大焦距
-* Return  :                                                  
+* Return  : 成功返回0，失败返回-1                                               
 **********************************************/
-void controlPtzPos(float X, float Y, float Z , unsigned short Speed);
+int controlPtzPos(float X, float Y, float Z , unsigned short Speed);
 
 /*********************************************
 * FuncName: ptzStop       

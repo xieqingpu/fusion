@@ -49,6 +49,7 @@ extern PTZ_PresetsTours_t  PTZPresetsTour[MAX_PRESETS_TOUR];
 extern ONVIF_CLS g_onvif_cls;
 extern ONVIF_CFG g_onvif_cfg;
 
+static int cur_preset_id = -1;
 
 
 /***************************************************************************************/
@@ -143,7 +144,10 @@ ONVIF_RET onvif_ContinuousMove(ContinuousMove_REQ * p_req)
     uint16_t ptzSpeed;
 	ptzSpeed  = switchSpeed(x,  y,  z);
 	
-	controlPtzPos(x, y, z , ptzSpeed);   //// add by xieqingpu
+	int ret = controlPtzPos(x, y, z , ptzSpeed);     // add
+	if (ret == 0)
+		cur_preset_id = -1;
+
 
     return ONVIF_OK;
 }
@@ -384,7 +388,6 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
     p_preset->PTZPreset.PTZPosition.ZoomFlag = 1;
     p_preset->PTZPreset.PTZPosition.Zoom.x = 0;
 
-    // p_preset->UsedFlag = 1; 
     
     return ONVIF_OK;
 }
@@ -450,11 +453,8 @@ ONVIF_RET onvif_GotoPreset(GotoPreset_REQ * p_req)
 	short location = index < 0 ? 1 : (index+1);  //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始
 	gotoPtzPreset(location);
 
-	/* 在 GetPresets/build_GetPresets_rly_xml 中已经读取到了 */
-	/* if (readPtzPreset(p_profile->presets, MAX_PTZ_PRESETS) != 0)		//MAX_PTZ_PRESETS:其实该ptz设备最多支持256个预置位，但我只设置最多100个
-			printf("read PTZ preset faile.\n"); */
+	cur_preset_id = index;
 
-	// printf("xxx ==== onvif_GotoPreset |p_profile->presets[%d].zoomVal: %d =====\n", index, p_profile->presets[index].zoomVal);
 
 	uint16_t zoomValue ;
 	zoomValue = p_profile->presets[index].zoomVal;
@@ -623,6 +623,7 @@ ONVIF_RET onvif_SetConfiguration(SetConfiguration_REQ * p_req)
 }
 
 /* add PresetTour by xieqingpu */
+static char PresetTourToken_tmp[ONVIF_TOKEN_LEN];
 
 ONVIF_RET onvif_CreatePresetTour(PresetTour_REQ * p_req)
 {
@@ -639,38 +640,57 @@ ONVIF_RET onvif_CreatePresetTour(PresetTour_REQ * p_req)
 		return ONVIF_ERR_NoPTZProfile;
 	}
 	
-
-	p_PresetTour = onvif_add_PresetTour(&p_profile->PresetTours); 
-	if (p_PresetTour)
+	// 获取空闲的巡更的下标
+	g_onvif_cls.preset_tour_idx = onvif_get_idle_PresetTour_idx(); 
+	if (g_onvif_cls.preset_tour_idx < 0)
 	{
-		// 获取空闲的巡更的下标
-		g_onvif_cls.preset_tour_idx = onvif_get_idle_PresetTour_idx(); 
-		if (g_onvif_cls.preset_tour_idx < 0)
-		{
-        	return ONVIF_ERR_OTHER;
-		}
-
-		/* 只是判断巡航数量是否超过了设置的MAX_PRESETS_TOUR，超过了则返回NULL*/
-		PTZ_PresetsTours_t * PTZ_PresetsTour = onvif_get_idle_PresetTour(p_req->ProfileToken);	//&PTZPresetsTour[i]
-		if (NULL == PTZ_PresetsTour)
-        {
-        	return ONVIF_ERR_OTHER;
-        }
-		/*  */
-
-        sprintf(p_PresetTour->PresetTour.token, "PRESET_TOUR_%d", g_onvif_cls.preset_tour_idx);
-        strcpy(p_req->PresetTourToken, p_PresetTour->PresetTour.token);
-        // g_onvif_cls.preset_tour_idx++;
-		
-        strcpy(PTZPresetsTour[g_onvif_cls.preset_tour_idx].PresetTourToken, p_PresetTour->PresetTour.token);
-
-		ONVIF_PTZPresetTourSpot * p_tour_spot = onvif_add_TourSpot(&p_PresetTour->PresetTour.TourSpot);
-		if (NULL == p_tour_spot)
-		{
-			free(p_PresetTour);
-			return ONVIF_ERR_OTHER;
-		}
+		return ONVIF_ERR_OTHER;
 	}
+
+	/* 只是判断巡航数量是否超过了设置的MAX_PRESETS_TOUR，超过了则返回NULL*/
+	PTZ_PresetsTours_t * PTZ_PresetsTour = onvif_get_idle_PresetTour();	//&PTZPresetsTour[i]
+	if (NULL == PTZ_PresetsTour)
+	{
+		return ONVIF_ERR_OTHER;
+	}
+	/*  */
+
+	sprintf(PresetTourToken_tmp, "PRESET_TOUR_%d", g_onvif_cls.preset_tour_idx);  //dump
+	strcpy(p_req->PresetTourToken, PresetTourToken_tmp);
+
+
+
+	// p_PresetTour = onvif_add_PresetTour(&p_profile->PresetTours); 
+	// if (p_PresetTour)
+	// {
+	// 	// 获取空闲的巡更的下标
+	// 	g_onvif_cls.preset_tour_idx = onvif_get_idle_PresetTour_idx(); 
+	// 	if (g_onvif_cls.preset_tour_idx < 0)
+	// 	{
+    //     	return ONVIF_ERR_OTHER;
+	// 	}
+
+	// 	/* 只是判断巡航数量是否超过了设置的MAX_PRESETS_TOUR，超过了则返回NULL*/
+	// 	PTZ_PresetsTours_t * PTZ_PresetsTour = onvif_get_idle_PresetTour();	//&PTZPresetsTour[i]
+	// 	if (NULL == PTZ_PresetsTour)
+    //     {
+    //     	return ONVIF_ERR_OTHER;
+    //     }
+	// 	/*  */
+
+    //     sprintf(p_PresetTour->PresetTour.token, "PRESET_TOUR_%d", g_onvif_cls.preset_tour_idx);
+    //     strcpy(p_req->PresetTourToken, p_PresetTour->PresetTour.token);
+    //     // g_onvif_cls.preset_tour_idx++;
+		
+    //     strcpy(PTZPresetsTour[g_onvif_cls.preset_tour_idx].PresetTourToken, p_PresetTour->PresetTour.token);
+
+	// 	ONVIF_PTZPresetTourSpot * p_tour_spot = onvif_add_TourSpot(&p_PresetTour->PresetTour.TourSpot);
+	// 	if (NULL == p_tour_spot)
+	// 	{
+	// 		free(p_PresetTour);
+	// 		return ONVIF_ERR_OTHER;
+	// 	}
+	// }
 
 	return ONVIF_OK;
 }
@@ -714,6 +734,28 @@ void getVectorData(onvif_VectorList * p_VectorData,unsigned int preset_idx, int 
 	p_VectorData->w = (g_onvif_cfg.profiles->presets[preset_idx].Vector_list[vector_idx].w)/2*IR_WIDTH;
 	p_VectorData->h = (g_onvif_cfg.profiles->presets[preset_idx].Vector_list[vector_idx].h)/2*IR_HEIGHT;
 }
+
+
+//成功返回0，失败返回-1
+int get_detect_info(void** pvector, int* cnt)
+{
+	if(cur_preset_id < 0)
+		return -1;
+
+	ONVIF_PTZPreset preset = g_onvif_cfg.profiles->presets[cur_preset_id];
+	if (preset.UsedFlag == 0)	return -1;
+
+	*pvector = preset.Vector_list;
+	if (NULL == *pvector)
+		return -1;
+
+	*cnt = preset.Vector_Number;
+	if (*cnt < 0)
+		return -1;
+
+	return 0;
+}
+
 
 int VectorListHandle(ONVIF_PTZPreset preset)
 {
@@ -833,6 +875,9 @@ void *PresetTour_state_touring_Forward(void *args)
 
 		zoomValue = preset.zoomVal;
 
+		//将转动到哪个预置位赋值给当前预置位变量
+		cur_preset_id = preset_idx;
+
 		/* 此处是为了能够可以处理焦距聚焦问题 */
 		zoomValue_prev = get_zoom_val();   	 //获取相机焦距，也即上一个预置位的焦距
 		if (zoomValue_prev > 50 && fabs(zoomValue - zoomValue_prev) < 10)  //如果该预置位的焦距与上一个预置位的焦距相差小于10
@@ -949,6 +994,9 @@ void *PresetTour_state_touring_Backward(void *args)
 		gotoPtzPreset(location);
 
 		zoomValue = preset.zoomVal;
+
+		//将转动到哪个预置位赋值给当前预置位变量
+		cur_preset_id = preset_idx;
 
 		/* 此处是为了能够可以处理焦距聚焦问题 */
 		zoomValue_prev = get_zoom_val();   	 //获取相机焦距，也即上一个预置位的焦距
@@ -1098,6 +1146,9 @@ void *PresetTour_state_touring_Random(void *args)
 		gotoPtzPreset(location);
 
 		zoomValue = preset.zoomVal;
+
+		//将转动到哪个预置位赋值给当前预置位变量
+		cur_preset_id = preset_idx;
 
 		/* 此处是为了能够可以处理焦距聚焦问题 */
 		zoomValue_prev = get_zoom_val();   	 //获取相机焦距，也即上一个预置位的焦距
@@ -1390,6 +1441,33 @@ ONVIF_RET onvif_ModifyPresetTour(ModifyPresetTour_REQ * p_req)
 		return ONVIF_ERR_NoPTZProfile;
 	}
 
+
+	/* 如果onvif_CreatePresetTour(..)函数中PresetTourToken_tmp和前端发过来的巡航token一样，则说明PresetTour Token是 CreatePresetTour 新创建的，不是修改巡航的 */
+	PTZ_PresetsTours_t * p_presetTour_tmp = NULL; 
+ 	ONVIF_PresetTour * PresetTour_p = NULL;
+	int ret = strcmp(PresetTourToken_tmp, p_req->PresetTour_req->PresetTour.token);
+ 	if (ret == 0)
+	{
+		PresetTour_p = onvif_add_PresetTour(&p_profile->PresetTours); 	//dump
+		if (PresetTour_p)
+		{
+			// sprintf(PresetTour_p->PresetTour.token, "PRESET_TOUR_%d", g_onvif_cls.preset_tour_idx);
+			strcpy(PresetTour_p->PresetTour.token, PresetTourToken_tmp);
+			
+			strcpy(PTZPresetsTour[g_onvif_cls.preset_tour_idx].PresetTourToken, PresetTour_p->PresetTour.token);
+
+			ONVIF_PTZPresetTourSpot * p_tour_spot = onvif_add_TourSpot(&PresetTour_p->PresetTour.TourSpot);
+			if (NULL == p_tour_spot)
+			{
+				free(PresetTour_p);
+				return ONVIF_ERR_OTHER;
+			}
+		}
+ 	}
+	memset(PresetTourToken_tmp, 0, sizeof(PresetTourToken_tmp));
+	/* end */
+
+
 	p_tmp = p_req->PresetTour_req;
 	p_PresetTour = onvif_find_PTZPresetTour(p_req->ProfileToken, p_tmp->PresetTour.token);
 	if (NULL == p_PresetTour)
@@ -1401,21 +1479,23 @@ ONVIF_RET onvif_ModifyPresetTour(ModifyPresetTour_REQ * p_req)
 
 		return ONVIF_ERR_OTHER;
 	}
-
-	p_prev = onvif_get_prev_presetTour(&p_profile->PresetTours, p_PresetTour);
-	if (NULL == p_prev)
+	else	//找到相应的token，修改巡航
 	{
-		p_profile->PresetTours = p_tmp;
-		p_tmp->next = p_PresetTour->next;
+		p_prev = onvif_get_prev_presetTour(&p_profile->PresetTours, p_PresetTour);
+		if (NULL == p_prev)
+		{
+			p_profile->PresetTours = p_tmp;
+			p_tmp->next = p_PresetTour->next;
+		}
+		else
+		{
+			p_prev->next = p_tmp;
+			p_tmp->next = p_PresetTour->next;
+		}
+		
+		onvif_free_TourSpots(&(p_PresetTour->PresetTour.TourSpot));
+		free(p_PresetTour);
 	}
-	else
-	{
-		p_prev->next = p_tmp;
-		p_tmp->next = p_PresetTour->next;
-	}
-	
-	onvif_free_TourSpots(&(p_PresetTour->PresetTour.TourSpot));
-	free(p_PresetTour);
 
  	//todo:creat preset tour    
     PTZ_PresetsTours_t * p_presetTour = NULL;

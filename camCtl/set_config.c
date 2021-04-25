@@ -124,33 +124,33 @@ uint16_t  switchToZspeed(float z)
 }
 
 
-void controlPtzPos(float X, float Y, float Z , unsigned short Speed)
+int controlPtzPos(float X, float Y, float Z , unsigned short Speed)
 {
 	UTIL_INFO(" ctlPTZ:  x=%0.3f , y = %0.3f , z = %0.3f, Speed:%d",X, Y, Z , Speed);
 
 	if (X > 0 && Y == 0) {	//右	    
-		if ( pelco_Right(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_Right faile.\n");
+		if ( pelco_Right(Speed) != RET_OK )   return -1;
 	} 
 	else if (X < 0 && Y == 0) {	 //左
-		if ( pelco_Left(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_Left faile.\n");
+		if ( pelco_Left(Speed) != RET_OK )   return -1;
 	} 
 	else if (Y > 0 && X == 0) { //上		
-		if ( pelco_Up(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_Up faile.\n");
+		if ( pelco_Up(Speed) != RET_OK )   return -1;
 	} 
 	else if(Y < 0 && X == 0)  { //下    
-		if ( pelco_Down(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_Down faile.\n");
+		if ( pelco_Down(Speed) != RET_OK )  return -1;
 	} 
 	else if (X > 0 && Y > 0) { // 右上		      
-		if ( pelco_right_up(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_right_up faile.\n");
+		if ( pelco_right_up(Speed) != RET_OK )  return -1;
 	} 
 	else if (X > 0 && Y < 0) { // 右下           
-		if ( pelco_right_down(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_right_down faile.\n");
+		if ( pelco_right_down(Speed) != RET_OK )  return -1;
 	} 
 	else if (X < 0 && Y > 0) { // 左上
-		if ( pelco_left_up(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_left_up faile.\n");
+		if ( pelco_left_up(Speed) != RET_OK )  return -1;
 	} 
 	else if (X < 0 && Y < 0) { // 左下
-		if ( pelco_left_down(Speed) != RET_OK )   UTIL_INFO("set_config | pelco_left_down faile.\n");
+		if ( pelco_left_down(Speed) != RET_OK )  return -1;
 	}
 
 	uint16_t Zspeed = switchToZspeed(Z);
@@ -164,6 +164,8 @@ void controlPtzPos(float X, float Y, float Z , unsigned short Speed)
 	else{
 		printf("get_visca_status error !!!\r\n");
 	}
+
+	return 0;
 }
 
 void ptzStop()

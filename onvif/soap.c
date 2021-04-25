@@ -54,6 +54,8 @@
 #endif
 
 
+#include "utils_log.h"
+
 /***************************************************************************************/
 HD_AUTH_INFO        g_onvif_auth;
 
@@ -9818,7 +9820,50 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
     char * p_post;
     const char * p_name;
     onvif_UserLevel oplevel = UserLevel_Anonymous;
-    
+
+
+   /* 以下为了打印ip地址 */
+	/* p_user->p_rbuf里的内容并不是onvif协议的，只是双光融合项目前端添加的内容，也就是不一定有“X-Real-IP: ”字符串.
+	 * 所以要获取客户端ip，如果没有前端添加的内容，那么直接从p_user->ip获取即可
+	*/
+	// UTIL_INFO("rx_msg->msg_buf: %s\n",rx_msg->msg_buf);  // 一次客户端请求如下内容如下msg_buf:POST /onvif/ptz_service HTTP/1.0
+	// UTIL_INFO("p_user->p_rbuf:  %s\n",p_user->p_rbuf);   // 客户端ip也在这里面 ,比如一次客户端请求如下内容如下："POST /onvif/ptz_service HTTP/1.0^M Host: 192.168.3.12^M X-Real-IP: 192.168.3.81^M X-Forwarded-For: 192.168.3.81^M X-Forwarded-Proto: http^M HTTP_X_FORWARDED_FOR: 192.168.3.81^M Connection: close^M Content-Length: 1162^M User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36^M Content-Type: application/soap+xml; charset=utf-8;^M Accept:"
+
+	/* p_user->p_rbuf != NULL说明该p_user->p_rbuf前端有数据，有数据才进行获取客户端ip地址 */
+	if (p_user->p_rbuf != NULL) 
+	{
+		char  *p_ip_start=NULL, *p_ip_end=NULL, *p_ip_front=NULL; 
+		int ip_len;
+		char ip_buf[32];
+		memset(ip_buf, 0, 32);
+
+		p_ip_front = strstr(p_user->p_rbuf, "X-Real-IP:");
+		if (NULL != p_ip_front)	  /* 不等于NULL，说明从前端的p_user->p_rbuf内容中获取客户端ip */
+		{
+			p_ip_start = p_ip_front + strlen("X-Real-IP: ");  //注意，：号后面有一个空格
+			p_ip_end = strstr(p_ip_start, "\r\n");  
+			ip_len = p_ip_end - p_ip_start;
+			// UTIL_INFO("ip_len = %d\n",ip_len);
+
+			stpncpy(ip_buf, p_ip_start, ip_len);
+			UTIL_INFO("xxxxxxxxxxxxxxxx 客户端ip地址,client ip = (%s)\n", ip_buf);
+		}
+		else	/* 否则就直接从p_user->rip中获取客户端ip */
+		{
+			char r_addr[32];
+			memset(r_addr, 0, 32);
+
+			struct in_addr r_inaddr;
+			r_inaddr.s_addr = p_user->rip;
+			strcpy(r_addr, inet_ntoa(r_inaddr));  
+
+			// UTIL_INFO("xxxxxxxxxxxxxxxx 本地(服务器)ip地址: %s, %u\r\n", p_user->lip, p_user->lport);		 //本地(服务器)ip
+			UTIL_INFO("xxxxxxxxxxxxxxxx 客户端ip地址,client ip = (%s)\r\n", r_addr);  //客户端ip
+			// UTIL_INFO("xxxxxxxxxxxxxxxx 客户端ip地址： client ip = (%s), %u\r\n", inet_ntoa(r_inaddr), p_user->rport);  //客户端ip
+		}
+	}
+
+
 	p_xml = http_get_ctt(rx_msg);
 	if (NULL == p_xml)
 	{
@@ -9905,7 +9950,7 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 
     p_post = rx_msg->first_line.value_string;
     p_name = p_body->f_child->name;
-    
+
 	if (soap_strcmp(p_name, "GetDeviceInformation") == 0)
 	{
 		soap_GetDeviceInformation(p_user, rx_msg, p_body, p_header);
