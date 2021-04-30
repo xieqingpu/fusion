@@ -3782,6 +3782,7 @@ ONVIF_RET parse_SetPreset(XMLN * p_node, SetPreset_REQ * p_req)
 	XMLN * p_ProfileToken;
 	XMLN * p_PresetName;
 	XMLN * p_PresetToken;
+	XMLN * p_ModifyPosition;
 	
     assert(p_node);
 
@@ -3804,6 +3805,19 @@ ONVIF_RET parse_SetPreset(XMLN * p_node, SetPreset_REQ * p_req)
 		p_req->PresetTokenFlag = 1;
 		strncpy(p_req->PresetToken, p_PresetToken->data, sizeof(p_req->PresetToken)-1);
 	}
+
+	/* add xieqingpu */
+	p_ModifyPosition = xml_node_soap_get(p_node, "ModifyPosition");   // 是否修改预置位位置
+	if (p_ModifyPosition && p_ModifyPosition->data)
+	{
+		strncpy(p_req->ModifyPosition, p_ModifyPosition->data, sizeof(p_req->ModifyPosition)-1);
+		p_req->ModifyPosition_Flag = onvif_StringToEnable(p_ModifyPosition->data);  // 0:关闭 1:打开
+	} 
+	else
+	{
+		p_req->ModifyPosition_Flag = 0;
+	}
+
 
 	///  xieqigpu
 	XMLN * p_VectorList;

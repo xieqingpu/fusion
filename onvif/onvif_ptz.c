@@ -302,49 +302,57 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
         {
         	return ONVIF_ERR_TooManyPresets;
         }
-     }
+    }
 
+
+	/* 获取Unix时间戳，用在token字段上，以确保token的唯一性 */
+    time_t time_utc;
+    time(&time_utc);
+	
 	/* add by xieqingpu 获取空闲的预置位的下标 */
-	g_onvif_cls.preset_idx = onvif_get_idle_PTZPreset_idx(p_req->ProfileToken); 
-	if (g_onvif_cls.preset_idx < 0)    g_onvif_cls.preset_idx++;
+	// g_onvif_cls.preset_idx = onvif_get_idle_PTZPreset_idx(p_req->ProfileToken); 
     
+	static BOOL isRename = 0;
+
 	if (p_req->PresetNameFlag && p_req->PresetName[0] != '\0')     // Preset Name
     {
     	strcpy(p_preset->PTZPreset.Name, p_req->PresetName);
     }
     else
     {
-    	sprintf(p_preset->PTZPreset.Name, "PRESET_NAME_%d", g_onvif_cls.preset_idx);
+    	sprintf(p_preset->PTZPreset.Name, "PRESET_NAME_%ld", time_utc);
     	strcpy(p_req->PresetName, p_preset->PTZPreset.Name);
-    	// g_onvif_cls.preset_idx++;
     }
     
-    if (p_req->PresetTokenFlag && p_req->PresetToken[0] != '\0')  // Preset Token
+	UTIL_INFO("============ isRename = %d, PresetTokenFlag = %d PresetToken = %s ========\n",isRename,p_req->PresetTokenFlag, p_req->PresetToken);
+    if (p_req->PresetTokenFlag && p_req->PresetToken[0] != '\0')  // Preset Token , 有前端发过来‘PresetToken’说明是重命名预置位操作 或者 画检测框
     {
         strcpy(p_preset->PTZPreset.token, p_req->PresetToken);
+		isRename = 1;
     }
     else
     {
-        sprintf(p_preset->PTZPreset.token, "PRESET_%d", g_onvif_cls.preset_idx);
+        sprintf(p_preset->PTZPreset.token, "PRESET_%ld", time_utc);
         strcpy(p_req->PresetToken, p_preset->PTZPreset.token);
-        // g_onvif_cls.preset_idx++;
     }
 
-   	// todo : get PTZ current position ...
- 	// add by xieqingpu
-	int i;
- 	p_preset->UsedFlag = 1;	
-
- 	int index = onvif_find_PTZPreset_index(p_req->ProfileToken, p_req->PresetToken);
-
-	short location = index < 0 ? 1 : (index+1);  //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始
-	/* 设置预置位 */
-	setPtzPreset(location);
-
-
-	/* 预置位对应的截取的图像区域 */
-    if (p_req->VectorList_Flag )
+	UTIL_INFO("============ isRename = %d, ModifyPosition_Flag = %d, ModifyPosition = %s ==========\n",isRename, p_req->ModifyPosition_Flag, p_req->ModifyPosition);
+	
+	/* 只单单修改名字(没有修改预置位位置) */
+	if( isRename && p_req->ModifyPosition_Flag==0 && strcasecmp(p_req->ModifyPosition, "false")==0 )
 	{
+		UTIL_INFO("=========================== 只单单修改名字 =====================\n");
+		goto write_preset;
+
+		return ONVIF_OK;
+	}
+
+	/* 创建新的预置位 或者 画检测框 或者 重命名操作(并且同时重新修改位置) */
+	UTIL_INFO("============ 创建新的预置位 或者 画检测框 或者 重命名操作(并且同时重新修改位置) ========\n");
+	/* 预置位对应是否截取图像区域 */
+	if (p_req->VectorList_Flag )
+	{
+		int i;
 		p_preset->VectorListFlag = 1;
 
 		if (p_req->VectorNumber > VECTOR_LIST_LEN)	//如果画框数量超过了VECTOR_LIST_LEN，则返回错误
@@ -366,29 +374,46 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
 			p_preset->Vector_list[i].temperature.Min = p_req->VectorList[i].temperature.Min;
 			p_preset->Vector_list[i].temperature.Max = p_req->VectorList[i].temperature.Max;
 		}
+
+		goto write_preset;
+	
+		return ONVIF_OK;
 	}
 	else {
 		p_preset->VectorListFlag = 0;
 	}
+
+	int index = onvif_find_PTZPreset_index(p_req->ProfileToken, p_req->PresetToken);
+
+	short location = index < 0 ? 1 : (index+1);  //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始
+	/* 设置预置位 */
+	setPtzPreset(location);
 	
 
 	/* 预置位对应的相机焦距 */
 	uint16_t z = get_zoom_val();
 	p_preset->zoomVal = z;
 	printf("xxx ===== onvif__SetPreset |p_profile->presets[%d].zoomVal: %d == z=%d\n", index, p_preset->zoomVal, z);
- 
+
+
+	p_preset->UsedFlag = 1;	
+
+	p_preset->PTZPreset.PTZPositionFlag = 1;
+	p_preset->PTZPreset.PTZPosition.PanTiltFlag = 1;
+	p_preset->PTZPreset.PTZPosition.PanTilt.x = 0;
+	p_preset->PTZPreset.PTZPosition.PanTilt.y = 0;
+	p_preset->PTZPreset.PTZPosition.ZoomFlag = 1;
+	p_preset->PTZPreset.PTZPosition.Zoom.x = 0;
+
+	goto write_preset;
+
+
+write_preset:
+
 	if (writePtzPreset(p_profile->presets, MAX_PTZ_PRESETS) != 0) //ARRAY_SIZE(p_profile->presets) //MAX_PTZ_PRESETS:其实该ptz设备最多支持256个预置位，但我只设置最多100个
 		printf("write Ptz Preset faile.\n");
- ////
-
-    p_preset->PTZPreset.PTZPositionFlag = 1;
-    p_preset->PTZPreset.PTZPosition.PanTiltFlag = 1;
-    p_preset->PTZPreset.PTZPosition.PanTilt.x = 0;
-    p_preset->PTZPreset.PTZPosition.PanTilt.y = 0;
-    p_preset->PTZPreset.PTZPosition.ZoomFlag = 1;
-    p_preset->PTZPreset.PTZPosition.Zoom.x = 0;
-
     
+
     return ONVIF_OK;
 }
 

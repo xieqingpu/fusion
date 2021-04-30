@@ -91,11 +91,14 @@ typedef struct
 	uint32	PresetTokenFlag : 1;				// Indicates whether the field PresetToken is valid
 	uint32	PresetNameFlag 	: 1;				// Indicates whether the field PresetName is valid
 	uint32  VectorList_Flag	 	: 1;	//xieqingpu
-	uint32  Reserved	 	: 29;
+	uint32  ModifyPosition_Flag	 	: 1;	//xieqingpu  ,重命名预置位时是否也修改预置位位置
+	uint32  Reserved	 	: 28;
 	
     char	ProfileToken[ONVIF_TOKEN_LEN];		// required, A reference to the MediaProfile where the operation should take place
     char	PresetToken[ONVIF_TOKEN_LEN];		// optional, A requested preset token
     char    PresetName[ONVIF_NAME_LEN];			// optional, A requested preset name
+
+    char    ModifyPosition[ONVIF_NAME_LEN];		// add
 
 	uint16  VectorNumber;     //xie
 	onvif_ex_VectorList	 VectorList[VECTOR_LIST_LEN];     //xieqingpu
