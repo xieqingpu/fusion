@@ -324,7 +324,7 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
     	strcpy(p_req->PresetName, p_preset->PTZPreset.Name);
     }
     
-	UTIL_INFO("============ isRename = %d, PresetTokenFlag = %d PresetToken = %s ========\n",isRename,p_req->PresetTokenFlag, p_req->PresetToken);
+	// UTIL_INFO("============ isRename = %d, PresetTokenFlag = %d PresetToken = %s ========\n",isRename,p_req->PresetTokenFlag, p_req->PresetToken);
     if (p_req->PresetTokenFlag && p_req->PresetToken[0] != '\0')  // Preset Token , 有前端发过来‘PresetToken’说明是重命名预置位操作 或者 画检测框
     {
         strcpy(p_preset->PTZPreset.token, p_req->PresetToken);
@@ -336,19 +336,19 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
         strcpy(p_req->PresetToken, p_preset->PTZPreset.token);
     }
 
-	UTIL_INFO("============ isRename = %d, ModifyPosition_Flag = %d, ModifyPosition = %s ==========\n",isRename, p_req->ModifyPosition_Flag, p_req->ModifyPosition);
+	// UTIL_INFO("============ isRename = %d, ModifyPosition_Flag = %d, ModifyPosition = %s ==========\n",isRename, p_req->ModifyPosition_Flag, p_req->ModifyPosition);
 	
 	/* 只单单修改名字(没有修改预置位位置) */
 	if( isRename && p_req->ModifyPosition_Flag==0 && strcasecmp(p_req->ModifyPosition, "false")==0 )
 	{
-		UTIL_INFO("=========================== 只单单修改名字 =====================\n");
+		// UTIL_INFO("=========================== 只单单修改名字 =====================\n");
 		goto write_preset;
 
 		return ONVIF_OK;
 	}
 
 	/* 创建新的预置位 或者 画检测框 或者 重命名操作(并且同时重新修改位置) */
-	UTIL_INFO("============ 创建新的预置位 或者 画检测框 或者 重命名操作(并且同时重新修改位置) ========\n");
+	// UTIL_INFO("============ 创建新的预置位 或者 画检测框 或者 重命名操作(并且同时重新修改位置) ========\n");
 	/* 预置位对应是否截取图像区域 */
 	if (p_req->VectorList_Flag )
 	{
