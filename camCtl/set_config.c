@@ -1357,24 +1357,25 @@ int onvif_SIP_Settings(GB28181Conf_t * p_GB28181Confing)
 /* 获取叠加检测框 */
 int get_Alg_Param(AlgParam_t * p_AlgParam)
 {
-	int ret;
-
 	if (read_cfg_from_file((char*)ALG_PARAM_FILE, (char*)p_AlgParam, sizeof(AlgParam_t)) != 0)
 	{
+		p_AlgParam->Enabled = 0;
 		UTIL_ERR("read_cfg_from_file:%s faile!!!", ALG_PARAM_FILE);
-		return -1;
 	}
 
-	// return ret;
 	return 0;  //just for test
 }
 
 /* 设置叠加检测框 */
 int set_Alg_Param(AlgParam_t * p_AlgParam)
 {
-	int ret;
+	if (!p_AlgParam)
+	{
+		return -1;
+	}
+	
 	//add your code of set Alg here
-
+	GPTMessageSend(GPT_MSG_VIDEO_SETCHECKALGPARAM, 0, (int)p_AlgParam, sizeof(AlgParam_t));
 
 	//设置完成后保存数据于文件中
 	if (save_cfg_to_file((char*)ALG_PARAM_FILE, (char*)p_AlgParam, sizeof(AlgParam_t)) < 0)
@@ -1521,6 +1522,14 @@ int FusionParamGetHanldeMsg(int msgtype, int chan, int u32DataParam, int u32Data
 		   }
 		   getFusionParam((DulaInformation_t *)u32DataParam);
 	   }
+	   case GPT_MSG_VIDEO_GETCHECKALGPARAM:
+	   {
+		   if(sizeof(AlgParam_t) != u32DataLen){
+			   pthread_mutex_unlock(&m_fusion_param_lock);
+			   return -1;
+		   }
+		   get_Alg_Param((AlgParam_t *)u32DataParam);
+	   }
 	   break;
 	   default:
 		   break;
@@ -1666,6 +1675,7 @@ int onvif_ir_message_register()
 int onvif_fusion_message_register()
 {
    GPTMessageRegister(GPT_MSG_DULA_GETFUSIONPARAM, FusionParamGetHanldeMsg, 0, NULL);
+   GPTMessageRegister(GPT_MSG_VIDEO_GETCHECKALGPARAM, FusionParamGetHanldeMsg, 0, NULL);
    return 0;
 
 }

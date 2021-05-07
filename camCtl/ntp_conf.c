@@ -276,6 +276,7 @@ void * ntpdate_Thread (void * arg)
 		UTIL_INFO("SetDateTimeType_MANUAL");
 		//同步rtc时间
 		sync_hwclock_tosys();
+		Set_Ntp_Sync_Time(1);
 	}
 	
     while(1){

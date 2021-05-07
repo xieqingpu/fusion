@@ -141,6 +141,7 @@ typedef struct
 #define  PROFILE_MAIN      "Main"  
 #define  PROFILE_HIGH      "High"
 #define  PROFILE_EXTENDED  "Extended"  
+#define  PROFILE_MAIN      "Main"
 #define  PROFILE_MAIN10    "Main10"
 /* typedef enum H264Profile 
 {

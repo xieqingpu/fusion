@@ -1923,7 +1923,6 @@ onvif_DoorMode onvif_StringToDoorMode(const char * str)
 
 const char * onvif_RelayModeToString(onvif_RelayMode mode)
 {
-
     switch (mode)
 	{
 	case RelayMode_Monostable:
@@ -2092,7 +2091,6 @@ onvif_ParityBit onvif_StringToParityBit(const char * str)
 
 const char * onvif_SerialPortTypeToString(onvif_SerialPortType type)
 {
-
     switch (type)
 	{
 	case SerialPortType_RS232:

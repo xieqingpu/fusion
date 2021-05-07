@@ -36,7 +36,7 @@
 #include "base64.h"
 #include "onvif_utils.h"
 #include "onvif_probe.h"
-
+#include "utils_log.h"
 #ifdef PROFILE_G_SUPPORT
 #include "onvif_recording.h"
 #endif
@@ -53,8 +53,6 @@
 #include "openssl/ssl.h"
 #endif
 
-
-#include "utils_log.h"
 
 /***************************************************************************************/
 HD_AUTH_INFO        g_onvif_auth;
@@ -876,7 +874,7 @@ int soap_build_header(char * p_xml, int mlen, const char * action, XMLN * p_head
 ONVIF_RET soap_build_send_rly(HTTPCLN * p_user, HTTPMSG * rx_msg, soap_build_xml build_xml, const char * argv, const char * action, XMLN * p_header)
 {
     int offset = 0;
-	int ret = -1, mlen = 1024*512/* 1024*40 */, xlen;
+	int ret = -1, mlen = 1024*40, xlen;
 	
 	char * p_xml = (char *)malloc(mlen);
 	if (NULL == p_xml)
@@ -4486,8 +4484,9 @@ int soap_GotoPreset(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_
 			return soap_build_send_rly(p_user, rx_msg, build_GotoPreset_rly_xml, NULL, NULL, p_header);
 		}
 	}
-	
-	return soap_build_err_rly(p_user, rx_msg, ret);
+	UTIL_INFO("parse gotopreset failed!!ret=%d", ret);
+	soap_build_err_rly(p_user, rx_msg, ret);
+	return ret;
 }
 
 int soap_GotoHomePosition(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XMLN * p_header)
@@ -4555,11 +4554,9 @@ int soap_CreatePresetTour(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XML
 	
 	memset(&req, 0, sizeof(PresetTour_REQ));
 
-	// ret = parse_SetPreset(p_SetPreset, &req);
 	ret = parse_CreatePresetTour(p_CreatePresetTour, &req);
 	if (ONVIF_OK == ret)
 	{
-		// ret = onvif_SetPreset(&req);
 		ret = onvif_CreatePresetTour(&req);
 	    if (ONVIF_OK == ret)
 		{
@@ -4654,7 +4651,6 @@ int soap_RemovePresetTour(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XML
 	ret = parse_RemovePresetTour(p_RemovePresetTour, &req);
 	if (ONVIF_OK == ret)
 	{
-		// ret = onvif_RemovePreset(&req);
 		ret = onvif_RemovePresetTour(&req);
 		if (ONVIF_OK == ret)
 		{
@@ -4669,7 +4665,6 @@ int soap_ModifyPresetTour(HTTPCLN * p_user, HTTPMSG * rx_msg, XMLN * p_body, XML
 {
 	ONVIF_RET ret;
 	XMLN * p_ModifyPresetTour;	
-	// onvif_PresetTour req;
 	ModifyPresetTour_REQ req;
 	
     onvif_print("%s\r\n", __FUNCTION__);
@@ -9830,38 +9825,38 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	// UTIL_INFO("p_user->p_rbuf:  %s\n",p_user->p_rbuf);   // 客户端ip也在这里面 ,比如一次客户端请求如下内容如下："POST /onvif/ptz_service HTTP/1.0^M Host: 192.168.3.12^M X-Real-IP: 192.168.3.81^M X-Forwarded-For: 192.168.3.81^M X-Forwarded-Proto: http^M HTTP_X_FORWARDED_FOR: 192.168.3.81^M Connection: close^M Content-Length: 1162^M User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.128 Safari/537.36^M Content-Type: application/soap+xml; charset=utf-8;^M Accept:"
 
 	/* p_user->p_rbuf != NULL说明该p_user->p_rbuf前端有数据，有数据才进行获取客户端ip地址 */
-	if (p_user->p_rbuf != NULL) 
-	{
-		char  *p_ip_start=NULL, *p_ip_end=NULL, *p_ip_front=NULL; 
-		int ip_len;
-		char ip_buf[32];
-		memset(ip_buf, 0, 32);
+	// if (p_user->p_rbuf != NULL) 
+	// {
+	// 	char  *p_ip_start=NULL, *p_ip_end=NULL, *p_ip_front=NULL; 
+	// 	int ip_len;
+	// 	char ip_buf[32];
+	// 	memset(ip_buf, 0, 32);
 
-		p_ip_front = strstr(p_user->p_rbuf, "X-Real-IP:");
-		if (NULL != p_ip_front)	  /* 不等于NULL，说明从前端的p_user->p_rbuf内容中获取客户端ip */
-		{
-			p_ip_start = p_ip_front + strlen("X-Real-IP: ");  //注意，：号后面有一个空格
-			p_ip_end = strstr(p_ip_start, "\r\n");  
-			ip_len = p_ip_end - p_ip_start;
-			// UTIL_INFO("ip_len = %d\n",ip_len);
+	// 	p_ip_front = strstr(p_user->p_rbuf, "X-Real-IP:");
+	// 	if (NULL != p_ip_front)	  /* 不等于NULL，说明从前端的p_user->p_rbuf内容中获取客户端ip */
+	// 	{
+	// 		p_ip_start = p_ip_front + strlen("X-Real-IP: ");  //注意，：号后面有一个空格
+	// 		p_ip_end = strstr(p_ip_start, "\r\n");  
+	// 		ip_len = p_ip_end - p_ip_start;
+	// 		// UTIL_INFO("ip_len = %d\n",ip_len);
 
-			stpncpy(ip_buf, p_ip_start, ip_len);
-			UTIL_INFO("xxxxxxxxxxxxxxxx 客户端ip地址,client ip = (%s)\n", ip_buf);
-		}
-		else	/* 否则就直接从p_user->rip中获取客户端ip */
-		{
-			char r_addr[32];
-			memset(r_addr, 0, 32);
+	// 		stpncpy(ip_buf, p_ip_start, ip_len);
+	// 		UTIL_INFO("xxxxxxxxxxxxxxxx 客户端ip地址,client ip = (%s)\n", ip_buf);
+	// 	}
+	// 	else	/* 否则就直接从p_user->rip中获取客户端ip */
+	// 	{
+	// 		char r_addr[32];
+	// 		memset(r_addr, 0, 32);
 
-			struct in_addr r_inaddr;
-			r_inaddr.s_addr = p_user->rip;
-			strcpy(r_addr, inet_ntoa(r_inaddr));  
+	// 		struct in_addr r_inaddr;
+	// 		r_inaddr.s_addr = p_user->rip;
+	// 		strcpy(r_addr, inet_ntoa(r_inaddr));  
 
-			// UTIL_INFO("xxxxxxxxxxxxxxxx 本地(服务器)ip地址: %s, %u\r\n", p_user->lip, p_user->lport);		 //本地(服务器)ip
-			UTIL_INFO("xxxxxxxxxxxxxxxx 客户端ip地址,client ip = (%s)\r\n", r_addr);  //客户端ip
-			// UTIL_INFO("xxxxxxxxxxxxxxxx 客户端ip地址： client ip = (%s), %u\r\n", inet_ntoa(r_inaddr), p_user->rport);  //客户端ip
-		}
-	}
+	// 		// UTIL_INFO("xxxxxxxxxxxxxxxx 本地(服务器)ip地址: %s, %u\r\n", p_user->lip, p_user->lport);		 //本地(服务器)ip
+	// 		UTIL_INFO("xxxxxxxxxxxxxxxx 客户端ip地址,client ip = (%s)\r\n", r_addr);  //客户端ip
+	// 		// UTIL_INFO("xxxxxxxxxxxxxxxx 客户端ip地址： client ip = (%s), %u\r\n", inet_ntoa(r_inaddr), p_user->rport);  //客户端ip
+	// 	}
+	// }
 
 
 	p_xml = http_get_ctt(rx_msg);
@@ -9872,7 +9867,7 @@ void soap_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
 	}
 
 
-	// printf("\r\nsoap_process::rx xml:\r\n%s\r\n", p_xml);		// Print the XML file sent by the client
+	// printf("\r\nsoap_process::rx xml:\r\n%s\r\n", p_xml);		
 
 	p_node = xxx_hxml_parse(p_xml, strlen(p_xml));
 	if (NULL == p_node || NULL == p_node->name)

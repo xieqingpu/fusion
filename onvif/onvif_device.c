@@ -101,6 +101,7 @@ ONVIF_RET onvif_SetSystemDateAndTime(SetSystemDateAndTime_REQ * p_req)
 {
 	// check datetime
 	BOOL isTZChange = 0;
+	onvif_SystemDateTime *pSystemDateTime = &g_onvif_cfg.SystemDateTime;
 	if (p_req->SystemDateTime.DateTimeType == SetDateTimeType_Manual)
 	{
 		if (p_req->UTCDateTime.Date.Month < 1 || p_req->UTCDateTime.Date.Month > 12 ||
@@ -120,18 +121,21 @@ ONVIF_RET onvif_SetSystemDateAndTime(SetSystemDateAndTime_REQ * p_req)
 	{
 		return ONVIF_ERR_InvalidTimeZone;
 	}
-
-	g_onvif_cfg.SystemDateTime.DateTimeType = p_req->SystemDateTime.DateTimeType;
-	g_onvif_cfg.SystemDateTime.DaylightSavings = p_req->SystemDateTime.DaylightSavings;
-	if (p_req->SystemDateTime.TimeZone.TZ[0] != '\0'
-		&& 0 != strcasecmp(g_onvif_cfg.SystemDateTime.TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ))
+		
+    pSystemDateTime->TimeZoneFlag = p_req->SystemDateTime.TimeZoneFlag;
+	pSystemDateTime->DateTimeType = p_req->SystemDateTime.DateTimeType;
+	pSystemDateTime->DaylightSavings = p_req->SystemDateTime.DaylightSavings;
+	if ((p_req->SystemDateTime.TimeZone.TZ[0] != '\0') && 
+		(0 != strncasecmp(pSystemDateTime->TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ, 
+				strlen(p_req->SystemDateTime.TimeZone.TZ))))
 	{
-		strcpy(g_onvif_cfg.SystemDateTime.TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ);
+	    memset(pSystemDateTime->TimeZone.TZ, 0x0, sizeof(pSystemDateTime->TimeZone.TZ));
+		strncpy(pSystemDateTime->TimeZone.TZ, p_req->SystemDateTime.TimeZone.TZ, strlen(p_req->SystemDateTime.TimeZone.TZ));
 		isTZChange = 1;
 	}
 	
 	// todo : add set system date time code ...
-	SetSystemDateTime(&p_req->SystemDateTime, &p_req->UTCDateTime, isTZChange, TRUE);
+	SetSystemDateTime(pSystemDateTime, &p_req->UTCDateTime, isTZChange, TRUE);
 
     // send notify message ...
     onvif_LastClockSynchronizationNotify();
@@ -400,7 +404,8 @@ ONVIF_RET onvif_SetNetworkInterfaces(SetNetworkInterfaces_REQ * p_req)
     //NOTE:只有在有线环境下才可以设置ip地址
     if (NULL != strstr(p_req->NetworkInterface.token, "eth")) 
 	{
-	    SetNetworkInterfaces(&p_req->NetworkInterface, TRUE);
+	    if (SetNetworkInterfaces(&p_req->NetworkInterface, TRUE) !=0 )
+			return -1;
 		memset(g_onvif_cfg.servs[0].serv_ip, 0x0, sizeof(g_onvif_cfg.servs[0].serv_ip));
 		strcpy(g_onvif_cfg.servs[0].serv_ip, p_req->NetworkInterface.IPv4.Config.Address);
 		onvif_init_capabilities();
@@ -821,7 +826,7 @@ BOOL onvif_StartFirmwareUpgrade(const char * lip, uint32 lport, StartFirmwareUpg
 #else
 	sprintf(p_res->UploadUri, "http://%s:%d/FirmwareUpgrade", lip, lport);
 #endif
-	printf("UploadUri = %s\n",p_res->UploadUri);
+	UTIL_INFO("UploadUri = %s\n",p_res->UploadUri);
 
 	p_res->UploadDelay = 5;				// 5 seconds
 	p_res->ExpectedDownTime = 5 * 60; 	// 5 minutes

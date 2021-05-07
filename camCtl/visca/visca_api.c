@@ -66,6 +66,33 @@ VISCA_set_flip(VISCAInterface_t *iface, VISCACamera_t *camera, int flip)
 
 
 
+
+
+
+VISCA_API uint32_t
+VISCA_set_mirror_LR(VISCAInterface_t *iface, VISCACamera_t *camera, int flip)
+{
+  VISCAPacket_t packet;
+
+  _VISCA_init_packet(&packet);
+  _VISCA_append_byte(&packet, VISCA_COMMAND);
+  _VISCA_append_byte(&packet, VISCA_CATEGORY_CAMERA1);
+  _VISCA_append_byte(&packet, 0x61);
+
+  if(flip)
+  	_VISCA_append_byte(&packet, 0x02);
+  else
+	_VISCA_append_byte(&packet, 0x03);
+
+  return _VISCA_send_packet_with_reply(iface, camera, &packet);
+  
+}
+
+
+
+
+
+
 /*
 VISCA_API uint32_t
 VISCA_set_zoom_value(VISCAInterface_t *iface, VISCACamera_t *camera, uint32_t zoom)
@@ -189,12 +216,6 @@ int set_contract_value(int param){//00-100
 	return	VISCA_contract_value(&iface, &camera, param);
 }
 
-//自动对焦
-int set_focus_auto()
-{
-	VISCA_set_focus_Auto(&iface, &camera);
-}
-
 //0 -19
 int set_zoom_value(int param){
 	int command = 0;
@@ -274,7 +295,6 @@ int set_zoom(unsigned short val)
 	VISCA_set_zoom_value(&iface, &camera, val);
 
 	VISCA_set_focus_Auto(&iface, &camera);
-	// set_focus_auto();	//设置相机为自动对焦
 
 	return 0;
 }
@@ -412,6 +432,22 @@ int get_visca_status()
 	return visca_status;
 }
 
+
+//flip输入0或者1
+int set_img_flip(int flip)
+{
+	return VISCA_set_flip(&iface, &camera, flip);
+
+}
+
+
+//flip输入0或者1
+int set_img_mirror(int flip)
+{
+	return VISCA_set_mirror_LR(&iface, &camera, flip);
+
+}
+
 void* visca_init_thread(void* param)
 {
 	int ret;
@@ -476,9 +512,8 @@ void* visca_init_thread(void* param)
 					camera.vendor, camera.model, camera.rom_version, camera.socket_num);
 
 			set_visca_status(1);    //1:success
-
-			set_focus_auto();	//设置相机为自动对焦
-
+			set_img_flip(1);
+			set_img_mirror(1);
 			return VISCA_SUCCESS;
 		}
 		else

@@ -1777,15 +1777,20 @@ void onvif_init_VideoSourceConfigurationOptions()
 void onvif_init_SystemDateTime()
 {
     int ret = -1;
-    ret = GetSystemDateTime(&g_onvif_cfg.SystemDateTime);
-	if (ret < 0 || g_onvif_cfg.SystemDateTime.TimeZone.TZ[0] == '\0') {
-		g_onvif_cfg.SystemDateTime.DateTimeType = SetDateTimeType_NTP;
-	    g_onvif_cfg.SystemDateTime.DaylightSavings = FALSE;
-	    g_onvif_cfg.SystemDateTime.TimeZoneFlag = 1;
-		strcpy(g_onvif_cfg.SystemDateTime.TimeZone.TZ, "CST-8:00:00");
+	onvif_SystemDateTime *pSystemDateTime = &g_onvif_cfg.SystemDateTime;
+    ret = GetSystemDateTime(pSystemDateTime);
+	if (ret < 0 || pSystemDateTime->TimeZone.TZ[0] == '\0') {
+		pSystemDateTime->DateTimeType = SetDateTimeType_Manual;
+	    pSystemDateTime->DaylightSavings = FALSE;
+	    pSystemDateTime->TimeZoneFlag = 1;
+		memset(pSystemDateTime->TimeZone.TZ, 0x0, sizeof(pSystemDateTime->TimeZone.TZ));
+		strcpy(pSystemDateTime->TimeZone.TZ, "CST-8:00:00");
+		UTIL_INFO("have no datatime TZ=%s", pSystemDateTime->TimeZone.TZ);
 	}
-
-	UTIL_INFO("TZ=%s", g_onvif_cfg.SystemDateTime.TimeZone.TZ);
+	else
+	{
+		UTIL_INFO("TZ=%s", pSystemDateTime->TimeZone.TZ);
+	}
 }
 
 void onvif_init_MetadataConfiguration()
@@ -2219,9 +2224,9 @@ void onvif_init_net()
     // init ntp settting
     ret = GetNTPInformation(&g_onvif_cfg.network.NTPInformation);
 	if (ret < 0) {
-	    g_onvif_cfg.network.NTPInformation.FromDHCP = TRUE;
+	    g_onvif_cfg.network.NTPInformation.FromDHCP = FALSE;
 	    strcpy(g_onvif_cfg.network.NTPInformation.NTPServer[0], "ntp1.aliyun.com");
-		SetNTPInformation(&g_onvif_cfg.network.NTPInformation, TRUE);
+		//SetNTPInformation(&g_onvif_cfg.network.NTPInformation, TRUE);
 	}
 
     // init default gateway
@@ -2816,10 +2821,11 @@ int onvif_get_idle_PresetTour_idx()
 	return -1;
 }
 
-PTZ_PresetsTours_t * onvif_get_idle_PresetTour()
+PTZ_PresetsTours_t * onvif_get_idle_PresetTour(int *index)
 {
     int i;
 
+	*index = 0;
     for (i = 0; i < ARRAY_SIZE(PTZPresetsTour); i++)
     {
         if (PTZPresetsTour[i].UsedFlag == 0)
@@ -2832,8 +2838,9 @@ PTZ_PresetsTours_t * onvif_get_idle_PresetTour()
     {
         return NULL;
     }
-
-    // return &p_profile->presets[i];
+	
+    *index = i;
+	
     return &PTZPresetsTour[i];
 }
 
@@ -3294,14 +3301,17 @@ int PresetTours_init(PTZ_PresetsTours_t * PresetsTour, onvif_PresetTour * p_req)
 	return 0;
 }
 
-int GetPresetTours_init()
+int onvif_PresetTours_init()
 {
     ONVIF_PROFILE * p_profile;
 	int index = 0, ret;
-
+	
+	p_profile = g_onvif_cfg.profiles;
+	
 	if (readPtzPresetTour(PTZPresetsTour, MAX_PRESETS_TOUR) != 0)
 	{
-		printf("GetPresetTours_init | read PtzPresetTour faile...\n");
+		UTIL_ERR("read PtzPresetTour failed...");
+		return -1;
 	}
 
 	p_profile = g_onvif_cfg.profiles;
@@ -6378,10 +6388,10 @@ void onvif_init()
 
 	/* add xie */
 	onvif_init_PresetTourOptions();
-	GetPresetTours_init();     
+	onvif_PresetTours_init();     
 
 	// add PTZ node to profile
-	p_profile = g_onvif_cfg.profiles;  //初次初始化在 onvif_init_cfg()/ onvif_load_cfg()/ onvif_parse_profile()/ onvif_add_profile()
+	p_profile = g_onvif_cfg.profiles;  //初次初始化在 onvif_init_cfg()
 	while (p_profile)
 	{
 		p_profile->ptz_cfg = g_onvif_cfg.ptz_cfg;

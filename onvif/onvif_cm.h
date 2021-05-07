@@ -359,7 +359,7 @@ typedef enum
 	BacklightCompensationMode_ON = 1				    // Backlight compensation is enabled
 } onvif_BacklightCompensationMode;
 
-//add by xie
+// Exposure mode
 typedef enum  
 {
 	SIP_FAULE = 0,

@@ -4204,7 +4204,6 @@ ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
 			ret = parse_PresetTour(p_PresetTour, &PresetTour_req->PresetTour);
 			if (ONVIF_OK != ret)
 			{
-				// onvif_free_Configs(&p_req->AnalyticsModule);
 				onvif_free_PresetTours(&p_req->PresetTour_req);
 
 				return ret;

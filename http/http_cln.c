@@ -211,15 +211,15 @@ BOOL http_tcp_tx(HTTPREQ * p_req, const char * p_data, int len)
 	}
 	else
 	{
-		slen = tcp_sendall(p_req->cfd, p_data, len, 1000);
+		slen = tcp_sendall(p_req->cfd, p_data, len, 20000);
 	}
 #else	
     
-	slen = tcp_sendall(p_req->cfd, p_data, len, 1000);
+	slen = tcp_sendall(p_req->cfd, p_data, len, 20000);
 #endif
 	if (slen != len)
 	{
-	    log_print(LOG_ERR, "%s, slen = %d, len = %d\r\n", __FUNCTION__, slen, len);
+	    UTIL_ERR("slen = %d, len = %d failed!!!", slen, len);
 		return FALSE;
     }
     
@@ -453,6 +453,9 @@ int http_cjson_parse(char *msgPayload)
 	  status			 请求结果状态码		数值
 	  请求成功			{"bool":true,"msg":"OK","status":200}
 	*/
+	if (!msgPayload)
+		return -1;
+	
 	root_json = cJSON_Parse(msgPayload);
 	if(root_json)
 	{
@@ -575,16 +578,24 @@ int http_onvif_event_req(HTTPREQ * p_req, Gpt_EventUploadInfo *pUploadInfo)
 		ret = http_event_tcp_rx(p_req, tempdatabuff, sizeof(tempdatabuff));
 		if (ret > 0) 
 		{
-			p = strstr(tempdatabuff, "Content-Length");
-			if (p && sscanf(p, "Content-Length: %d", &len) != 1) {
-				UTIL_ERR("parse Content-Length failed. line: %s", p);
+			p = strstr(tempdatabuff, "Content-Length");//Content-Length: 37^M
+			if (p) {
+				if (sscanf(p, "Content-Length: %d", &len) < 0)
+				{
+					UTIL_ERR("parse Content-Length failed. line: %s", p);
+					return -1;
+				}
+			}
+			else {
+				UTIL_ERR("have no Content-Length. line: %s", p);
 				return -1;
 			}
+
 			p = strstr(tempdatabuff, "\r\n\r\n");
 			if (p) {
 				p += strlen("\r\n\r\n");
 				p[len] = '\0';
-			    UTIL_INFO("http_event_tcp_rx >> %s", p);
+			    UTIL_INFO("http_event_tcp_rx len=%d>> %s", len, p);
 				return http_cjson_parse(p);
 			}
 		}
@@ -625,7 +636,7 @@ static int http_onvif_event_trans(HTTPREQ * p_req, int timeout, Gpt_EventUploadI
 	p_req->cfd = tcp_connect_timeout(inet_addr(p_req->host), p_req->port, timeout);
 	if (p_req->cfd <= 0)
 	{
-	    log_print(LOG_ERR, "%s, tcp_connect_timeout\r\n", __FUNCTION__);
+	    UTIL_ERR("tcp_connect_timeout failed");
 		goto FAILED;
     }
 
@@ -726,7 +737,6 @@ int http_send_event_jpeg(Gpt_EventUploadInfo *pUploadInfo)
 	strcpy(req.host, host);
 
 	req.https = 0;
-	//UTIL_INFO("pUploadInfo->hostname=%s req.host==%s,req.url=%s", pUploadInfo->hostname, req.host, req.url);	
 	return http_onvif_event_trans(&req, 200, pUploadInfo);
 }
 
@@ -742,7 +752,7 @@ int http_snap_and_sendto_host(int eventtype, int snaptype, int towhere, const ch
 	if ((0 == towhere && strlen(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl) > 0) ||
 		(1 == towhere && strlen(g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl) > 0))
 	{
-	    UTIL_INFO("towhere====%d", towhere);
+	    //UTIL_INFO("towhere====%d", towhere);
 	}
 	else 
 	{
@@ -768,19 +778,25 @@ int http_snap_and_sendto_host(int eventtype, int snaptype, int towhere, const ch
 		        {
 			        len = strlen(g_onvif_cfg.network.EventUploadInfo.HttpServerUrl);
 					if (len >= sizeof(pUploadInfo.hostname))
+					{
+						unlink(pUploadInfo.pFileName);
 						return -1;
+					}
 					strncpy(pUploadInfo.hostname, g_onvif_cfg.network.EventUploadInfo.HttpServerUrl, len);
 		        }
 				else
 				{
 					len = strlen(g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl);
 					if (len >= sizeof(pUploadInfo.hostname))
+					{
+						unlink(pUploadInfo.pFileName);
 						return -1;
+					}
+
 					strncpy(pUploadInfo.hostname, g_onvif_cfg.network.EventUploadInfo.AlgorithmServerUrl, len);
 				}
 				
 				pUploadInfo.hostname[len] = '\0';
-				
 				if (eventdetail)
 				{
 				    len = strlen(eventdetail);
@@ -792,6 +808,10 @@ int http_snap_and_sendto_host(int eventtype, int snaptype, int towhere, const ch
 				pUploadInfo.eventtype = eventtype;
 				pUploadInfo.towhere = towhere;
 				ret = http_send_event_jpeg(&pUploadInfo);
+				if (ret < 0)
+				{
+					UTIL_ERR("Upload file=%s to url=%s failed!!", pUploadInfo.pFileName, pUploadInfo.hostname);
+				}
 		    }
 			else
 				UTIL_INFO("pUploadInfo.pFileName=%s not exsit===", pUploadInfo.pFileName);

@@ -416,14 +416,14 @@ ONVIF_RET onvif_GetStreamUri(const char * lip, uint32 lport, GetStreamUri_REQ * 
 
 	    if (p_req->StreamSetup.Transport.Protocol == TransportProtocol_HTTP)
 	    {
-	        offset += sprintf(p_res->MediaUri.Uri, "http://%s/live.sdp", lip);
+	        offset += sprintf(p_res->MediaUri.Uri, "http://%s/live.sdp", g_onvif_cfg.servs[0].serv_ip/* lip */);
 	    }
 	    else
 	    {
 	        if (strstr(p_req->ProfileToken, "PROFILE_001"))
-	        	offset += sprintf(p_res->MediaUri.Uri, "rtsp://%s/live/chn00_1", lip);
+	        	offset += sprintf(p_res->MediaUri.Uri, "rtsp://%s/live/chn00_1", g_onvif_cfg.servs[0].serv_ip/* lip */);
 			else
-				offset += sprintf(p_res->MediaUri.Uri, "rtsp://%s/live/chn00_0", lip);
+				offset += sprintf(p_res->MediaUri.Uri, "rtsp://%s/live/chn00_0", g_onvif_cfg.servs[0].serv_ip/* lip */);
 	    }
 
 	/*     if (StreamType_RTP_Unicast == p_req->StreamSetup.Stream)

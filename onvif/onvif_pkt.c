@@ -29,6 +29,7 @@
 #include "onvif_err.h"
 #include "onvif_media.h"
 #include "onvif_image.h"
+#include "utils_log.h"
 #ifdef VIDEO_ANALYTICS
 #include "onvif_analytics.h"
 #endif
@@ -2162,20 +2163,21 @@ int build_GetSystemDateAndTime_rly_xml(char * p_buf, int mlen, const char * argv
 	time(&nowtime);
 	gtime = gmtime(&nowtime);
     
+	onvif_SystemDateTime *pSystemDateTime = &g_onvif_cfg.SystemDateTime;
 	offset += snprintf(p_buf+offset, mlen-offset, 
 		"<tds:GetSystemDateAndTimeResponse>"
 			"<tds:SystemDateAndTime>"
 			"<tt:DateTimeType>%s</tt:DateTimeType>"
 			"<tt:DaylightSavings>%s</tt:DaylightSavings>",
-			onvif_SetDateTimeTypeToString(g_onvif_cfg.SystemDateTime.DateTimeType), 
-			g_onvif_cfg.SystemDateTime.DaylightSavings ? "true" : "false");
+			onvif_SetDateTimeTypeToString(pSystemDateTime->DateTimeType), 
+			pSystemDateTime->DaylightSavings ? "true" : "false");
 
-	if (g_onvif_cfg.SystemDateTime.TimeZoneFlag && 
-		g_onvif_cfg.SystemDateTime.TimeZone.TZ[0] != '\0')
+	if (pSystemDateTime->TimeZoneFlag && 
+		pSystemDateTime->TimeZone.TZ[0] != '\0')
 	{
 		offset += snprintf(p_buf+offset, mlen-offset, 
 			"<tt:TimeZone><tt:TZ>%s</tt:TZ></tt:TimeZone>", 
-			g_onvif_cfg.SystemDateTime.TimeZone.TZ);			
+			pSystemDateTime->TimeZone.TZ);
 	}
 		
 	offset += snprintf(p_buf+offset, mlen-offset, 			
@@ -2194,8 +2196,7 @@ int build_GetSystemDateAndTime_rly_xml(char * p_buf, int mlen, const char * argv
 			"</tds:SystemDateAndTime>"
 		"</tds:GetSystemDateAndTimeResponse>",
 		gtime->tm_hour, gtime->tm_min, gtime->tm_sec, 
-		gtime->tm_year+1900, gtime->tm_mon+1, gtime->tm_mday);		
-	
+		gtime->tm_year+1900, gtime->tm_mon+1, gtime->tm_mday);	
 	return offset;
 }
 
@@ -7532,18 +7533,6 @@ int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
 	{
 		printf("read PTZ preset faile.\n");
 	}
-	/*else{
-	 	for(int j = 0; j < 8; j++)		// just for test
-		{
-			printf("xxx GetPresets| Preset[%d].UsedFlag:%d token:%s Name:%s\n",j, p_profile->presets[j].UsedFlag, p_profile->presets[j].PTZPreset.token, p_profile->presets[j].PTZPreset.Name);
-			for (int i = 0; i < g_vector_num; i++)
-			{
-				printf("xxxxxx GetPresets| Vector_list: X=%0.3f, Y=%0.3f, W=%0.3f, H=%0.3f\n",p_profile->presets[j].Vector_list[i].x, p_profile->presets[j].Vector_list[i].y, p_profile->presets[j].Vector_list[i].w, p_profile->presets[j].Vector_list[i].h);
-			}
-		printf("\n");
-		} 
-	} */
-	////
 
 	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:GetPresetsResponse>");
 
@@ -7554,8 +7543,6 @@ int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
 	        continue;
 	    }
 		/////
-		/* printf("xxx read2 p_profile->presets[%d].UsedFlag:%d\n",i, p_profile->presets[i].UsedFlag);
-		printf("xxx read2 Preset[%d],token:%s Name:%s\n",i, p_profile->presets[i].PTZPreset.token, p_profile->presets[i].PTZPreset.Name); */
 	    
     	offset += snprintf(p_buf+offset, mlen-offset, 
     		"<tptz:Preset token=\"%s\">",
@@ -7584,7 +7571,6 @@ int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
 	    }
 
 	    ////  xieqingpu
-		// printf("xxx \033[0;34m========= p_profile->presets[%d].VectorListFlag = %d =========\033[0m\n", i, p_profile->presets[i].VectorListFlag);
 		if ( p_profile->presets[i].VectorListFlag != 0 ) {      //对应的预置位是否有画检测区域Vector  !=0代表有
 		
 			offset += snprintf(p_buf+offset, mlen-offset, "<tt:VectorList>");
@@ -7823,8 +7809,8 @@ int build_TourSpot_xml_Ext(char * p_buf, int mlen,  Presets_t * p_req)
 	int offset = 0;
 	
 	offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetDetail>");
-		// offset += build_PresetDetail_xml(p_buf+offset, mlen-offset, p_req);
-   	    offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetToken>%s</tt:PresetToken>", p_req->PresetToken);	
+	// offset += build_PresetDetail_xml(p_buf+offset, mlen-offset, p_req);
+	offset += snprintf(p_buf+offset, mlen-offset, "<tt:PresetToken>%s</tt:PresetToken>", p_req->PresetToken);	
 	offset += snprintf(p_buf+offset, mlen-offset, "</tt:PresetDetail>");		
 
     offset += snprintf(p_buf+offset, mlen-offset, "<tt:StayTime>PT%dS</tt:StayTime>", p_req->StayTime);	
@@ -7834,9 +7820,9 @@ int build_TourSpot_xml_Ext(char * p_buf, int mlen,  Presets_t * p_req)
 int build_GetPresetTours_rly_xml(char * p_buf, int mlen, const char * argv)
 {
 	int offset = 0;
-
 	ONVIF_PresetTour * p_PresetTour;
-	ONVIF_PROFILE * p_profile = onvif_find_profile(argv);  // g_onvif_cfg.profiles
+	
+	ONVIF_PROFILE * p_profile = onvif_find_profile(argv); 
     if (NULL == p_profile)
     {
         return ONVIF_ERR_NoProfile;
@@ -7865,24 +7851,20 @@ int build_GetPresetTours_rly_xml(char * p_buf, int mlen, const char * argv)
 		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:StartingCondition>");
 		offset += build_StartingCondition_xml(p_buf+offset, mlen-offset, &p_PresetTour->PresetTour.StartingCondition);	
 		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:StartingCondition>");
-		
 		ONVIF_PTZPresetTourSpot * p_TourSpot = p_PresetTour->PresetTour.TourSpot;
 		while (p_TourSpot)
 		{
 			offset += snprintf(p_buf+offset, mlen-offset, "<tptz:TourSpot>");
 			offset += build_TourSpot_xml(p_buf+offset, mlen-offset, &p_TourSpot->PTZPresetTourSpot);
 			offset += snprintf(p_buf+offset, mlen-offset, "</tptz:TourSpot>");
-
 			p_TourSpot = p_TourSpot->next;
 		}
-
         offset += snprintf(p_buf+offset, mlen-offset, "</tptz:PresetTour>");
 
     	p_PresetTour = p_PresetTour->next;
 	}
 
 	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:GetPresetToursResponse>");
-
 	return offset;
 }
 
@@ -8008,16 +7990,16 @@ int build_GetPresetTourOptions_rly_xml(char * p_buf, int mlen, const char * argv
 	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:GetPresetTourOptionsResponse>");
 	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:Options>");
 		
-		//在双光融合项目中我们把它去掉
-		// offset += snprintf(p_buf+offset, mlen-offset, "<tt:AutoStart>%s</tt:AutoStart>",p_PresetTour->PresetTour.AutoStart ? "true" : "false");	
-			
-		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:StartingCondition>");
-		offset += build_StartingConditionOptions_xml(p_buf+offset, mlen-offset, &g_onvif_cfg.PTZPresetTourOptions.StartingCondition);	
-		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:StartingCondition>");
+	//在双光融合项目中我们把它去掉
+	// offset += snprintf(p_buf+offset, mlen-offset, "<tt:AutoStart>%s</tt:AutoStart>",p_PresetTour->PresetTour.AutoStart ? "true" : "false");	
 		
-		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:TourSpot>");
-		offset += build_TourSpotOptions_xml(p_buf+offset, mlen-offset, &g_onvif_cfg.PTZPresetTourOptions.TourSpot); 
-		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:TourSpot>");
+	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:StartingCondition>");
+	offset += build_StartingConditionOptions_xml(p_buf+offset, mlen-offset, &g_onvif_cfg.PTZPresetTourOptions.StartingCondition);	
+	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:StartingCondition>");
+	
+	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:TourSpot>");
+	offset += build_TourSpotOptions_xml(p_buf+offset, mlen-offset, &g_onvif_cfg.PTZPresetTourOptions.TourSpot); 
+	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:TourSpot>");
 
 	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:Options>");
 	offset += snprintf(p_buf+offset, mlen-offset, "</tptz:GetPresetTourOptionsResponse>");
