@@ -308,11 +308,6 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
     time_t time_utc;
     time(&time_utc);
 	
-	/* add by xieqingpu 获取空闲的预置位的下标 */
-	// g_onvif_cls.preset_idx = onvif_get_idle_PTZPreset_idx(p_req->ProfileToken); 
-    
-	static BOOL isRename = 0;
-
 	if (p_req->PresetNameFlag && p_req->PresetName[0] != '\0')     // Preset Name
     {
     	strcpy(p_preset->PTZPreset.Name, p_req->PresetName);
@@ -323,11 +318,9 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
     	strcpy(p_req->PresetName, p_preset->PTZPreset.Name);
     }
     
-	// UTIL_INFO("============ isRename = %d, PresetTokenFlag = %d PresetToken = %s ========\n",isRename,p_req->PresetTokenFlag, p_req->PresetToken);
     if (p_req->PresetTokenFlag && p_req->PresetToken[0] != '\0')  // Preset Token , 有前端发过来‘PresetToken’说明是重命名预置位操作 或者 画检测框
     {
         strcpy(p_preset->PTZPreset.token, p_req->PresetToken);
-		isRename = 1;
     }
     else
     {
@@ -335,19 +328,13 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
         strcpy(p_req->PresetToken, p_preset->PTZPreset.token);
     }
 
-	// UTIL_INFO("============ isRename = %d, ModifyPosition_Flag = %d, ModifyPosition = %s ==========\n",isRename, p_req->ModifyPosition_Flag, p_req->ModifyPosition);
-	
 	/* 只单单修改名字(没有修改预置位位置) */
-	if( isRename && p_req->ModifyPosition_Flag==0 && strcasecmp(p_req->ModifyPosition, "false")==0 )
+	if(p_req->PresetTokenFlag && p_req->ModifyPosition_Flag==0 && strcasecmp(p_req->ModifyPosition, "false")==0 )
 	{
-		// UTIL_INFO("=========================== 只单单修改名字 =====================\n");
 		goto write_preset;
-
-		return ONVIF_OK;
 	}
 
 	/* 创建新的预置位 或者 画检测框 或者 重命名操作(并且同时重新修改位置) */
-	// UTIL_INFO("============ 创建新的预置位 或者 画检测框 或者 重命名操作(并且同时重新修改位置) ========\n");
 	/* 预置位对应是否画检测框 */
 	if (p_req->VectorList_Flag )
 	{
@@ -376,7 +363,6 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
 
 		goto write_preset;
 	
-		return ONVIF_OK;
 	}
 	else {
 		p_preset->VectorListFlag = 0;
@@ -385,15 +371,13 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
 	int index = onvif_find_PTZPreset_index(p_req->ProfileToken, p_req->PresetToken);
 
 	short location = index < 0 ? 1 : (index+1);  //该ptz设备可以从0x00~0x3f设置，但好像从0设置不行，所以从1开始
-	// 设置预置位 
+	/* 设置预置位 */
 	setPtzPreset(location);
 	
 
-	// 预置位对应的相机焦距 
+	/* 预置位对应的相机焦距 */
 	uint16_t z = get_zoom_val();
 	p_preset->zoomVal = z;
-	printf("xxx ===== onvif__SetPreset |p_profile->presets[%d].zoomVal: %d == z=%d\n", index, p_preset->zoomVal, z);
-
 
 	p_preset->UsedFlag = 1;	
 
@@ -403,8 +387,6 @@ ONVIF_RET onvif_SetPreset(SetPreset_REQ * p_req)
 	p_preset->PTZPreset.PTZPosition.PanTilt.y = 0;
 	p_preset->PTZPreset.PTZPosition.ZoomFlag = 1;
 	p_preset->PTZPreset.PTZPosition.Zoom.x = 0;
-
-	goto write_preset;
 
 
 write_preset:
@@ -710,6 +692,30 @@ int get_detect_info(void* pvector, int* cnt)
 		return -1;
 
 	return 0;
+}
+
+int get_cur_preset_name(char* presetname)
+{
+	if (cur_preset_id < 0 || !presetname)
+		return -1;
+
+	ONVIF_PTZPreset preset = g_onvif_cfg.profiles->presets[cur_preset_id];
+	if (preset.UsedFlag == 0)	return -1;
+	/*
+    if (0 == preset.VectorListFlag)
+    {
+		return -1;
+    }
+	else*/
+	{
+	    if (strlen(preset.PTZPreset.Name) > 0)
+		{
+			memcpy(presetname, preset.PTZPreset.Name, strlen(preset.PTZPreset.Name));
+			return 0;
+	    }
+	}
+
+	return -1;
 }
 
 int VectorListHandle(ONVIF_PTZPreset preset)
@@ -1445,6 +1451,19 @@ ONVIF_RET onvif_ModifyPresetTour(ModifyPresetTour_REQ * p_req)
 		if (PresetTour_p)
 		{
 			strcpy(PresetTour_p->PresetTour.token, p_presetTour->PresetTourToken);
+
+			if (p_req->PresetTour_req->PresetTour.StartingCondition.PresetTourTimerFlag)   //是否有设置巡航定时器
+			{
+				ONVIF_PTZPresetTourTimer * p_tourTimer = onvif_add_Timer(&PresetTour_p->PresetTour.StartingCondition.Timer);
+				if (NULL == p_tourTimer)
+				{
+					free(PresetTour_p);
+					PresetTour_p = NULL;
+					onvifret = ONVIF_ERR_OTHER;
+					goto __EXIT;
+				}
+			}
+
 			ONVIF_PTZPresetTourSpot * p_tour_spot = onvif_add_TourSpot(&PresetTour_p->PresetTour.TourSpot);
 			if (NULL == p_tour_spot)
 			{
@@ -1460,6 +1479,10 @@ ONVIF_RET onvif_ModifyPresetTour(ModifyPresetTour_REQ * p_req)
 	p_PresetTour = onvif_find_PTZPresetTour(p_req->ProfileToken, p_tmp->PresetTour.token);
 	if (NULL == p_PresetTour)
 	{
+		if (p_tmp->PresetTour.StartingCondition.PresetTourTimerFlag)   //是否有设置巡航定时器
+		{
+			onvif_free_Timers(&p_tmp->PresetTour.StartingCondition.Timer);
+		}
 		onvif_free_TourSpots(&(p_tmp->PresetTour.TourSpot));
 		free(p_tmp);
 		p_tmp = NULL;
@@ -1479,23 +1502,68 @@ ONVIF_RET onvif_ModifyPresetTour(ModifyPresetTour_REQ * p_req)
 		p_tmp->next = p_PresetTour->next;
 	}
 	
+	if (p_PresetTour->PresetTour.StartingCondition.PresetTourTimerFlag)   //是否有设置巡航定时器
+	{
+		onvif_free_Timers(&p_PresetTour->PresetTour.StartingCondition.Timer);
+	}
 	onvif_free_TourSpots(&(p_PresetTour->PresetTour.TourSpot));
 	free(p_PresetTour);
 
+
+	//todo: 以下赋值为了将数据保存于文件
 	p_presetTour->UsedFlag = 1;
 	strcpy(p_presetTour->Name, p_req->PresetTour_req->PresetTour.Name);
-	if (p_req->PresetTour_req->PresetTour.StartingCondition.RecurringTimeFlag){
-		p_presetTour->PresetsTour.runNumber = p_req->PresetTour_req->PresetTour.StartingCondition.RecurringTime;
+
+	onvif_PTZPresetTourStartingCondition  startingCondition;
+	startingCondition = p_req->PresetTour_req->PresetTour.StartingCondition;
+
+	if (startingCondition.RecurringTimeFlag){
+		p_presetTour->PresetsTour.runNumberFlag = 1;
+		p_presetTour->PresetsTour.runNumber = startingCondition.RecurringTime;
 	}
-	if (p_req->PresetTour_req->PresetTour.StartingCondition.RecurringDurationFlag){
-		p_presetTour->PresetsTour.runTime   = p_req->PresetTour_req->PresetTour.StartingCondition.RecurringDuration;
+	if (startingCondition.RecurringDurationFlag){
+		p_presetTour->PresetsTour.runTimeFlag = 1;
+		p_presetTour->PresetsTour.runTime   = startingCondition.RecurringDuration;
 	}
-	if (p_req->PresetTour_req->PresetTour.StartingCondition.DirectionFlag){    //与RandomPresetOrder互斥
-		p_presetTour->PresetsTour.direction = p_req->PresetTour_req->PresetTour.StartingCondition.Direction;
+	if (startingCondition.DirectionFlag){    //与RandomPresetOrder互斥
+		p_presetTour->PresetsTour.direction = startingCondition.Direction;
 	}
-	if (p_req->PresetTour_req->PresetTour.StartingCondition.RandomPresetOrderFlag){   //与Direction互斥
-		p_presetTour->PresetsTour.RandomOrder = p_req->PresetTour_req->PresetTour.StartingCondition.RandomPresetOrder;
+	if (startingCondition.RandomPresetOrderFlag){   //与Direction互斥
+		p_presetTour->PresetsTour.RandomOrder = startingCondition.RandomPresetOrder;
 	}
+
+	//扩展定时巡更
+	if (startingCondition.PresetTourTimerFlag)
+	{
+		p_presetTour->PresetsTour.TimerFlag = 1;
+	}
+
+	uint32_t j = 0;
+	ONVIF_PTZPresetTourTimer * p_PresetTourTimer = startingCondition.Timer;
+	while (p_PresetTourTimer)
+	{
+		p_presetTour->PresetsTour.Timer[j].Enabled = p_PresetTourTimer->timer.Enabled;;
+
+		if (p_PresetTourTimer->timer.IntervalMinutesFlag){
+			p_presetTour->PresetsTour.Timer[j].IntervalMinutesFlag = 1;
+			p_presetTour->PresetsTour.Timer[j].IntervalMinutes = p_PresetTourTimer->timer.IntervalMinutes;
+		}
+		
+		if (p_PresetTourTimer->timer.UTCDateTimeFlag){
+			p_presetTour->PresetsTour.Timer[j].UTCDateTimeFlag = 1;
+			p_presetTour->PresetsTour.Timer[j].UTCDateTime.Date.Year = p_PresetTourTimer->timer.UTCDateTime.Date.Year;
+			p_presetTour->PresetsTour.Timer[j].UTCDateTime.Date.Month = p_PresetTourTimer->timer.UTCDateTime.Date.Month;
+			p_presetTour->PresetsTour.Timer[j].UTCDateTime.Date.Day = p_PresetTourTimer->timer.UTCDateTime.Date.Day;
+			p_presetTour->PresetsTour.Timer[j].UTCDateTime.Time.Hour = p_PresetTourTimer->timer.UTCDateTime.Time.Hour;
+			p_presetTour->PresetsTour.Timer[j].UTCDateTime.Time.Minute = p_PresetTourTimer->timer.UTCDateTime.Time.Minute;
+			p_presetTour->PresetsTour.Timer[j].UTCDateTime.Time.Second = p_PresetTourTimer->timer.UTCDateTime.Time.Second;
+		}
+		j++;	//巡更的定时器数量
+
+		p_PresetTourTimer = p_PresetTourTimer->next;
+	}
+	p_presetTour->PresetsTour.timerCount = j;
+
 
 	uint32_t i = 0;
 	ONVIF_PTZPresetTourSpot * p_TourSpot = p_req->PresetTour_req->PresetTour.TourSpot;

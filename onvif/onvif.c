@@ -778,6 +778,48 @@ ONVIF_PTZPresetTourSpot * onvif_add_TourSpot(ONVIF_PTZPresetTourSpot ** p_head)
 
 	return p_new;
 }
+
+
+void onvif_free_Timers(ONVIF_PTZPresetTourTimer ** p_head)
+{
+    ONVIF_PTZPresetTourTimer * p_next;
+	ONVIF_PTZPresetTourTimer * p_tmp = *p_head;
+
+	while (p_tmp)
+	{
+		p_next = p_tmp->next;
+		
+		free(p_tmp);
+		p_tmp = p_next;
+	}
+
+	*p_head = NULL;
+}
+ONVIF_PTZPresetTourTimer * onvif_add_Timer(ONVIF_PTZPresetTourTimer ** p_head)
+{
+	ONVIF_PTZPresetTourTimer * p_tmp;
+	ONVIF_PTZPresetTourTimer * p_new = (ONVIF_PTZPresetTourTimer *) malloc(sizeof(ONVIF_PTZPresetTourTimer));
+	if (NULL == p_new)
+	{
+		return NULL;
+	}
+
+	memset(p_new, 0, sizeof(ONVIF_PTZPresetTourTimer));
+
+	p_tmp = *p_head;
+	if (NULL == p_tmp)
+	{
+		*p_head = p_new;
+	}
+	else
+	{
+		while (p_tmp && p_tmp->next) p_tmp = p_tmp->next;
+
+		p_tmp->next = p_new;
+	}	
+
+	return p_new;
+}
 /*  */
 
 ONVIF_SimpleItem * onvif_add_SimpleItem(ONVIF_SimpleItem ** p_head)
@@ -2974,7 +3016,10 @@ ONVIF_PresetTour * onvif_free_PresetTours(ONVIF_PresetTour ** p_head)
 	{
 		p_next = p_tmp->next;
 
-		// onvif_free_Config(p_tmp);
+		if (p_tmp->PresetTour.StartingCondition.PresetTourTimerFlag)   //是否有设置巡航定时器
+		{
+			onvif_free_Timers(&p_tmp->PresetTour.StartingCondition.Timer);
+		}
 		onvif_free_TourSpots(&p_tmp->PresetTour.TourSpot);
 
 		free(p_tmp);
@@ -3039,7 +3084,10 @@ void onvif_remove_PresetTour(ONVIF_PresetTour ** p_head, ONVIF_PresetTour * p_re
 			p_prev->next = p_cfg->next;
 		}
 
-		// onvif_free_Config(p_cfg);
+		if(p_cfg->PresetTour.StartingCondition.PresetTourTimerFlag)
+		{
+			onvif_free_Timers(&p_cfg->PresetTour.StartingCondition.Timer);
+		}
 		onvif_free_TourSpots(&p_cfg->PresetTour.TourSpot); 
 		free(p_cfg);
 	}	
@@ -3247,9 +3295,37 @@ int PresetTours_TourSpot_init(Presets_t * preset, onvif_PTZPresetTourSpot * p_re
 	return ONVIF_OK;
 }
 
+
+int PresetTours_timer_init(onvif_PTZPresetTourTimer * timer, onvif_PTZPresetTourTimer * p_req)
+{
+
+	p_req->Enabled = timer->Enabled;
+
+	if(timer->IntervalMinutesFlag)
+	{
+		p_req->IntervalMinutesFlag = 1;
+		p_req->IntervalMinutes = timer->IntervalMinutes;
+	}
+
+	if(timer->UTCDateTimeFlag)
+	{
+		p_req->UTCDateTimeFlag = 1;
+		p_req->UTCDateTime.Date.Year = timer->UTCDateTime.Date.Year;
+		p_req->UTCDateTime.Date.Month = timer->UTCDateTime.Date.Month;
+		p_req->UTCDateTime.Date.Day = timer->UTCDateTime.Date.Day;
+
+		p_req->UTCDateTime.Time.Hour = timer->UTCDateTime.Time.Hour;
+		p_req->UTCDateTime.Time.Minute = timer->UTCDateTime.Time.Minute;
+		p_req->UTCDateTime.Time.Second = timer->UTCDateTime.Time.Second;
+	}
+
+	return ONVIF_OK;
+}
+
 int PresetTours_init(PTZ_PresetsTours_t * PresetsTour, onvif_PresetTour * p_req)
 {
 	int i = 0, ret;
+	int j = 0;
 
 	strncpy(p_req->token, PresetsTour->PresetTourToken, sizeof(p_req->token)-1);
 	strncpy(p_req->Name, PresetsTour->Name, sizeof(p_req->Name)-1);
@@ -3264,13 +3340,13 @@ int PresetTours_init(PTZ_PresetsTours_t * PresetsTour, onvif_PresetTour * p_req)
 		p_req->StartingCondition.RandomPresetOrder = PresetsTour->PresetsTour.RandomOrder;
 	}
 
-	if (PresetsTour->PresetsTour.runNumber >= 0)
+	if (PresetsTour->PresetsTour.runNumberFlag)
 	{
 		p_req->StartingCondition.RecurringTimeFlag = 1;
 		p_req->StartingCondition.RecurringTime = PresetsTour->PresetsTour.runNumber;
 	}
 
-	if (PresetsTour->PresetsTour.runTime >= 0)
+	if (PresetsTour->PresetsTour.runTimeFlag)
 	{
 		p_req->StartingCondition.RecurringDurationFlag = 1;
 		p_req->StartingCondition.RecurringDuration = PresetsTour->PresetsTour.runTime;
@@ -3282,6 +3358,24 @@ int PresetTours_init(PTZ_PresetsTours_t * PresetsTour, onvif_PresetTour * p_req)
 		p_req->StartingCondition.Direction = PresetsTour->PresetsTour.direction;
 	}
 
+
+	uint16_t timerCount = PresetsTour->PresetsTour.timerCount;
+	if (PresetsTour->PresetsTour.TimerFlag)
+	{
+		for (j = 0; j < timerCount; j++)
+		{
+			ONVIF_PTZPresetTourTimer * p_tourTimer = onvif_add_Timer(&p_req->StartingCondition.Timer);
+			if (p_tourTimer)
+			{
+				ret = PresetTours_timer_init(&PresetsTour->PresetsTour.Timer[j], &p_tourTimer->timer);
+				if (ONVIF_OK != ret)
+				{
+					onvif_free_Timers(&p_req->StartingCondition.Timer);
+					break;
+				}
+			}
+		}
+	}
 	
 	uint16_t presetCount = PresetsTour->PresetsTour.presetCount;
 	for (i = 0; i < presetCount; i++)

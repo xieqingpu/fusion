@@ -25,6 +25,8 @@
 
 #include "set_config.h"
 
+#include "utils_log.h"   //test
+
 /***************************************************************************************/
 
 BOOL parse_Bool(const char * pdata)
@@ -3933,6 +3935,97 @@ ONVIF_RET parse_GotoHomePosition(XMLN * p_node, GotoHomePosition_REQ * p_req)
 
 /* add PresetTour by xieqingpu */
 
+ONVIF_RET parse_UTCDateTime(XMLN * p_node, onvif_DateTime * p_req)
+{
+	XMLN * p_Date;
+	XMLN * p_Year;
+	XMLN * p_Month;
+	XMLN * p_Day;
+
+	XMLN * p_Time;
+	XMLN * p_Hour;
+	XMLN * p_Minute;
+	XMLN * p_Second;
+
+	/* 年月日 */
+	p_Date = xml_node_soap_get(p_node, "Date");
+	if (p_Date)
+	{
+		p_Year = xml_node_soap_get(p_Date, "Year");
+		if (p_Year && p_Year->data)
+		{
+			p_req->Date.Year = atoi(p_Year->data);
+		}
+
+		p_Month = xml_node_soap_get(p_Date, "Month");
+		if (p_Month && p_Month->data)
+		{
+			p_req->Date.Month = atoi(p_Month->data);
+		}
+
+		p_Day = xml_node_soap_get(p_Date, "Day");
+		if (p_Day && p_Day->data)
+		{
+			p_req->Date.Day = atoi(p_Day->data);
+		}
+	}
+
+	/* 时秒分 */
+	p_Time = xml_node_soap_get(p_node, "Time");
+	if (p_Time)
+	{
+		p_Hour = xml_node_soap_get(p_Time, "Hour");
+		if (p_Hour && p_Hour->data)
+		{
+			p_req->Time.Hour = atoi(p_Hour->data);
+		}
+
+		p_Minute = xml_node_soap_get(p_Time, "Minute");
+		if (p_Minute && p_Minute->data)
+		{
+			p_req->Time.Minute = atoi(p_Minute->data);
+		}
+
+		p_Second = xml_node_soap_get(p_Time, "Second");
+		if (p_Second && p_Second->data)
+		{
+			p_req->Time.Second = atoi(p_Second->data);
+		}
+	}
+}
+
+ONVIF_RET parse_PresetTour_Timer(XMLN * p_node, onvif_PTZPresetTourTimer * p_req)
+{
+	XMLN * p_Enabled;
+	XMLN * p_IntervalMinutes;
+	XMLN * p_StartingUTCDateTime;
+	ONVIF_RET ret;
+
+	
+	p_Enabled = xml_node_soap_get(p_node, "Enabled");
+	if (p_Enabled && p_Enabled->data)
+	{
+	    p_req->Enabled = parse_Bool(p_Enabled->data);
+	}
+
+	p_IntervalMinutes = xml_node_soap_get(p_node, "IntervalMinutes");
+	if (p_IntervalMinutes && p_IntervalMinutes->data)
+	{
+		p_req->IntervalMinutesFlag = 1;
+		p_req->IntervalMinutes = atoi(p_IntervalMinutes->data);
+	}
+
+	p_StartingUTCDateTime = xml_node_soap_get(p_node, "StartingUTCDateTime");
+	if (p_StartingUTCDateTime)
+	{
+		p_req->UTCDateTimeFlag = 1;
+		parse_UTCDateTime(p_StartingUTCDateTime, &p_req->UTCDateTime);
+	}
+
+	return ONVIF_OK;
+}
+
+
 // parse_PTZVector(p_PTZPosition, &p_req->Status.CurrentTourSpot.PresetDetail.PTZPosition);
 ONVIF_RET parse_TourSpot(XMLN * p_node, onvif_PTZPresetTourSpot * p_req)
 {
@@ -3997,6 +4090,7 @@ ONVIF_RET parse_PresetTour(XMLN * p_node, onvif_PresetTour * p_req)
 	XMLN * p_AutoStart;
 	XMLN * p_StartingCondition;
 	XMLN * p_TourSpot;
+	XMLN * p_Extension;
 	const char * p_token;
 	ONVIF_RET ret;
 
@@ -4081,6 +4175,38 @@ ONVIF_RET parse_PresetTour(XMLN * p_node, onvif_PresetTour * p_req)
 			p_req->StartingCondition.DirectionFlag = 1;
 			p_req->StartingCondition.Direction = PTZPresetTourDirection_Forward;
 		}
+
+		/* 扩展设置定时巡航 */
+		static int timerNumber = 0;
+		p_Extension = xml_node_soap_get(p_StartingCondition, "Extension");
+		if (p_Extension)
+		{
+			XMLN * p_Timer;
+
+			p_Timer = xml_node_soap_get(p_Extension, "Timer");
+			if (p_Timer)
+				p_req->StartingCondition.PresetTourTimerFlag = 1;
+
+			while (p_Timer && soap_strcmp(p_Timer->name, "Timer") == 0) 
+			{
+
+				ONVIF_PTZPresetTourTimer * p_tourTimer = onvif_add_Timer(&p_req->StartingCondition.Timer);
+				if (p_tourTimer)
+				{
+					ret = parse_PresetTour_Timer(p_Timer, &p_tourTimer->timer); 
+					if (ONVIF_OK != ret)
+					{
+						onvif_free_Timers(&p_req->StartingCondition.Timer);
+						break;
+					}
+				}
+
+				timerNumber++;
+				p_Timer = p_Timer->next;
+			}
+		}
+		if (timerNumber > MAX_TIMER)	//如果设置的定时器数量超过MAX_TIMER
+			return ONVIF_ERR_OTHER;
 	}
 	//四.
 	p_TourSpot = xml_node_soap_get(p_node, "TourSpot");
@@ -4192,12 +4318,10 @@ ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
 	}else {
 		return ONVIF_ERR_NoProfile;
 	}
-
+ 
 	p_PresetTour = xml_node_soap_get(p_node, "PresetTour"); 
 	if (p_PresetTour && soap_strcmp(p_PresetTour->name, "PresetTour") == 0)
 	{
-	// while (p_PresetTour && soap_strcmp(p_PresetTour->name, "PresetTour") == 0)
-	// {
 		ONVIF_PresetTour * PresetTour_req = onvif_add_PresetTour(&p_req->PresetTour_req);
 		if (PresetTour_req)
 		{
@@ -4205,14 +4329,10 @@ ONVIF_RET parse_ModifyPresetTour(XMLN * p_node, ModifyPresetTour_REQ * p_req)
 			if (ONVIF_OK != ret)
 			{
 				onvif_free_PresetTours(&p_req->PresetTour_req);
-
 				return ret;
 			}
 		}
 	}
-	// 	p_PresetTour = p_PresetTour->next;
-	// }
-
 	return ONVIF_OK;
 }
 

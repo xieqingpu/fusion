@@ -763,6 +763,28 @@ typedef struct
 	onvif_ParityBit Items[10];	                        // optional
 } onvif_ParityBitList;
 
+
+typedef struct
+{
+	int		Hour;									    // Range is 0 to 23
+	int		Minute;									    // Range is 0 to 59
+	int		Second;									    // Range is 0 to 61 (typically 59)
+} onvif_Time;
+
+typedef struct
+{
+	int		Year;									    // 
+	int		Month;									    // Range is 1 to 12
+	int		Day;									    // Range is 1 to 31
+} onvif_Date;
+
+typedef struct
+{
+	onvif_Time	Time;								    // required 
+	onvif_Date  Date;								    // required 
+} onvif_DateTime;
+
+
 /* device capabilities */
 typedef struct
 {
@@ -2415,13 +2437,33 @@ typedef struct
 	onvif_PTZPresetTourSpot     CurrentTourSpot;	    // optional, Indicates a tour spot currently staying
 } onvif_PTZPresetTourStatus;
 
+
+typedef struct 
+{
+    uint32  IntervalMinutesFlag : 1;		           
+    uint32  UTCDateTimeFlag     : 1;		           
+	uint32	Reserved		    : 30;
+	
+	BOOL   Enabled;
+	int    IntervalMinutes;	            // 定时间隔
+    onvif_DateTime 	UTCDateTime;
+} onvif_PTZPresetTourTimer;
+
+typedef struct _ONVIF_PTZPresetTourTimer
+{
+	struct _ONVIF_PTZPresetTourTimer * next;
+
+	onvif_PTZPresetTourTimer timer;
+} ONVIF_PTZPresetTourTimer;
+
 typedef struct 
 {
     uint32  RecurringTimeFlag	    : 1;		        // Indicates whether the field RecurringTime is valid
 	uint32  RecurringDurationFlag   : 1;		        // Indicates whether the field RecurringDuration is valid
 	uint32  DirectionFlag		    : 1;		        // Indicates whether the field Direction is valid
 	uint32  RandomPresetOrderFlag   : 1;		        // Indicates whether the field RandomPresetOrder is valid
-	uint32	Reserved	            : 28;
+	uint32  PresetTourTimerFlag     : 1;	//add 扩展	
+	uint32	Reserved	            : 27;
 	
 	int     RecurringTime;	                            // optional, Optional parameter to specify how many times the preset tour is recurred
 	int     RecurringDuration;	                        // optional, Optional parameter to specify how long time duration the preset tour is recurred
@@ -2429,6 +2471,8 @@ typedef struct
 	onvif_PTZPresetTourDirection    Direction;	        // optional, Optional parameter to choose which direction the preset tour goes. Forward shall be chosen in case it is omitted
 
 	BOOL RandomPresetOrder;	                            // optional, Execute presets in random order. If set to true and Direction is also present, Direction will be ignored and presets of the Tour will be recalled randomly
+
+	ONVIF_PTZPresetTourTimer *	Timer;		//add 扩展巡航定时
 } onvif_PTZPresetTourStartingCondition;
 
 typedef struct
@@ -2720,26 +2764,6 @@ typedef struct
 {
 	char 	TZ[128];								    // required, Posix timezone string
 } onvif_TimeZone;
-
-typedef struct
-{
-	int		Hour;									    // Range is 0 to 23
-	int		Minute;									    // Range is 0 to 59
-	int		Second;									    // Range is 0 to 61 (typically 59)
-} onvif_Time;
-
-typedef struct
-{
-	int		Year;									    // 
-	int		Month;									    // Range is 1 to 12
-	int		Day;									    // Range is 1 to 31
-} onvif_Date;
-
-typedef struct
-{
-	onvif_Time	Time;								    // required 
-	onvif_Date  Date;								    // required 
-} onvif_DateTime;
 
 typedef struct 
 {

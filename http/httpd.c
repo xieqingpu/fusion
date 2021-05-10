@@ -326,7 +326,7 @@ void http_process_request(HTTPCLN * p_user, HTTPMSG * rx_msg)
         // int olen;
         // char *p_ores;
         char *p_ores = "HTTP/1.1 204 No Content\r\n"
-                     "Access-Control-Allow-Origin: http://192.168.3.233:8080\r\n"
+                     "Access-Control-Allow-Origin: *\r\n"
                      "Access-Control-Allow-Methods: GET, POST, PUT, OPTIONS\r\n"
                      "Access-Control-Allow-Headers: Content-Type, Authorization, X-Custom-Header\r\n"
                      "Connection: close\r\n";

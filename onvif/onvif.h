@@ -594,11 +594,13 @@ ONVIF_PresetTour * onvif_add_PresetTour(ONVIF_PresetTour ** p_head);
 ONVIF_PresetTour * onvif_find_PTZPresetTour(const char * profile_token, const char  * PresetTours_token);
 ONVIF_PresetTour * onvif_find_ModifyPresetTour(const char * profile_token, const char  * PresetTours_token);
 ONVIF_PTZPresetTourSpot * onvif_add_TourSpot(ONVIF_PTZPresetTourSpot ** p_head);
+ONVIF_PTZPresetTourTimer * onvif_add_Timer(ONVIF_PTZPresetTourTimer ** p_head);
+
 void onvif_remove_PresetTour(ONVIF_PresetTour ** p_head, ONVIF_PresetTour * p_remove);
 void onvif_free_TourSpots(ONVIF_PTZPresetTourSpot ** p_head);
+void onvif_free_Timers(ONVIF_PTZPresetTourTimer ** p_head);
 ONVIF_PresetTour * onvif_free_PresetTours(ONVIF_PresetTour ** p_head);
 ONVIF_PresetTour * onvif_get_prev_presetTour(ONVIF_PresetTour ** p_head, ONVIF_PresetTour * p_found);
-
 /*  */
 #endif
 

@@ -24,7 +24,13 @@
 #include "onvif.h"
 #include "ntp_conf.h"
 
-#define VISCA_COM	"/dev/ttyAMA3"
+
+#ifdef HI3519AV100
+#define VISCA_COM     "/dev/ttyAMA3"
+#elif HI3516DV300
+#define VISCA_COM     "/dev/ttyAMA4"
+#endif
+
 #ifdef HI3519AV100
 #define PTZ_COM     "/dev/ttyAMA2"
 #elif HI3516DV300

@@ -63,6 +63,8 @@
 
 #include "set_config.h"
 
+#include "utils_log.h"   //test
+
 #if __WINDOWS_OS__
 #pragma warning(disable:4996)
 #endif
@@ -7755,6 +7757,49 @@ int build_Status_xml(char * p_buf, int mlen, onvif_PTZPresetTourStatus * p_req)
 	return offset;
 }
 
+int build_Timer_xml(char * p_buf, int mlen, onvif_DateTime * p_req)
+{
+	int offset = 0;
+
+	offset += snprintf(p_buf+offset, mlen-offset, 
+		"<tt:Date>"
+			"<tt:Year>%d</tt:Year>"
+			"<tt:Month>%d</tt:Month>"
+			"<tt:Day>%d</tt:Day>"
+		"</tt:Date>",
+	p_req->Date.Year, p_req->Date.Month, p_req->Date.Day );	
+
+	offset += snprintf(p_buf+offset, mlen-offset, 
+		"<tt:Time>"
+			"<tt:Hour>%d</tt:Hour>"
+			"<tt:Minute>%d</tt:Minute>"
+			"<tt:Second>%d</tt:Second>"
+		"</tt:Time>",
+	p_req->Time.Hour, p_req->Time.Minute, p_req->Time.Second );
+
+	return offset;
+}
+int build_PresetTourTimer_xml(char * p_buf, int mlen, onvif_PTZPresetTourTimer * p_req)
+{
+	int offset = 0;
+
+    offset += snprintf(p_buf+offset, mlen-offset, "<tt:Enabled>%s</tt:Enabled>", p_req->Enabled ? "true" : "false");
+
+	if (p_req->IntervalMinutesFlag)
+	{
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:IntervalMinutes>%d</tt:IntervalMinutes>", p_req->IntervalMinutes);
+	}
+
+	if (p_req->UTCDateTimeFlag)
+	{
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:StartingUTCDateTime>");
+		offset += build_Timer_xml(p_buf+offset, mlen-offset, &p_req->UTCDateTime);
+		offset += snprintf(p_buf+offset, mlen-offset, "</tt:StartingUTCDateTime>");		
+    }
+
+	return offset;
+}
+
 int build_StartingCondition_xml(char * p_buf, int mlen, onvif_PTZPresetTourStartingCondition * p_req)
 {
 	int offset = 0;
@@ -7778,7 +7823,23 @@ int build_StartingCondition_xml(char * p_buf, int mlen, onvif_PTZPresetTourStart
 		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Direction>%s</tt:Direction>",
 			onvif_PTZPresetTourDirectionToString(p_req->Direction));
 	}
+
+	/* 扩展巡更定时器（设置定时巡更时间） */
+	offset += snprintf(p_buf+offset, mlen-offset, "<tt:Extension>");
+
+	ONVIF_PTZPresetTourTimer * p_Timer = p_req->Timer;
+	while (p_Timer)
+	{
+		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:Timer>");
+		offset += build_PresetTourTimer_xml(p_buf+offset, mlen-offset, &p_Timer->timer);
+		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:Timer>");
+
+		p_Timer = p_Timer->next;
+	}
+
+	offset += snprintf(p_buf+offset, mlen-offset, "</tt:Extension>");
 	
+
 	return offset;
 }
 int build_TourSpot_xml(char * p_buf, int mlen, onvif_PTZPresetTourSpot * p_req)
@@ -7851,6 +7912,7 @@ int build_GetPresetTours_rly_xml(char * p_buf, int mlen, const char * argv)
 		offset += snprintf(p_buf+offset, mlen-offset, "<tptz:StartingCondition>");
 		offset += build_StartingCondition_xml(p_buf+offset, mlen-offset, &p_PresetTour->PresetTour.StartingCondition);	
 		offset += snprintf(p_buf+offset, mlen-offset, "</tptz:StartingCondition>");
+
 		ONVIF_PTZPresetTourSpot * p_TourSpot = p_PresetTour->PresetTour.TourSpot;
 		while (p_TourSpot)
 		{

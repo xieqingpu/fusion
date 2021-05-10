@@ -25,6 +25,7 @@
 
 #define MAX_PRESETS_TOUR    10 
 #define MAX_PRESETS_T    64
+#define MAX_TIMER    16
 
 typedef struct
 {
@@ -167,15 +168,18 @@ typedef struct
 {
 	uint32  runNumberFlag  : 1;	
 	uint32  runTimeFlag    : 1;
-	uint32	Reserved	   : 30;
+	uint32  TimerFlag    : 1;
+	uint32	Reserved	   : 29;
 
 	Presets_t presets[MAX_PRESETS_T];
     uint16    presetCount; 		//巡检总共的预置位
+    uint16    timerCount; 		//巡航的定时器数
 
 	uint16    direction; 		//巡检类型（顺序，倒序，随机）
 	BOOL	  RandomOrder;      //是否随机转动
     uint32    runNumber; 		//运行次数（次数运行完停止）
     uint32    runTime; 		    //运行时间（时间运行完停止）
+	onvif_PTZPresetTourTimer  Timer[MAX_TIMER];		// 扩展巡航定时
 } PresetsTours_t;
 
 typedef struct 
