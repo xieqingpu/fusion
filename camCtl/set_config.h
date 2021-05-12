@@ -355,6 +355,18 @@ int getImgParam(ImgParam_t *imgParams);
 int setImgParam(ImgParam_t *imgParams);
 
 int img_Stop();
+
+/*********************************************
+* FuncName: setVideoTransformMode       
+* Describe: 设置图像翻转模式, 模式1：可见光翻转、模式2:热成像翻转、模式3:可见光及热成像翻转
+* [IN]      
+* Return  : 成功返回0，失败返回-1                              
+**********************************************/
+int setVideoTransformMode(onvif_VideoTransformMode *transformMode);
+//获取图像翻转模式
+int getVideoTransformMode(onvif_VideoTransformMode *transformMode);
+
+
 /*********************************************
 * FuncName: getThermalBaseParam       
 * Describe:  获取 热成像参数配置_1 , 获取:色板、宽动态、亮度补偿、清晰度 (锐度)

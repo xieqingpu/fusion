@@ -126,7 +126,6 @@ uint16_t  switchToZspeed(float z)
 
 int controlPtzPos(float X, float Y, float Z , unsigned short Speed)
 {
-	UTIL_INFO(" ctlPTZ:  x=%0.3f , y = %0.3f , z = %0.3f, Speed:%d",X, Y, Z , Speed);
 
 	if (X > 0 && Y == 0) {	//右	    
 		if ( pelco_Right(Speed) != RET_OK )   return -1;
@@ -203,13 +202,11 @@ int writeHomePos(CONFIG_Home * p_homeZoom)
 /* 设置预置位 */
 void setPtzPreset(unsigned short location)
 {
-	UTIL_INFO("set_config | pelco_set_point = %d",location);
 	pelco_set_point(location);
 }
 /* 转到预置位 */
 void gotoPtzPreset(unsigned short location)
 {
-	UTIL_INFO("set_config | pelco_get_point = %d",location);
 	pelco_get_point(location);
 }
 
@@ -234,8 +231,6 @@ int writePtzPreset(ONVIF_PTZPreset * p_preset, int cnt)
 				  
 void focusMove(float zoom)
 {
-	UTIL_INFO("set_config  |  foucs move = %f",zoom);
-	
 	if(zoom>0)
 		set_focus_far();
 	else if(zoom<0)
@@ -333,6 +328,48 @@ int setImgParam(ImgParam_t *imgParams)
 	return 0;
 }
 
+#define VIDEO_TRANSFORM_MODE		"/user/cfg_files/videoTransformMode.dat"
+int getVideoTransformMode(onvif_VideoTransformMode *transformMode)
+{
+	if (read_cfg_from_file(VIDEO_TRANSFORM_MODE, (char *)transformMode,sizeof(onvif_VideoTransformMode)) != 0) 
+	{
+		transformMode->TransformMode = VideoTransformMode0;  //初始化失败后设置为
+		//保存参数
+		if (save_cfg_to_file((char*)VIDEO_TRANSFORM_MODE, (char*)transformMode, sizeof(onvif_VideoTransformMode))<0)
+			UTIL_ERR("save ir base param fail\n");
+
+		return -1;
+	}
+
+	return 0;
+}
+
+int setVideoTransformMode(onvif_VideoTransformMode *transformMode)
+{
+	if (transformMode->TransformMode == VideoTransformMode0){
+		set_img_flip(1);
+		set_img_mirror(1);
+		set_ir_img_flip(1);
+	} else if (transformMode->TransformMode == VideoTransformMode1){
+		set_img_flip(0);
+		set_img_mirror(0);
+		set_ir_img_flip(1);
+	} else if (transformMode->TransformMode == VideoTransformMode2){
+		set_img_flip(1);
+		set_img_mirror(1);
+		set_ir_img_flip(0);
+	} else {			//VideoTransformMode3
+		set_img_flip(0);
+		set_img_mirror(0);
+		set_ir_img_flip(0);
+	}
+
+	//保存参数
+	if (save_cfg_to_file((char*)VIDEO_TRANSFORM_MODE, (char*)transformMode, sizeof(onvif_VideoTransformMode))<0)
+		UTIL_ERR("save ir base param fail\n");
+
+	return 0;
+}
 
 #define IR_BASE_PARAM_FILE			"/user/cfg_files/irBase.dat"
 //获取热成像基础参数,成功返回0，失败返回-1
@@ -453,9 +490,9 @@ int setDulaParam(DulaInformation_t *dulaInfo)
 	memset(&readDulaInfo, 0 ,sizeof(DulaInformation_t));
 	if (read_cfg_from_file(FUSION_PARAM_FILE, (char *)&readDulaInfo, sizeof(DulaInformation_t)) == 0 && dulaInfo)
 	{
-		UTIL_INFO("focal:%d, weightIrY:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f,%0.2f", 
-				dulaInfo->focal, dulaInfo->weightIrY, dulaInfo->weightIrC, dulaInfo->dula_model, 
-				dulaInfo->x, dulaInfo->y, dulaInfo->scale, readDulaInfo.scale); 
+		// UTIL_INFO("focal:%d, weightIrY:%0.2f, distance:%0.2f, dula_model:%d, x:%d, y:%d, xscale:%0.2f,%0.2f", 
+		// 		dulaInfo->focal, dulaInfo->weightIrY, dulaInfo->weightIrC, dulaInfo->dula_model, 
+		// 		dulaInfo->x, dulaInfo->y, dulaInfo->scale, readDulaInfo.scale); 
 		float b = -1.00;
 		//切换模式focal:-1, weightIrY:-1.00, weightIrC:-1.00, dula_model:0, x:-1, y:-1, xscale:-1.00
 		if ((dulaInfo->focal == -1) && (fabs((dulaInfo->weightIrY)-(b))) < (1e-8)
@@ -1500,6 +1537,15 @@ int IRParamGetHanldeMsg(int msgtype, int chan,
 			getThermalEnvParam((ThermalEnvParam *)u32DataParam);
 		}
 		break;
+		case GPT_MSG_IR_GETIRFLIPPARAM:
+		{
+			if(sizeof(onvif_VideoTransformMode) != u32DataLen){
+				pthread_mutex_unlock(&m_get_ir_param_lock);
+				return -1;
+			}
+			getVideoTransformMode((onvif_VideoTransformMode *)u32DataParam);
+		}
+		break;
 		default:
 			break;
 	}
@@ -1668,6 +1714,7 @@ int onvif_ir_message_register()
 {
    GPTMessageRegister(GPT_MSG_IR_GETBASEPARAM, IRParamGetHanldeMsg, 0, NULL);
    GPTMessageRegister(GPT_MSG_IR_GETENVPARAM, IRParamGetHanldeMsg, 0, NULL);
+   GPTMessageRegister(GPT_MSG_IR_GETIRFLIPPARAM, IRParamGetHanldeMsg, 0, NULL);
    return 0;
 
 }
@@ -1707,5 +1754,6 @@ int onvif_message_init()
 	onvif_record_message_register();
 	//gb28181模块
 	onvif_gb28181_message_register();
+
 	return 0;
 }

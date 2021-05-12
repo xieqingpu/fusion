@@ -1710,6 +1710,7 @@ ONVIF_RET parse_SetImagingSettings(XMLN * p_node, SetImagingSettings_REQ * p_req
 	XMLN * p_Extension;
 	XMLN * p_ThermalSettings;
 	XMLN * p_DulaInfoSettings;
+	XMLN * p_VideoTransformMode;
 	
 	p_VideoSourceToken = xml_node_soap_get(p_node, "VideoSourceToken");
     if (p_VideoSourceToken && p_VideoSourceToken->data)
@@ -2015,6 +2016,13 @@ ONVIF_RET parse_SetImagingSettings(XMLN * p_node, SetImagingSettings_REQ * p_req
     {
     	return ONVIF_OK;
     }
+
+	p_VideoTransformMode = xml_node_soap_get(p_Extension, "VideoTransformMode");
+	if (p_VideoTransformMode && p_VideoTransformMode->data)
+    {
+		p_req->ImagingSettings.VideoTransformModeFlag = 1;
+		p_req->ImagingSettings.VideoTransformMode.TransformMode = (int)atoi(p_VideoTransformMode->data);
+	}
 	
 	p_ThermalSettings = xml_node_soap_get(p_Extension, "ThermalSettings");
 	if (p_ThermalSettings)

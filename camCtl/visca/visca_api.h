@@ -51,6 +51,9 @@ int set_zoom_wide_speed(int speed);
 
 int set_zoom_stop();
 
+int set_img_flip(int flip);
+int set_img_mirror(int flip);
+
 
 #ifdef __cplusplus
 }

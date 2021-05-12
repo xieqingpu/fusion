@@ -29,7 +29,8 @@
 #include "onvif_api.h"
 #include "utils_log.h"
 #include "set_config.h"
-
+#include "http_cln.h"
+#include "onvif_ptz.h"
 /***************************************************************************************/
 static HTTPSRV http_srv[MAX_SERVERS];
 extern ONVIF_CLS g_onvif_cls;
@@ -85,6 +86,22 @@ void * onvif_task(void * argv)
 
 			case ONVIF_EXIT:
 			    goto EXIT;
+				
+			case ONVIF_PRESETTOUR_SRC:
+				{
+					onvif_presettour_operation((ONVIF_PresetTour *)stm.msg_buf, FALSE);
+				}
+				break;
+			case ONVIF_AUTOPRESETTOUR_SRC:
+				{
+					onvif_presettour_operation((ONVIF_PresetTour *)stm.msg_buf, TRUE);
+				}
+				break;
+			case ONVIF_HTTPJPEGSEND_SRC:
+				{
+					http_snap_and_sendto_host_extend((Gpt_SendJpegInfo *)stm.msg_buf);
+				}
+				break;
 			}
 		}
 	}
@@ -102,7 +119,7 @@ void onvif_start()
 	int i;
 
 	onvif_init();
-
+	
     g_onvif_cls.msg_queue = hqCreate(100, sizeof(OIMSG), HQ_GET_WAIT);
 	if (g_onvif_cls.msg_queue == NULL)
 	{
@@ -128,6 +145,8 @@ void onvif_start()
 	onvif_timer_init();
 
 	onvif_start_discovery();
+
+    onvif_presettour_build();
 }
 
 void onvif_stop()

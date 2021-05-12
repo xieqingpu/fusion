@@ -31,6 +31,9 @@
 #define ONVIF_TIMER_SRC	    2
 #define ONVIF_DEL_UA_SRC    3
 #define ONVIF_EXIT          4
+#define ONVIF_PRESETTOUR_SRC	    5//定制巡航
+#define ONVIF_AUTOPRESETTOUR_SRC	6//自动巡航
+#define ONVIF_HTTPJPEGSEND_SRC	    7 //抓拍发送
 
 /***************************************************************************************/
 
@@ -489,6 +492,10 @@ typedef struct
 
     HQUEUE *		msg_queue;		                    // message receive queue
 	pthread_t		tid_main;                           // main task thread
+
+    //巡航线程
+    pthread_t       presettoursch_tid;
+	//pthread_t       presettour_tid;
 } ONVIF_CLS;
 
 typedef struct onvif_internal_msg
@@ -764,6 +771,8 @@ onvif_PrefixedIPAddress *                   onvif_find_ipaddr_filter(onvif_Prefi
 onvif_PrefixedIPAddress *                   onvif_get_idle_ipaddr_filter(onvif_PrefixedIPAddress * p_head, int size);
 ONVIF_RET                                   onvif_add_ipaddr_filter(onvif_PrefixedIPAddress * p_head, int size, onvif_PrefixedIPAddress * p_item);
 #endif // IPFILTER_SUPPORT
+int onvif_IsIdle_PTZPresetTour(const char * profile_token);
+int onvif_Idle_OtherPresetTour(const char* profile_token, const char* PresetTour_token);
 
 
 #ifdef __cplusplus

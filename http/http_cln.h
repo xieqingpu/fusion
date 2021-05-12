@@ -35,6 +35,13 @@ typedef struct eventinfo {
 	int towhere;// 推送图片去哪个服务器，0表示事件服务器地址，1表示算法服务器地址
 }Gpt_EventUploadInfo;
 
+typedef struct sendinfo {
+	char eventdetail[256];
+	int eventtype;//事件类型
+	int towhere;// 推送图片去哪个服务器，0表示事件服务器地址，1表示算法服务器地址
+	int snaptype; 
+}Gpt_SendJpegInfo;
+
 BOOL http_onvif_trans(HTTPREQ * p_req, int timeout, const char * bufs, int len);
 
 /*发送图片到服务器
@@ -64,6 +71,8 @@ int http_send_event_jpeg(Gpt_EventUploadInfo *pUploadInfo);
 返回与http_send_event_jpeg相同
 */
 int http_snap_and_sendto_host(int eventtype, int snaptype, int towhere, const char *eventdetail);
+
+int http_snap_and_sendto_host_extend(Gpt_SendJpegInfo *pSendInfo);
 
 #ifdef __cplusplus
 }

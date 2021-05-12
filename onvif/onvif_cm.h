@@ -718,6 +718,18 @@ typedef struct
 	ThermalSettings2	ThermalSet2;
 } onvif_ThermalSettings;
 
+typedef enum 
+{
+    VideoTransformMode0 = 0,     //0(禁用)
+    VideoTransformMode1 = 1,  	 //模式1：可见光翻转 
+    VideoTransformMode2 = 2,     //模式2: 热成像翻转      	     
+    VideoTransformMode3 = 3      //模式3: 可见光及热成像翻转                 
+} video_transform_mode;
+
+typedef struct		
+{
+	video_transform_mode	TransformMode; 	
+} onvif_VideoTransformMode;		//图像翻转
 
 typedef struct
 {
@@ -1403,7 +1415,8 @@ typedef struct
    ////extension根据项目扩展  add by xieqingpu
 	uint32  ThermalSettings_extFlag				: 1;	
 	uint32  DulaInformationFlag			:1;
-	uint32  Reserved					: 20;
+	uint32  VideoTransformModeFlag			:1;
+	uint32  Reserved					: 19;
 	
 	onvif_BacklightCompensation BacklightCompensation;  // optional, Enabled/disabled BLC mode (on/off)
 	float   Brightness;                                 // optional, Image brightness (unit unspecified)
@@ -1419,6 +1432,7 @@ typedef struct
    ////extension根据项目扩展  add by xieqingpu
 	onvif_ThermalSettings		ThermalSettings;
 	onvif_DulaInformation		DulaInfo;
+	onvif_VideoTransformMode	VideoTransformMode;
 } onvif_ImagingSettings;
 
 typedef struct
@@ -2488,6 +2502,9 @@ typedef struct
 
 	ONVIF_PTZPresetTourSpot *   TourSpot;	            // optional, A list of detail of touring spots including preset positions
 	
+    //巡航线程
+    uint32          presettour_run;
+	pthread_t       presettour_tid;
 } onvif_PresetTour;
 
 typedef struct

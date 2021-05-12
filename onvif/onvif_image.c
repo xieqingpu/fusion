@@ -157,6 +157,17 @@ ONVIF_RET onvif_SetImagingSettings(SetImagingSettings_REQ * p_req)
 	
 	// todo : add the image setting code ...
 	///   add by xieqingpu
+	if (p_req->ImagingSettings.VideoTransformModeFlag)
+	{
+		onvif_VideoTransformMode transformMode;
+		memset(&transformMode, 0, sizeof(onvif_VideoTransformMode));
+
+		transformMode.TransformMode = p_req->ImagingSettings.VideoTransformMode.TransformMode;
+
+		if (setVideoTransformMode(&transformMode) != 0)
+			UTIL_ERR("set Video Transform Mode faile");
+	}
+
 	if (p_req->ImagingSettings.ThermalSettings_extFlag != 1 && p_req->ImagingSettings.DulaInformationFlag != 1){
 		// printf("Brightness 亮度= %0.2f ,ColorSaturation 饱和度 = %0.2f , Contrast 对比度 = %0.2f , Sharpness 锐度= %0.2f\n",p_req->ImagingSettings.Brightness, p_req->ImagingSettings.ColorSaturation,
 		// p_req->ImagingSettings.Contrast, p_req->ImagingSettings.Sharpness); 
@@ -387,6 +398,11 @@ ONVIF_RET onvif_SetImagingSettings(SetImagingSettings_REQ * p_req)
 	}
 
 	//// add by xieqingpu
+	if (p_req->ImagingSettings.VideoTransformModeFlag)
+	{
+		g_onvif_cfg.ImagingSettings.VideoTransformMode.TransformMode = p_req->ImagingSettings.VideoTransformMode.TransformMode;
+	}
+
 	if (p_req->ImagingSettings.ThermalSettings_extFlag)
 	{
 		g_onvif_cfg.ImagingSettings.ThermalSettings_extFlag = p_req->ImagingSettings.ThermalSettings_extFlag;

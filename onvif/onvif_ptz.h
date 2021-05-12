@@ -23,7 +23,7 @@
 #include "sys_inc.h"
 #include "onvif.h"
 
-#define MAX_PRESETS_TOUR    10 
+#define MAX_PRESETS_TOUR    4 
 #define MAX_PRESETS_T    64
 #define MAX_TIMER    16
 
@@ -227,7 +227,8 @@ ONVIF_RET onvif_CreatePresetTour(PresetTour_REQ * p_req);
 ONVIF_RET onvif_OperatePresetTour(OperatePresetTour_REQ * p_req);
 ONVIF_RET onvif_RemovePresetTour(PresetTour_REQ * p_req);
 ONVIF_RET onvif_ModifyPresetTour(ModifyPresetTour_REQ * p_req);
-
+ONVIF_RET onvif_presettour_operation(ONVIF_PresetTour * presetTours, BOOL AutoStart);
+int onvif_presettour_build();
 
 #ifdef __cplusplus
 }

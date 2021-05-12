@@ -1057,6 +1057,18 @@ void onvif_init_ImagingSettings()
 	g_onvif_cfg.ImagingSettings.Sharpness = imgParam.sharp;
 
 	//// 扩展 add xieqingpu
+	g_onvif_cfg.ImagingSettings.VideoTransformModeFlag = 1;
+	if (g_onvif_cfg.ImagingSettings.VideoTransformModeFlag)
+	{
+		onvif_VideoTransformMode transformMode;
+		memset(&transformMode, 0, sizeof(onvif_VideoTransformMode));
+
+		if (getVideoTransformMode(&transformMode) != 0)
+			UTIL_ERR("get Video Transform Mode faile.");
+
+		g_onvif_cfg.ImagingSettings.VideoTransformMode.TransformMode = transformMode.TransformMode;
+	}
+
 	g_onvif_cfg.ImagingSettings.ThermalSettings_extFlag = 1;
 	if (g_onvif_cfg.ImagingSettings.ThermalSettings_extFlag)
 	{
@@ -2983,7 +2995,7 @@ ONVIF_PresetTour * onvif_get_prev_presetTour(ONVIF_PresetTour ** p_head, ONVIF_P
 	return p_prev;
 }
 
-ONVIF_PresetTour * onvif_find_PTZPresetTour(const char * profile_token, const char  * PresetTour_token)  //onvif_find_PTZPreset
+ONVIF_PresetTour * onvif_find_PTZPresetTour(const char * profile_token, const char  * PresetTour_token)
 {
     ONVIF_PROFILE * p_profile = onvif_find_profile(profile_token);
     if (NULL == p_profile)
@@ -2991,7 +3003,6 @@ ONVIF_PresetTour * onvif_find_PTZPresetTour(const char * profile_token, const ch
         return NULL;
     }
 
-	// ONVIF_PresetTour * p_tmp = g_onvif_cfg.ptz_preset_tour;
 	ONVIF_PresetTour * p_tmp = p_profile->PresetTours;
 	while (p_tmp)
 	{
@@ -3004,6 +3015,72 @@ ONVIF_PresetTour * onvif_find_PTZPresetTour(const char * profile_token, const ch
 	}
 
 	return p_tmp;
+
+}
+
+int onvif_Idle_OtherPresetTour(const char* profile_token, const char* PresetTour_token)
+{
+	ONVIF_RET ret = ONVIF_ERR_OTHER;
+    ONVIF_PROFILE * p_profile = onvif_find_profile(profile_token);
+    if (NULL == p_profile)
+    {
+        return ret;
+    }
+
+	ONVIF_PresetTour * p_tmp = p_profile->PresetTours;
+	while (p_tmp)
+	{
+		if (strcmp(p_tmp->PresetTour.token, PresetTour_token) == 0)
+		{
+			p_tmp = p_tmp->next;
+			continue;
+		}
+		
+		if (1 == p_tmp->PresetTour.presettour_run || 
+			PTZPresetTourState_Idle != p_tmp->PresetTour.Status.State)
+		{
+		    ret = ONVIF_OK;
+			//UTIL_INFO("IDLE p_tmp->PresetTour.token===%s",p_tmp->PresetTour.token);
+			p_tmp->PresetTour.Status.State = PTZPresetTourState_Idle;
+			ptzStop();
+			while(1)
+		    {
+		    	if (0 == p_tmp->PresetTour.presettour_run)
+					break;
+				usleep(1000);
+		    }
+		}
+
+		p_tmp = p_tmp->next;
+	}
+
+	return ret;
+
+}
+
+int onvif_IsIdle_PTZPresetTour(const char * profile_token)
+{
+    ONVIF_RET ret = ONVIF_ERR_OTHER;
+    ONVIF_PROFILE * p_profile = onvif_find_profile(profile_token);
+    if (NULL == p_profile)
+    {
+        return ONVIF_ERR_NoProfile;
+    }
+
+	ONVIF_PresetTour * p_tmp = p_profile->PresetTours;
+	while (p_tmp)
+	{
+		if (1 == p_tmp->PresetTour.presettour_run || 
+			PTZPresetTourState_Idle != p_tmp->PresetTour.Status.State)
+		{
+		    ret = ONVIF_OK;
+			break;
+		}
+
+		p_tmp = p_tmp->next;
+	}
+
+	return ret;
 
 }
 
@@ -3407,8 +3484,6 @@ int onvif_PresetTours_init()
 		UTIL_ERR("read PtzPresetTour failed...");
 		return -1;
 	}
-
-	p_profile = g_onvif_cfg.profiles;
 
 	/* 该for()里只有双光融合项目的需要的数据（结构体PTZ_PresetsTours_t） */
 	for (index = 0; index < MAX_PRESETS_TOUR; index++)
@@ -6462,6 +6537,21 @@ void onvif_init_cfg()
 #endif
 }
 
+static int onvif_Preset_init()
+{
+    ONVIF_PROFILE * p_profile;
+	
+	p_profile = g_onvif_cfg.profiles;
+
+	//// add by xieqingpu
+	if (readPtzPreset(p_profile->presets, MAX_PTZ_PRESETS) != 0) 
+	{
+		UTIL_ERR("read PTZ preset faile.");
+		return -1;
+	}
+	return 0;
+}
+
 void onvif_init()
 {
 #ifdef PTZ_SUPPORT
@@ -6479,6 +6569,8 @@ void onvif_init()
     
 #ifdef PTZ_SUPPORT
 	onvif_init_ptz();
+
+	onvif_Preset_init();
 
 	/* add xie */
 	onvif_init_PresetTourOptions();

@@ -1528,8 +1528,13 @@ int build_ImageSettings_xml(char * p_buf, int mlen)
 	}
 
 	//// 扩展 add by xieqingpu
+	offset += snprintf(p_buf+offset, mlen-offset, "<tt:Extension>");
+
+	if(g_onvif_cfg.ImagingSettings.VideoTransformModeFlag){
+		offset += snprintf(p_buf+offset, mlen-offset, "<tt:VideoTransformMode>%d</tt:VideoTransformMode>", g_onvif_cfg.ImagingSettings.VideoTransformMode.TransformMode);
+	}
+
 	if ( g_onvif_cfg.ImagingSettings.ThermalSettings_extFlag ){
-		offset += snprintf(p_buf+offset, mlen-offset, "<tt:Extension>");
 		offset += snprintf(p_buf+offset, mlen-offset, "<tt:ThermalSettings>");
 
 		//热成像第一个设置
@@ -1562,9 +1567,8 @@ int build_ImageSettings_xml(char * p_buf, int mlen)
 			offset += snprintf(p_buf+offset, mlen-offset, "<tt:Scale>%0.2f</tt:Scale>", g_onvif_cfg.ImagingSettings.DulaInfo.scale);
 			offset += snprintf(p_buf+offset, mlen-offset, "</tt:DulaInfoSettings>");	
 		}
-
-		offset += snprintf(p_buf+offset, mlen-offset, "</tt:Extension>");	
 	}
+	offset += snprintf(p_buf+offset, mlen-offset, "</tt:Extension>");	
 	////
 
 	return offset;
@@ -7524,17 +7528,11 @@ int build_GetPresets_rly_xml(char * p_buf, int mlen, const char * argv)
 {
 	int i , j;
 	int offset = 0;
-    ONVIF_PROFILE * p_profile = onvif_find_profile(argv);  // g_onvif_cfg.profiles
+    ONVIF_PROFILE * p_profile = onvif_find_profile(argv);
     if (NULL == p_profile)
     {
         return ONVIF_ERR_NoProfile;
     }
-
-	//// add by xieqingpu
-	if (readPtzPreset(p_profile->presets, MAX_PTZ_PRESETS) != 0)  // MAX_PTZ_PRESETS:其实该云台设备支持256个预置位，但我只设置最多100个
-	{
-		printf("read PTZ preset faile.\n");
-	}
 
 	offset += snprintf(p_buf+offset, mlen-offset, "<tptz:GetPresetsResponse>");
 

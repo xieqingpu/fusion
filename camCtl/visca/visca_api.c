@@ -5,10 +5,13 @@
 #include "libvisca.h"
 #include "rw_config.h"
 #include "utils_log.h"
+#include "onvif.h"
 
 VISCAInterface_t iface;
 VISCACamera_t camera;
 
+extern ONVIF_CFG g_onvif_cfg;
+ 
 VISCA_API uint32_t
 set_auto_icr(VISCAInterface_t *iface, VISCACamera_t *camera, int on)
 {
@@ -432,20 +435,18 @@ int get_visca_status()
 	return visca_status;
 }
 
-
 //flip输入0或者1
 int set_img_flip(int flip)
 {
-	return VISCA_set_flip(&iface, &camera, flip);
-
+	if (get_visca_status() == 1 )
+		return VISCA_set_flip(&iface, &camera, flip);
 }
-
 
 //flip输入0或者1
 int set_img_mirror(int flip)
 {
-	return VISCA_set_mirror_LR(&iface, &camera, flip);
-
+	if (get_visca_status() == 1 )
+		return VISCA_set_mirror_LR(&iface, &camera, flip);
 }
 
 void* visca_init_thread(void* param)
@@ -512,8 +513,7 @@ void* visca_init_thread(void* param)
 					camera.vendor, camera.model, camera.rom_version, camera.socket_num);
 
 			set_visca_status(1);    //1:success
-			set_img_flip(1);
-			set_img_mirror(1);
+
 			return VISCA_SUCCESS;
 		}
 		else

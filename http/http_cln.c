@@ -826,4 +826,10 @@ int http_snap_and_sendto_host(int eventtype, int snaptype, int towhere, const ch
     return ret;
 }
 
+int http_snap_and_sendto_host_extend(Gpt_SendJpegInfo *pSendInfo)
+{
+	if (pSendInfo)
+		return http_snap_and_sendto_host(pSendInfo->eventtype, pSendInfo->snaptype, pSendInfo->towhere, pSendInfo->eventdetail);
+	return -1;
+}
 

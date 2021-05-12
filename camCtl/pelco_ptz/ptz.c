@@ -130,14 +130,12 @@ error_code pelcoWrite( unsigned char *buf, u_int32 size )
 	int count = 0;
 
 	if( size == 0 ) return RET_ERR;
-    usleep(100);
 	if( (count = write(fdOut,buf,size)) != size )
 	{
 		if( count < 0 )
 		{
 			UTIL_ERR("ERROR: %s:WRITE %s", __FUNCTION__, strerror(errno));
 			ec = RET_ERR;
-			sleep(2);
 		}
 	}
 	
